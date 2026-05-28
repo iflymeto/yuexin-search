@@ -1,0 +1,777 @@
+.config-page {
+    color: #303133;
+}
+
+.config-page .config-io-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.config-page .config-io-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.config-page .config-io-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: #ecf5ff;
+    color: #409eff;
+    flex-shrink: 0;
+}
+
+.config-page .config-io-icon.success {
+    background: #f0f9eb;
+    color: #67c23a;
+}
+
+.config-page .config-io-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.config-page .config-io-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.config-page .config-io-desc {
+    color: #909399;
+    font-size: 12px;
+}
+
+.config-page .config-health-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #e1f3d8;
+    background: #f0f9eb;
+    color: #529b2e;
+}
+
+.config-page .config-health-panel.warn {
+    border-color: #faecd8;
+    background: #fdf6ec;
+    color: #b88230;
+}
+
+.config-page .config-health-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+    font-weight: 600;
+}
+
+.config-page .config-health-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.config-page .config-health-item {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(230, 162, 60, .22);
+    color: #ad7b2b;
+    font-size: 12px;
+}
+
+.config-page .config-filter-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.config-page .config-filter-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    background: #fafafa;
+    box-sizing: border-box;
+}
+
+.config-page .config-filter-control i {
+    color: #909399;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.config-page .config-filter-input {
+    flex: 1;
+    min-width: 120px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: #303133;
+    font-size: 14px;
+}
+
+.config-page .config-filter-clear {
+    border: 0;
+    background: transparent;
+    color: #409eff;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.config-page .config-filter-count {
+    color: #909399;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.config-page .config-empty-filter {
+    padding: 28px 16px;
+    margin-bottom: 14px;
+    border: 1px dashed #dcdfe6;
+    border-radius: 6px;
+    background: #fafafa;
+    color: #909399;
+    text-align: center;
+}
+
+.config-page .config-tabs {
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.config-page .config-tabs > .el-tabs__header {
+    margin: 0;
+    padding: 0 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #ebeef5;
+}
+
+.config-page .config-tabs > .el-tabs__content {
+    padding: 16px;
+}
+
+.config-page .config-tab-body {
+    max-width: 1180px;
+}
+
+.config-page .config-section {
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+.config-page .config-section-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 13px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #ebeef5;
+}
+
+.config-page .config-section-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.config-page .config-section-desc {
+    margin-top: 5px;
+    color: #909399;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.config-page .config-section-body {
+    padding: 14px 16px 2px;
+}
+
+.config-page .config-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.config-page .config-field-grid.one-column {
+    grid-template-columns: 1fr;
+}
+
+.config-page .config-field-card {
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid #edf0f5;
+    border-radius: 7px;
+    background: linear-gradient(180deg, #fff 0%, #fcfdff 100%);
+    min-height: 0;
+    box-shadow: 0 1px 0 rgba(31, 45, 61, .02);
+}
+
+.config-page .config-field-card textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.config-page .config-field-card textarea[placeholder*="CSS"],
+.config-page .config-field-card textarea[placeholder*="script"],
+.config-page .config-field-card textarea[placeholder*="<a"] {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.config-page .config-field-card .el-form-item__label {
+    float: none;
+    width: auto !important;
+    padding: 0 0 8px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.config-page .config-field-card .el-form-item__content {
+    margin-left: 0 !important;
+    line-height: 1.4;
+}
+
+.config-page .config-field-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.config-page .config-field-title {
+    color: #303133;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.config-page .config-field-key {
+    color: #c0c4cc;
+    font-size: 12px;
+    font-family: Consolas, Monaco, monospace;
+    line-height: 1.35;
+    padding-top: 2px;
+    text-align: right;
+    word-break: break-all;
+}
+
+.config-page .config-help {
+    display: block;
+    margin-top: 8px;
+    color: #909399;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.config-page .config-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.config-page .config-radio-group .el-radio {
+    margin-right: 8px;
+    margin-bottom: 6px;
+}
+
+.config-page .config-image-preview {
+    margin-top: 0;
+    max-width: 220px;
+    max-height: 160px;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    object-fit: contain;
+    background: #fafafa;
+}
+
+.config-page .config-image-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.config-page .config-image-picker .config-image-preview {
+    margin-top: 0;
+}
+
+.config-page .config-mode-body {
+    margin-top: 10px;
+}
+
+.config-page .config-mode-head {
+    margin-bottom: 10px;
+}
+
+.config-page .config-preview-wrap {
+    margin-top: 10px;
+}
+
+.config-page .config-image-preview.legacy-preview {
+    max-width: 200px;
+    max-height: 200px;
+    border-color: #ddd;
+}
+
+.config-page .config-native-input,
+.config-page .config-native-textarea {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 2 !important;
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    background: #fff;
+    color: #303133;
+    font-size: 14px;
+    line-height: 1.45;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.config-page .config-native-input {
+    height: 36px;
+    padding: 0 11px;
+}
+
+.config-page .config-short-editor {
+    height: 38px !important;
+    min-height: 38px !important;
+}
+
+.config-page .config-native-textarea {
+    min-height: 86px;
+    padding: 8px 11px;
+    resize: vertical;
+}
+
+.config-page .config-primary-editor {
+    min-height: 92px !important;
+    background: #fff !important;
+    border: 1px solid #dcdfe6 !important;
+}
+
+.config-page .config-primary-editor.compact {
+    min-height: 44px !important;
+    height: 44px;
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.config-page .config-primary-editor.image-path {
+    flex: 1 1 360px;
+    min-height: 42px !important;
+    height: 42px;
+}
+
+.config-page .config-primary-editor.code {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.config-page .config-native-input:focus,
+.config-page .config-native-textarea:focus {
+    border-color: #409eff;
+    box-shadow: 0 0 0 2px rgba(64, 158, 255, .12);
+    background: #fff;
+}
+
+.config-page .config-native-number {
+    max-width: 220px;
+}
+
+.config-page .config-inline-control,
+.config-page .config-secret-control {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #edf0f5;
+    border-radius: 7px;
+    background: #fbfcff;
+}
+
+.config-page .config-secret-control .config-native-textarea {
+    flex: 1;
+}
+
+.config-page .config-secret-control.long-secret {
+    align-items: flex-start;
+}
+
+.config-page .config-secret-control.long-secret .config-native-input {
+    height: 38px;
+}
+
+.config-page .config-secret-control .secret-editor {
+    min-height: 112px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.config-page .config-native-btn {
+    height: 36px;
+    padding: 0 13px;
+    border: 1px solid #409eff;
+    border-radius: 6px;
+    background: #409eff;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.config-page .config-native-btn.plain {
+    border-color: #dcdfe6;
+    background: #fff;
+    color: #606266;
+}
+
+.config-page .config-native-btn.subtle {
+    border-color: #dcdfe6;
+    background: #fff;
+    color: #606266;
+}
+
+.config-page .config-native-btn:hover {
+    filter: brightness(.98);
+}
+
+.config-page .config-native-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    min-height: 36px;
+    align-items: center;
+}
+
+.config-page .config-native-options label,
+.config-page .config-native-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #606266;
+    font-size: 14px;
+    cursor: pointer;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid #e4e7ed;
+    border-radius: 999px;
+    background: #fff;
+}
+
+.config-page .config-native-options input,
+.config-page .config-native-switch input {
+    margin: 0;
+}
+
+.config-page .config-native-switch {
+    min-height: 36px;
+    padding: 0 12px;
+}
+
+.config-page .config-color-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+}
+
+.config-page .config-native-color {
+    width: 46px;
+    height: 38px;
+    padding: 2px;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    background: #fff;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.config-page .config-color-control .el-input,
+.config-page .config-color-control .config-native-input {
+    max-width: 240px;
+}
+
+.config-page .config-submit-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: rgba(250, 250, 250, .96);
+    box-shadow: 0 -8px 18px rgba(31, 45, 61, .04);
+    backdrop-filter: blur(6px);
+}
+
+.config-page .config-submit-left,
+.config-page .config-submit-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.config-page .config-muted {
+    color: #909399;
+    font-size: 12px;
+}
+
+.config-page code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f5f7fa;
+    color: #606266;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+}
+
+.diagnosis-dialog {
+    max-width: 860px;
+}
+
+.diagnosis-dialog .el-message-box__content {
+    padding-top: 8px;
+}
+
+.diagnosis-report {
+    color: #303133;
+    text-align: left;
+}
+
+.diagnosis-result {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.diagnosis-result.success {
+    border-color: #e1f3d8;
+    background: #f0f9eb;
+}
+
+.diagnosis-result.warning {
+    border-color: #faecd8;
+    background: #fdf6ec;
+}
+
+.diagnosis-result-title,
+.diagnosis-section-title {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.diagnosis-result.success .diagnosis-result-title {
+    color: #529b2e;
+}
+
+.diagnosis-result.warning .diagnosis-result-title {
+    color: #b88230;
+}
+
+.diagnosis-result-text {
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.diagnosis-section {
+    margin-top: 14px;
+}
+
+.diagnosis-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.diagnosis-table th,
+.diagnosis-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #ebeef5;
+    text-align: left;
+    vertical-align: top;
+}
+
+.diagnosis-table th {
+    background: #f5f7fa;
+    color: #606266;
+    font-weight: 600;
+}
+
+.diagnosis-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.diagnosis-table tr.is-empty td {
+    background: #fdf6ec;
+}
+
+.diagnosis-table code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f5f7fa;
+    color: #606266;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.diagnosis-empty {
+    color: #b88230;
+}
+
+.diagnosis-empty-box {
+    padding: 12px 14px;
+    border: 1px dashed #dcdfe6;
+    border-radius: 6px;
+    background: #fafafa;
+    color: #909399;
+}
+
+.diagnosis-steps {
+    margin: 0;
+    padding-left: 22px;
+    line-height: 1.9;
+}
+
+.config-import-preview {
+    padding: 10px;
+    text-align: left;
+}
+
+.config-import-preview p {
+    margin: 0 0 8px;
+}
+
+.config-import-warning {
+    margin-top: 15px !important;
+    color: #e6a23c;
+}
+
+.config-test-status-ok {
+    color: #67c23a;
+}
+
+.conf-manage-page .conf-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.conf-manage-page .conf-search {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.conf-manage-page .conf-filter-select {
+    width: 120px;
+}
+
+.conf-manage-page .conf-tip {
+    display: inline-block;
+    margin-top: 4px;
+    color: #999;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.conf-manage-page .conf-tip.warning {
+    color: #6881ec;
+}
+
+.conf-manage-page .conf-option-editor {
+    margin-top: 10px;
+}
+
+.conf-manage-page .conf-sort-input {
+    width: 120px;
+}
+
+@media (max-width: 1100px) {
+    .config-page .config-io-panel,
+    .config-page .config-field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .config-page .config-health-panel {
+        flex-direction: column;
+    }
+
+    .config-page .config-filter-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .config-page .config-filter-count {
+        text-align: right;
+    }
+
+    .config-page .config-health-actions {
+        justify-content: flex-start;
+    }
+
+    .config-page .config-tabs > .el-tabs__content {
+        padding: 12px;
+    }
+
+    .config-page .config-section-head,
+    .config-page .config-submit-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

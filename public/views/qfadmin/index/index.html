@@ -1,0 +1,258 @@
+{include file="common/header"/}
+    
+    <div class="homecontainer dashboard-page">
+        <div class="welcome-header">
+            <p class="welcome-text">资源管理系统</p>
+            <div class="welcome-subtext">系统运行概况、数据库、缓存与服务器状态</div>
+        </div>
+
+        <div class="dash-container">
+            <div class="dash-grid">
+                <!-- PHP 状态 -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title">PHP 运行环境</span>
+                        <span class="dash-badge ok">运行中</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">版本</span>
+                        <span class="dash-value">{$php.version}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">运行模式</span>
+                        <span class="dash-value">{$php.sapi}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">内存占用</span>
+                        <span class="dash-value">{$php.memory_usage_human} / {$php.memory_limit}</span>
+                    </div>
+                    <div class="dash-progress-wrap">
+                        <div class="dash-progress-bar">
+                            <div class="dash-progress-fill {if $php.memory_usage_percent > 80}danger{elseif $php.memory_usage_percent > 60}warning{/if}" 
+                                 style="width: {$php.memory_usage_percent}%"></div>
+                        </div>
+                        <span class="dash-progress-text">{$php.memory_usage_percent}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">最大执行时间</span>
+                        <span class="dash-value">{$php.max_execution_time}s</span>
+                    </div>
+                    <div class="dash-tag-group">
+                        <span class="dash-tag {if $php.opcache_enabled}active{/if}">OPcache</span>
+                        <span class="dash-tag {if $php.xdebug}active{/if}">Xdebug</span>
+                        <span class="dash-tag {if $php.apcu}active{/if}">APCu</span>
+                    </div>
+                </div>
+
+                <!-- 数据库状态 -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title">数据库</span>
+                        <span class="dash-badge {if $db.connected}ok{else}err{/if}">
+                            {if $db.connected}已连接{else}离线{/if}
+                        </span>
+                    </div>
+                    {if $db.connected}
+                    <div class="dash-stat-row">
+                        <span class="dash-label">版本</span>
+                        <span class="dash-value">{$db.version}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">数据库大小</span>
+                        <span class="dash-value">{$db.database_size_human|default='-'}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">运行时长</span>
+                        <span class="dash-value">{$db.uptime_human}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">连接数</span>
+                        <span class="dash-value">{$db.threads_connected} / {$db.max_connections}</span>
+                    </div>
+                    <div class="dash-progress-wrap">
+                        <div class="dash-progress-bar">
+                            <div class="dash-progress-fill {if ($db.threads_connected / $db.max_connections) > 0.8}danger{/if}" 
+                                 style="width: {:round(($db.threads_connected / $db.max_connections) * 100, 1)}%"></div>
+                        </div>
+                        <span class="dash-progress-text">{:round(($db.threads_connected / $db.max_connections) * 100, 1)}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">慢查询</span>
+                        <span class="dash-value {if $db.slow_queries > 0}danger{/if}">{$db.slow_queries}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">总查询</span>
+                        <span class="dash-value">{$db.total_queries}</span>
+                    </div>
+                    {else}
+                    <div class="dash-empty error">{$db.error}</div>
+                    {/if}
+                </div>
+
+                <!-- 缓存状态 -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title">缓存状态</span>
+                        <span class="dash-badge {if $cache.connected}ok{else}err{/if}">
+                            {$cache.status}
+                        </span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">缓存类型</span>
+                        <span class="dash-value">{$cache.driver|strtoupper}</span>
+                    </div>
+                    {if $cache.driver == 'file'}
+                    <div class="dash-stat-row">
+                        <span class="dash-label">缓存目录</span>
+                        <span class="dash-value truncate" title="{$cache.path}">{$cache.path}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">缓存文件数</span>
+                        <span class="dash-value">{$cache.file_count}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">内存占用</span>
+                        <span class="dash-value">{$cache.size_human}</span>
+                    </div>
+                    {elseif $cache.driver == 'redis' && $cache.connected}
+                    <div class="dash-stat-row">
+                        <span class="dash-label">版本</span>
+                        <span class="dash-value">{$cache.version}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">地址</span>
+                        <span class="dash-value">{$cache.host}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">模式</span>
+                        <span class="dash-value">{$cache.mode}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">内存占用</span>
+                        <span class="dash-value">{$cache.used_memory_human}</span>
+                    </div>
+                    <div class="dash-progress-wrap">
+                        <div class="dash-progress-bar">
+                            <div class="dash-progress-fill {if $cache.memory_percent > 90}danger{elseif $cache.memory_percent > 70}warning{/if}" 
+                                 style="width: {$cache.memory_percent}%"></div>
+                        </div>
+                        <span class="dash-progress-text">{$cache.memory_percent}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">命中率</span>
+                        <span class="dash-value">{$cache.hit_rate}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">键数量</span>
+                        <span class="dash-value">{$cache.total_keys}</span>
+                    </div>
+                    {elseif $cache.driver == 'memcached' && $cache.connected}
+                    <div class="dash-stat-row">
+                        <span class="dash-label">版本</span>
+                        <span class="dash-value">{$cache.version}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">地址</span>
+                        <span class="dash-value">{$cache.host}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">内存占用</span>
+                        <span class="dash-value">{$cache.used_memory_human} / {$cache.memory_limit_human}</span>
+                    </div>
+                    <div class="dash-progress-wrap">
+                        <div class="dash-progress-bar">
+                            <div class="dash-progress-fill {if $cache.memory_percent > 90}danger{elseif $cache.memory_percent > 70}warning{/if}" 
+                                 style="width: {$cache.memory_percent}%"></div>
+                        </div>
+                        <span class="dash-progress-text">{$cache.memory_percent}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">命中率</span>
+                        <span class="dash-value">{$cache.hit_rate}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">缓存条目</span>
+                        <span class="dash-value">{$cache.curr_items}</span>
+                    </div>
+                    {else}
+                    <div class="dash-empty">{$cache.error}</div>
+                    {/if}
+                </div>
+
+                <!-- 服务器信息 -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title">服务器信息</span>
+                        <span class="dash-badge ok">运行中</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">操作系统</span>
+                        <span class="dash-value">{$server.os}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">Web 服务器</span>
+                        <span class="dash-value truncate truncate-sm" title="{$server.server_software}">{$server.server_software}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">负载 (1/5/15)</span>
+                        <span class="dash-value">{$server.load_1} / {$server.load_5} / {$server.load_15}</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">磁盘使用</span>
+                        <span class="dash-value">{$server.disk_used_percent}%</span>
+                    </div>
+                    <div class="dash-progress-wrap">
+                        <div class="dash-progress-bar">
+                            <div class="dash-progress-fill {if $server.disk_used_percent > 90}danger{elseif $server.disk_used_percent > 70}warning{/if}" 
+                                 style="width: {$server.disk_used_percent}%"></div>
+                        </div>
+                        <span class="dash-progress-text">{$server.disk_used_percent}%</span>
+                    </div>
+                    <div class="dash-stat-row">
+                        <span class="dash-label">CPU 核心</span>
+                        <span class="dash-value">{$server.cpu_cores}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Request -->
+            <div class="dash-card dash-request-card">
+                <div class="dash-card-header compact">
+                    <span class="dash-card-title">当前请求</span>
+                    <span class="dash-badge ok dash-value">{$request.time}ms</span>
+                </div>
+                <div class="dash-request-meta">
+                    <span><span class="dash-request-label">请求方法:</span> {$request.method}</span>
+                    <span><span class="dash-request-label">协议:</span> {$request.protocol}</span>
+                    <span><span class="dash-request-label">客户端 IP:</span> {$request.client_ip}</span>
+                    <span><span class="dash-request-label">客户端端口:</span> {$request.client_port}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {include file="common/footer"/}
+    <script>
+        (function() {
+            if (document.getElementById('dashboard-style')) {
+                return;
+            }
+            var link = document.createElement('link');
+            link.id = 'dashboard-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/dashboard.css?v=2026051501';
+            document.head.appendChild(link);
+        })();
+
+        // 仅当 #app 实例不存在时初始化（防止与 header/footer 的 Vue 冲突）
+        if (typeof app === 'undefined') {
+            var app = new Vue({
+                el: '#app',
+                data() {
+                    return {
+                        data: {}
+                    }
+                }
+            });
+        }
+    </script>
+

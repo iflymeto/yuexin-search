@@ -1,0 +1,1707 @@
+<!-- 本地引入（已注释，改用CDN加速） -->
+<!-- <script src="__STATIC__/mofa/common/static/js/vue.global.min.js"></script> -->
+<!-- <script src="__STATIC__/mofa/common/static/js/index.full.min.js"></script> -->
+<!-- <script src="__STATIC__/mofa/common/static/js/axios.min.js"></script> -->
+
+<!-- npmmirror镜像（阿里云CDN，稳定性最佳） -->
+<script src="https://registry.npmmirror.com/vue/3.3.4/files/dist/vue.global.prod.js"></script>
+<script src="https://registry.npmmirror.com/element-plus/2.3.14/files/dist/index.full.js"></script>
+<script src="https://registry.npmmirror.com/axios/1.5.0/files/dist/axios.min.js"></script>
+<script src="__STATIC__/mofa/common/static/js/qrcanvas@3.js"></script>
+<script src="__STATIC__/mofa/common/static/js/announcement.js?v=2026052201"></script>
+<script src="__STATIC__/mofa/common/static/js/search.js?v=2026052201"></script>
+<script src="__STATIC__/mofa/common/static/js/home.js?v=2026052201"></script>
+<script src="__STATIC__/mofa/common/static/js/resource-dialog.js?v=2026052201"></script>
+<script>
+    const { createApp, ref, onMounted, onUnmounted, nextTick } = Vue;
+    const { ElButton, ElMessage  } = ElementPlus;
+
+    const PanTreeNode = {
+        name: 'PanTreeNode',
+        props: {
+            node: {
+                type: Object,
+                required: true
+            },
+            level: {
+                type: Number,
+                default: 0
+            }
+        },
+        data() {
+            return {
+                open: this.level === 0
+            };
+        },
+        computed: {
+            hasChildren() {
+                return this.node && Array.isArray(this.node.children) && this.node.children.length > 0;
+            },
+            isFolder() {
+                return this.node && this.node.type === 'folder';
+            },
+            icon() {
+                if (this.isFolder) return this.open ? '📂' : '📁';
+                const name = (this.node && this.node.name ? this.node.name : '').toLowerCase();
+                if (/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v)$/.test(name)) return '🎬';
+                if (/\.(mp3|m4a|flac|wav|aac|ogg|wma)$/.test(name)) return '🎵';
+                if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(name)) return '🖼';
+                if (/\.pdf$/.test(name)) return '📑';
+                if (/\.(zip|rar|7z|tar|gz)$/.test(name)) return '📦';
+                if (/\.(txt|srt|ass|doc|docx|xls|xlsx|ppt|pptx|epub|mobi)$/.test(name)) return '📄';
+                return '📄';
+            },
+            displaySize() {
+                const size = Number(this.node && this.node.size ? this.node.size : 0);
+                if (!size || this.isFolder) return '';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                let value = size;
+                let index = 0;
+                while (value >= 1024 && index < units.length - 1) {
+                    value = value / 1024;
+                    index++;
+                }
+                const fixed = value >= 10 || index === 0 ? 0 : 1;
+                return value.toFixed(fixed) + units[index];
+            },
+            displayName() {
+                return this.node && this.node.name ? this.node.name : '未命名文件';
+            }
+        },
+        methods: {
+            toggle() {
+                if (this.hasChildren) {
+                    this.open = !this.open;
+                }
+            }
+        },
+        template: `
+            <div class="pan-tree-node" :class="{open: open, folder: isFolder}">
+                <div class="pan-tree-row" :style="{paddingLeft: (level * 16) + 'px'}" @click="toggle">
+                    <span class="pan-tree-toggle" :class="{open: open, hidden: !hasChildren}">▶</span>
+                    <span class="pan-tree-icon">{{icon}}</span>
+                    <span class="pan-tree-name" :title="displayName">{{displayName}}</span>
+                    <span class="pan-tree-size" v-if="displaySize">{{displaySize}}</span>
+                </div>
+                <div class="pan-tree-children" v-if="hasChildren && open">
+                    <pan-tree-node
+                        v-for="(child, index) in node.children"
+                        :key="(child.fid || child.fs_id || child.path || child.name || 'node') + '_' + index"
+                        :node="child"
+                        :level="level + 1">
+                    </pan-tree-node>
+                </div>
+            </div>
+        `
+    };
+    
+    // ========== 缓存监控：在Console显示API缓存命中率 ==========
+    let cacheStats = {
+        totalRequests: 0,
+        hits: 0,
+        misses: 0,
+        totalTime: 0,
+        hitTime: 0,
+        missTime: 0
+    };
+    
+    // 添加axios响应拦截器
+    axios.interceptors.response.use(
+        response => {
+            // 读取缓存信息响应头
+            const cacheStatus = response.headers['x-cache-status'];
+            const cacheDriver = response.headers['x-cache-driver'];
+            const cacheTime = response.headers['x-cache-time'];
+            
+            if (cacheStatus) {
+                cacheStats.totalRequests++;
+                const timeMs = parseFloat(cacheTime) || 0;
+                cacheStats.totalTime += timeMs;
+                
+                if (cacheStatus === 'HIT') {
+                    cacheStats.hits++;
+                    cacheStats.hitTime += timeMs;
+                    debugLog.log(
+                        '%c✓ 缓存命中 %c' + cacheDriver + ' %c' + cacheTime,
+                        'color: #67C23A; font-weight: bold;',
+                        'color: #409EFF; font-weight: bold;',
+                        'color: #909399;'
+                    );
+                } else if (cacheStatus === 'MISS') {
+                    cacheStats.misses++;
+                    cacheStats.missTime += timeMs;
+                    debugLog.log(
+                        '%c✗ 缓存未命中 %c' + cacheDriver + ' %c' + cacheTime,
+                        'color: #F56C6C; font-weight: bold;',
+                        'color: #409EFF; font-weight: bold;',
+                        'color: #909399;'
+                    );
+                }
+                
+                // 每3次请求输出一次统计信息（适配无图模式）
+                if (cacheStats.totalRequests % 3 === 0) {
+                    const hitRate = ((cacheStats.hits / cacheStats.totalRequests) * 100).toFixed(2);
+                    const avgHitTime = cacheStats.hits > 0 ? (cacheStats.hitTime / cacheStats.hits).toFixed(2) : 0;
+                    const avgMissTime = cacheStats.misses > 0 ? (cacheStats.missTime / cacheStats.misses).toFixed(2) : 0;
+                    
+                    debugLog.group('%c📊 缓存统计（最近' + cacheStats.totalRequests + '次请求）', 'color: #E6A23C; font-weight: bold; font-size: 14px;');
+                    debugLog.log('%c命中率: %c' + hitRate + '%', 'color: #606266;', 'color: #67C23A; font-weight: bold; font-size: 16px;');
+                    debugLog.log('%c命中次数: %c' + cacheStats.hits + ' %c| 未命中: %c' + cacheStats.misses,
+                        'color: #606266;', 'color: #67C23A;',
+                        'color: #909399;', 'color: #F56C6C;'
+                    );
+                    debugLog.log('%c平均耗时(HIT): %c' + avgHitTime + 'ms %c| 平均耗时(MISS): %c' + avgMissTime + 'ms',
+                        'color: #606266;', 'color: #67C23A;',
+                        'color: #909399;', 'color: #F56C6C;'
+                    );
+                    debugLog.groupEnd();
+                }
+            }
+            
+            return response;
+        },
+        error => {
+            return Promise.reject(error);
+        }
+    );
+    
+    // 页面加载完成时输出欢迎信息
+    window.addEventListener('load', () => {
+        debugLog.log(
+            '%c🚀 新月搜索系统 - 性能监控已启用',
+            'color: #409EFF; font-size: 16px; font-weight: bold; padding: 10px;'
+        );
+        debugLog.log(
+            '%c💡 提示：每次API请求都会在控制台显示缓存命中情况',
+            'color: #909399; font-size: 12px;'
+        );
+    });
+    // ========== 缓存监控结束 ==========
+    
+    const app = createApp({
+        components: {
+            PanTreeNode
+        },
+        setup() {
+            // 定义响应式数据
+            const elementOpacity = ref(0);
+            const scrollThreshold = ref(150); // 动态设置的滚动阈值
+            const keyword = ref('{$keyword??''}');
+            const qcodeVisible = ref(false);
+            const layerVisible = ref(false);
+            const content = ref('');
+            const email = ref(''); // 联系邮箱
+            const load = ref(false); // 加载状态
+            const drawer = ref(false); // 抽屉状态
+            const rankList = ref([]);
+            const rankDj = ref([]);
+            const is_m = ref(0);
+            const newList = ref([]);
+            const suggestions = ref([]);
+            const showSuggestions = ref(false);
+            const loadingSuggestions = ref(false);
+            const QList = ref([]);
+            const QLoading = ref(false);
+            const total_result = ref(0);
+            const currentSource = ref(0);
+            const panSelectOpen = ref(false);
+            const dialogUrl = ref(false);
+            const dialogLoading = ref(false);
+            const dialogItem = ref({});
+            const is_type = ref(0);
+            const pc_type = ref(0);
+            const localList = ref([]); // 本地资源列表
+            const showBackTop = ref(false);
+            let currentEventSource = null; // 当前搜索的EventSource连接
+            const panTreeMemoryCache = new Map();
+            
+            // 公告弹窗相关数据
+            const announcementVisible = ref(false);
+            const announcementData = ref(null);
+            const announcementScrollable = ref(false);
+            
+            // 密码验证相关数据
+            const passwordDialogVisible = ref(false);
+            const passwordInput = ref('');
+            const passwordError = ref('');
+            const passwordLoading = ref(false);
+            const passwordInputRef = ref(null);
+            const currentResourceId = ref(null); // 当前需要验证的资源ID
+            const currentResourceItem = ref(null); // 当前需要验证的资源项
+            const currentResourceIndex = ref(null); // 当前需要验证的资源索引
+            
+            // 密码验证配置信息
+            const passwordHintText = ref('该资源需要访问密码，请输入密码后继续');
+            const passwordPlaceholder = ref('请输入访问密码');
+            const passwordDialogWidth = ref('400px');
+            
+            // 检测是否为移动端
+            const isMobile = ref(window.innerWidth <= 768);
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                isMobile.value = window.innerWidth <= 768;
+                passwordDialogWidth.value = isMobile.value ? '90%' : '400px';
+            });
+            
+            // 初始化弹窗宽度
+            passwordDialogWidth.value = isMobile.value ? '90%' : '400px';
+            
+            // 进度条相关数据
+            const searchProgress = ref({
+                total: 0,      // 总搜索线路数
+                current: 0,    // 当前已完成的线路数
+                message: '',   // 当前搜索状态信息
+                visible: false // 是否显示进度条
+            });
+            
+            
+            // 公共消息方法
+            const showMessage = (message, type = 'info') => {
+                ElMessage({
+                    message,
+                    type,
+                    plain: true,
+                });
+            };
+
+            const lockAnnouncementScroll = (locked) => {
+                if (!document.querySelector('.ios-announcement-overlay')) {
+                    return;
+                }
+                document.documentElement.style.overflow = locked ? 'hidden' : '';
+                document.body.style.overflow = locked ? 'hidden' : '';
+            };
+
+            const updateAnnouncementScrollable = async () => {
+                await nextTick();
+                const contentEl = document.querySelector('.ios-announcement-content');
+                announcementScrollable.value = !!(contentEl && contentEl.scrollHeight > contentEl.clientHeight + 4);
+            };
+
+            const getDisplayResourceUrlForDialog = (item) => {
+                const fakeModeEnabled = '{$config.fake_mode_enable|default="0"}'.trim() === '1';
+                const fakeQuarkUrl = '{$config.fake_quark_url|default=""}'.trim();
+                const fakeBaiduUrl = '{$config.fake_baidu_url|default=""}'.trim();
+                const resourceUrl = item && item.url ? item.url : '';
+                const resourceUrlLower = resourceUrl.toLowerCase();
+                let resourceType = Number(item && item.is_type !== undefined ? item.is_type : -1);
+
+                if (!fakeModeEnabled) {
+                    return resourceUrl;
+                }
+
+                if (![0, 2].includes(resourceType)) {
+                    if (resourceUrlLower.includes('pan.baidu.com')) {
+                        resourceType = 2;
+                    } else if (resourceUrlLower.includes('pan.quark.cn') || resourceUrlLower.includes('drive.quark.cn')) {
+                        resourceType = 0;
+                    }
+                }
+
+                if (resourceType === 0 && fakeQuarkUrl) {
+                    return fakeQuarkUrl;
+                }
+
+                if (resourceType === 2 && fakeBaiduUrl) {
+                    return fakeBaiduUrl;
+                }
+
+                return resourceUrl;
+            };
+
+            const fetchDisplayUrlForDialog = async (item) => {
+                const response = await axios.post('/api/other/get_display_url', {
+                    url: item && item.url ? item.url : '',
+                    is_type: item && item.is_type !== undefined ? item.is_type : -1
+                });
+
+                if (!response.data || response.data.code != 200 || !response.data.data) {
+                    throw new Error((response.data && response.data.msg) || '获取展示链接失败');
+                }
+
+                return response.data.data;
+            };
+
+            const getPanName = (item) => {
+                const type = Number(item && item.is_type !== undefined ? item.is_type : 0);
+                if (type === 1) return '阿里云盘';
+                if (type === 2) return '百度网盘';
+                if (type === 3) return 'UC网盘';
+                if (type === 4) return '迅雷网盘';
+                return '夸克网盘';
+            };
+
+            const getPanIcon = (item) => {
+                const type = Number(item && item.is_type !== undefined ? item.is_type : 0);
+                if (type === 2) return '/data/百度网盘.png';
+                if (type === 3) return '/data/UC网盘.png';
+                if (type === 4) return '/data/迅雷.png';
+                return '/data/夸克.png';
+            };
+
+            const supportsPanTree = (item) => {
+                const type = Number(item && item.is_type !== undefined ? item.is_type : -1);
+                return [0, 2, 3].includes(type);
+            };
+
+            const extractPanCode = (item) => {
+                if (item && item.code) {
+                    return item.code;
+                }
+
+                const url = item && item.treeSourceUrl ? item.treeSourceUrl : (item && item.url ? item.url : '');
+                if (!url || !url.startsWith('http')) {
+                    return '';
+                }
+
+                try {
+                    const parsed = new URL(url);
+                    return parsed.searchParams.get('pwd') || '';
+                } catch (error) {
+                    const match = url.match(/[?&]pwd=([^&#\s]+)/);
+                    return match ? decodeURIComponent(match[1]) : '';
+                }
+            };
+
+            const ensureItemTreeState = (item) => {
+                if (!item) return;
+                if (item.treeExpanded === undefined) item.treeExpanded = false;
+                if (item.treeLoading === undefined) item.treeLoading = false;
+                if (item.treeLoaded === undefined) item.treeLoaded = false;
+                if (item.treeData === undefined) item.treeData = null;
+                if (item.treeError === undefined) item.treeError = '';
+            };
+
+            const getPanTreeMemoryCacheKey = (item) => {
+                if (!item) return '';
+                const treeKey = item.tree_key || item.treeKey || '';
+                if (treeKey) {
+                    return 'tree_key:' + treeKey;
+                }
+
+                const sourceUrl = item.treeSourceUrl || item.originalUrl || item.url || '';
+                if (!sourceUrl) return '';
+
+                return [
+                    'source',
+                    item.is_type !== undefined ? item.is_type : -1,
+                    sourceUrl,
+                    extractPanCode(item),
+                    item.stoken || ''
+                ].join('|');
+            };
+
+            const loadItemPanTree = async (item, force = false) => {
+                ensureItemTreeState(item);
+                if (!item || item.treeLoading) return;
+
+                if (!supportsPanTree(item)) {
+                    item.treeExpanded = true;
+                    item.treeData = null;
+                    item.treeLoaded = false;
+                    item.treeError = Number(item && item.is_type !== undefined ? item.is_type : -1) === 4
+                        ? '暂不支持迅雷目录预览'
+                        : '当前网盘暂不支持目录预览';
+                    return;
+                }
+
+                const treeKey = item.tree_key || item.treeKey || '';
+                const sourceUrl = item.treeSourceUrl || item.originalUrl || item.url || '';
+                if (!treeKey && !sourceUrl) {
+                    item.treeExpanded = true;
+                    item.treeData = null;
+                    item.treeLoaded = false;
+                    item.treeError = '暂无可解析的资源地址';
+                    return;
+                }
+
+                if (!force && item.treeLoaded && item.treeData) {
+                    return;
+                }
+
+                const memoryCacheKey = getPanTreeMemoryCacheKey(item);
+                if (!force && memoryCacheKey && panTreeMemoryCache.has(memoryCacheKey)) {
+                    item.treeData = panTreeMemoryCache.get(memoryCacheKey);
+                    item.treeLoaded = true;
+                    item.treeError = '';
+                    return;
+                }
+
+                item.treeLoading = true;
+                item.treeError = '';
+                try {
+                    const treePayload = treeKey
+                        ? { tree_key: treeKey }
+                        : {
+                            url: encodeURIComponent(sourceUrl),
+                            is_type: item.is_type !== undefined ? item.is_type : -1,
+                            code: extractPanCode(item),
+                            stoken: item.stoken || ''
+                        };
+                    const response = await axios.post('/api/other/pan_tree', treePayload);
+
+                    if (response.data && response.data.code == 200 && response.data.data) {
+                        item.treeData = response.data.data;
+                        item.treeLoaded = true;
+                        item.treeError = '';
+                        if (memoryCacheKey) {
+                            panTreeMemoryCache.set(memoryCacheKey, response.data.data);
+                        }
+                    } else {
+                        item.treeData = null;
+                        item.treeLoaded = false;
+                        item.treeError = (response.data && (response.data.message || response.data.msg)) || '目录获取失败';
+                    }
+                } catch (error) {
+                    debugLog.error('获取卡片目录树失败:', error);
+                    item.treeData = null;
+                    item.treeLoaded = false;
+                    item.treeError = '目录获取失败，请稍后重试';
+                } finally {
+                    item.treeLoading = false;
+                }
+            };
+
+            const toggleItemTree = async (item) => {
+                ensureItemTreeState(item);
+                if (!item || item.treeLoading) return;
+
+                if (item.treeLoaded && item.treeData) {
+                    item.treeExpanded = !item.treeExpanded;
+                    return;
+                }
+
+                item.treeExpanded = true;
+                await loadItemPanTree(item, !!item.treeError);
+            };
+
+            const fallbackCopyText = (text) => {
+                if (!text) {
+                    return false;
+                }
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                const copied = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return copied;
+            };
+
+            const copyToClipboard = async (text, target = null) => {
+                if (!text) {
+                    return;
+                }
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function' && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const copied = fallbackCopyText(text);
+                        if (!copied) {
+                            throw new Error('copy failed');
+                        }
+                    }
+                    if (target) {
+                        const oldBg = target.style.background;
+                        target.style.background = '#fecaca';
+                        setTimeout(() => {
+                            target.style.background = oldBg || '#fef2f2';
+                        }, 220);
+                    }
+                    showMessage('已复制到剪贴板', 'success');
+                } catch (error) {
+                    debugLog.error('[公告弹窗] 复制失败:', error);
+                    showMessage('复制失败，请手动复制', 'error');
+                }
+            };
+
+            const fallbackClipboardWriteText = (text) => {
+                return new Promise((resolve, reject) => {
+                    const copied = fallbackCopyText(text);
+                    if (copied) {
+                        resolve();
+                        return;
+                    }
+                    reject(new Error('copy failed'));
+                });
+            };
+
+            if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+                try {
+                    if (!navigator.clipboard) {
+                        Object.defineProperty(navigator, 'clipboard', {
+                            value: {
+                                writeText: fallbackClipboardWriteText
+                            },
+                            configurable: true
+                        });
+                    } else {
+                        navigator.clipboard.writeText = fallbackClipboardWriteText;
+                    }
+                } catch (error) {
+                    debugLog.error('[公告弹窗] clipboard 兼容注入失败:', error);
+                }
+            }
+
+            window.copyToClipboard = (text) => {
+                const target = window.event && window.event.target ? window.event.target : null;
+                copyToClipboard(text, target);
+            };
+
+            // 密码错误信息配置
+            const passwordErrorMessage = ref('密码错误，请重新输入');
+            
+            // ========================================
+            // 全局版本号缓存（避免重复请求）
+            // 使用axios以便缓存监控生效
+            // ========================================
+            let configVersionPromise = null;
+            const getConfigVersion = () => {
+                if (!configVersionPromise) {
+                    configVersionPromise = axios.get('/api/other/get_config_version')
+                        .then(response => {
+                            if (response.data.code === 200) {
+                                return response.data.data.version;
+                            }
+                            throw new Error('版本检测失败');
+                        })
+                        .catch(error => {
+                            // 请求失败时重置Promise，下次可以重试
+                            configVersionPromise = null;
+                            throw error;
+                        });
+                }
+                return configVersionPromise;
+            };
+            
+            // 获取密码验证配置信息
+            // ========================================
+            // 智能缓存优化：版本检测机制
+            // 优点：1. 有缓存时0ms加载 2. 管理员修改后自动同步 3. 复用版本请求 4. 等待debugLog初始化
+            // ========================================
+            const loadPasswordConfig = async () => {
+                // 等待 debugLog 初始化完成（最多200ms）
+                await new Promise((resolve) => {
+                    const startTime = Date.now();
+                    const checkInit = () => {
+                        if (window.debugLog && window.debugLog.initialized) {
+                            resolve();
+                        } else if (Date.now() - startTime < 200) {
+                            setTimeout(checkInit, 20);
+                        } else {
+                            resolve();  // 超时也继续
+                        }
+                    };
+                    checkInit();
+                });
+                
+                try {
+                    debugLog.log('[密码配置] 开始加载');
+                    
+                    // 1. 先检查版本号（使用全局缓存，避免重复请求）
+                    const currentVersion = await getConfigVersion();
+                    
+                    // 2. 检查本地缓存
+                    const cachedVersion = localStorage.getItem('password_config_version');
+                    const cachedConfig = localStorage.getItem('password_config');
+                    
+                    // 3. 版本一致且有缓存，直接使用（0ms！）
+                    if (cachedConfig && cachedVersion === currentVersion) {
+                        const config = JSON.parse(cachedConfig);
+                        passwordHintText.value = config.hint || '该资源需要访问密码，请输入密码后继续';
+                        passwordPlaceholder.value = config.placeholder || '请输入访问密码';
+                        passwordErrorMessage.value = config.error_message || '密码错误，请重新输入';
+                        debugLog.log('[密码配置] ✓ 使用缓存（版本:', currentVersion, '）');
+                        return;
+                    }
+                    
+                    // 4. 版本不同或无缓存，重新加载
+                    debugLog.log('[密码配置] ↻ 版本更新，重新加载（旧:', cachedVersion, '→ 新:', currentVersion, '）');
+                    const response = await axios.get('/api/other/get_password_config');
+                    const result = response.data;
+                    
+                    if (result.code === 200 && result.data) {
+                        // 更新配置
+                        passwordHintText.value = result.data.hint || '该资源需要访问密码，请输入密码后继续';
+                        passwordPlaceholder.value = result.data.placeholder || '请输入访问密码';
+                        passwordErrorMessage.value = result.data.error_message || '密码错误，请重新输入';
+                        
+                        // 保存到缓存
+                        localStorage.setItem('password_config', JSON.stringify(result.data));
+                        localStorage.setItem('password_config_version', currentVersion);
+                        debugLog.log('[密码配置] ✓ 已缓存（版本:', currentVersion, '）');
+                    }
+                } catch (error) {
+                    debugLog.warn('[密码配置] 获取失败，使用默认配置:', error);
+                    // 使用默认值
+                    passwordHintText.value = '该资源需要访问密码，请输入密码后继续';
+                    passwordPlaceholder.value = '请输入访问密码';
+                    passwordErrorMessage.value = '密码错误，请重新输入';
+                }
+            };
+            
+            // 延迟执行，等待debugLog初始化
+            loadPasswordConfig();
+            
+            // ========================================
+            // ✅ 方案C+E：智能获取完整密码配置（用于传递给后端）
+            // ========================================
+            let cachedPasswordConfigForBackend = null; // 模块级缓存
+            
+            const loadPasswordConfigForBackend = async () => {
+                try {
+                    // 1. 先检查版本号
+                    const currentVersion = await getConfigVersion();
+                    
+                    // 2. 检查本地缓存
+                    const cachedVersion = localStorage.getItem('password_config_backend_version');
+                    const cachedConfig = localStorage.getItem('password_config_backend');
+                    
+                    // 3. 版本一致，使用缓存（0ms）
+                    if (cachedConfig && cachedVersion === currentVersion) {
+                        cachedPasswordConfigForBackend = JSON.parse(cachedConfig);
+                        debugLog.log('[密码配置-后端] ✓ 缓存命中（版本:', currentVersion, '）');
+                        return cachedPasswordConfigForBackend;
+                    }
+                    
+                    // 4. 版本不同，从版本API获取配置（已包含密码配置）
+                    debugLog.log('[密码配置-后端] ↻ 重新加载');
+                    const versionRes = await axios.get('/api/other/get_config_version');
+                    
+                    if (versionRes.data.code === 200 && versionRes.data.data.password_config) {
+                        cachedPasswordConfigForBackend = versionRes.data.data.password_config;
+                        
+                        // 保存到缓存
+                        localStorage.setItem('password_config_backend', JSON.stringify(cachedPasswordConfigForBackend));
+                        localStorage.setItem('password_config_backend_version', currentVersion);
+                        debugLog.log('[密码配置-后端] ✓ 已缓存（版本:', currentVersion, '）');
+                        
+                        return cachedPasswordConfigForBackend;
+                    }
+                } catch (error) {
+                    debugLog.error('[密码配置-后端] 加载失败:', error);
+                }
+                
+                // 降级：返回默认配置
+                return {
+                    enable: '0',
+                    password: '',
+                    error_message: '密码错误',
+                    expire: '24'
+                };
+            };
+            
+            // 预加载配置
+            loadPasswordConfigForBackend();
+            
+            const announcementModule = window.AnnouncementModule.create({
+                axios,
+                debugLog,
+                announcementData,
+                announcementVisible,
+                announcementScrollable,
+                getConfigVersion,
+                lockAnnouncementScroll,
+                updateAnnouncementScrollable,
+                copyToClipboard
+            });
+            const checkAnnouncement = announcementModule.checkAnnouncement;
+            const confirmAnnouncement = announcementModule.confirmAnnouncement;
+            const hideAnnouncementTemporarily = announcementModule.hideAnnouncementTemporarily;
+            const handleAnnouncementContentClick = announcementModule.handleAnnouncementContentClick;
+            const handleAnnouncementInlineClipboardClick = announcementModule.handleAnnouncementInlineClipboardClick;
+            
+            // ========================================
+            // 密码验证和资源处理相关方法
+            // ========================================
+            
+            const resourceDialogModule = window.ResourceDialogModule.create({
+                dialogItem,
+                showMessage,
+                copyToClipboard,
+                ensureItemTreeState,
+                supportsPanTree,
+                toggleItemTree
+            });
+            const showUrlFun = resourceDialogModule.showUrlFun;
+            const mergeDialogMedia = resourceDialogModule.mergeDialogMedia;
+            const canShowDialogTree = resourceDialogModule.canShowDialogTree;
+            const toggleDialogTree = resourceDialogModule.toggleDialogTree;
+            const copyDialogLink = resourceDialogModule.copyDialogLink;
+            
+            // 处理资源项（密码验证通过后）
+            const processResourceItem = async (item, index, password = '') => {
+                debugLog.log('[密码验证日志] 处理资源项，索引:', index, '资源:', item);
+
+                const isTransferMode = '{$config.is_quan_type|default="0"}'.trim() !== '1';
+
+                if (!isTransferMode && item.url && item.url.startsWith('http')) {
+                    // 直接URL，直接显示
+                    item.treeSourceUrl = item.url;
+                    dialogLoading.value = true;
+                    dialogUrl.value = true;
+                    item.showUrl = '';
+                    try {
+                        const displayData = await fetchDisplayUrlForDialog(item);
+                        item.showUrl = displayData.showUrl || getDisplayResourceUrlForDialog(item);
+                    } catch (error) {
+                        debugLog.error('获取展示链接失败:', error);
+                        item.showUrl = getDisplayResourceUrlForDialog(item);
+                    } finally {
+                        dialogLoading.value = false;
+                    }
+                    showUrlFun(item);
+                } else {
+                    // 转存分享模式：始终通过后端 save_url，避免明文 http 链接绕过转存逻辑
+                    const transferSourceUrl = item.transferSourceUrl || item.treeSourceUrl || item.originalUrl || item.url;
+                    item.transferSourceUrl = transferSourceUrl;
+                    item.originalUrl = item.originalUrl || transferSourceUrl;
+
+                    if (item.resourceFetched && item.showUrl) {
+                        dialogLoading.value = false;
+                        dialogUrl.value = true;
+                        showUrlFun(item);
+                        return;
+                    }
+
+                    item.treeSourceUrl = transferSourceUrl;
+                    dialogLoading.value = true;
+                    dialogUrl.value = true;
+                    
+                    // ✅ 优化：获取密码配置并传递给后端（方案C+E）
+                    const config = cachedPasswordConfigForBackend || await loadPasswordConfigForBackend();
+                    
+                    const postData = {
+                        url: encodeURIComponent(transferSourceUrl),
+                        title: item.title,
+                        _password_config: config  // 传递配置给后端，避免后端查询数据库
+                    };
+                    
+                    // 如果有密码，添加到请求中
+                    if (password) {
+                        postData.password = password;
+                    }
+                    
+                    axios.post('/api/other/save_url', postData)
+                    .then(res => {
+                        dialogLoading.value = false;
+                        if (res.data.code == 200) {
+                            if (!res.data.data || !res.data.data.url) {
+                                item.message = res.data.msg || res.data.message || '获取资源失败';
+                                showUrlFun(item);
+                                showMessage(item.message, 'error');
+                                return;
+                            }
+                            if (res.data.data.tree_key) {
+                                item.tree_key = res.data.data.tree_key;
+                                item.treeKey = res.data.data.tree_key;
+                                item.treeSourceUrl = '';
+                            }
+                            item.resourceFetched = true;
+                            item.resourceUrl = res.data.data.url;
+                            item.transferResultUrl = res.data.data.url;
+                            item.showUrl = getDisplayResourceUrlForDialog({
+                                ...item,
+                                url: res.data.data.url,
+                                is_type: res.data.data.is_type !== undefined ? res.data.data.is_type : item.is_type
+                            });
+                            mergeDialogMedia(item, res.data.data);
+                            if (res.data.data.is_type !== undefined) {
+                                item.is_type = res.data.data.is_type;
+                            }
+                            showUrlFun(item);
+                        } else {
+                            showMessage(res.data.msg || '获取资源失败', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        debugLog.error('保存URL失败:', error);
+                        dialogLoading.value = false;
+                        showMessage('网络错误，请稍后重试', 'error');
+                    });
+                }
+            };
+            
+            // 检查资源密码验证（针对具体资源项）
+            const checkResourcePasswordForItem = async (item, index) => {
+                try {
+                    debugLog.log('[密码验证日志] 开始检查资源密码验证需求');
+                    // 检查是否需要密码验证
+                    const response = await fetch('/api/other/check_password_required');
+                    const result = await response.json();
+                    debugLog.log('[密码验证日志] 密码验证需求检查结果:', result);
+                    
+                    if (result.data && result.data.password_required) {
+                        debugLog.log('[密码验证日志] 需要密码验证，开始检查本地密码');
+                        // 需要密码验证，先检查本地cookie与后台是否一致
+                        const localPassword = getLocalPassword();
+                        debugLog.log('[密码验证日志] 本地密码状态:', localPassword ? '存在' : '不存在');
+                        
+                        if (localPassword) {
+                            debugLog.log('[密码验证日志] 开始校验本地密码与后台一致性');
+                            // 有本地密码，校验与后台是否一致
+                            const isValid = await verifyLocalPassword(localPassword);
+                            debugLog.log('[密码验证日志] 本地密码校验结果:', isValid ? '有效' : '无效');
+                            
+                            if (isValid) {
+                                debugLog.log('[密码验证日志] 本地密码有效，跳过密码弹窗，直接处理资源');
+                                // 本地密码与后台一致，直接处理资源，跳过密码弹窗
+                                processResourceItem(item, index, localPassword);
+                                return;
+                            } else {
+                                debugLog.log('[密码验证日志] 本地密码无效，清除本地密码');
+                                // 本地密码与后台不一致，清除本地密码
+                                localStorage.removeItem('resource_password');
+                            }
+                        }
+                        
+                        debugLog.log('[密码验证日志] 显示密码输入框');
+                        // 没有本地密码或密码不一致，显示密码输入框
+                        currentResourceItem.value = item;
+                        currentResourceIndex.value = index;
+                        showPasswordDialog(index);
+                    } else {
+                        debugLog.log('[密码验证日志] 不需要密码验证，直接处理资源');
+                        // 不需要密码验证，直接处理资源
+                        processResourceItem(item, index);
+                    }
+                } catch (error) {
+                    debugLog.error('[密码验证日志] 检查密码要求失败:', error);
+                    showMessage('检查资源状态失败', 'error');
+                }
+            };
+            
+            // 获取资源按钮点击处理（全网搜索结果）
+            const getUrlBtn = async (event, index) => {
+                debugLog.log('[密码验证日志] 点击获取资源按钮，索引:', index);
+                
+                const item = QList.value[index];
+                if (!item) {
+                    debugLog.error('[密码验证日志] 找不到索引对应的资源:', index);
+                    return;
+                }
+                
+                // 首先检查本地是否有密码，如果有则直接验证
+                const localPassword = getLocalPassword();
+                if (localPassword) {
+                    debugLog.log('[密码验证日志] 发现本地密码，直接验证有效性');
+                    const isValid = await verifyLocalPassword(localPassword);
+                    if (isValid) {
+                        debugLog.log('[密码验证日志] 本地密码有效，直接处理资源');
+                        processResourceItem(item, index, localPassword);
+                        return;
+                    }
+                    debugLog.log('[密码验证日志] 本地密码无效，清除并继续正常流程');
+                    localStorage.removeItem('resource_password');
+                }
+                
+                // 如果没有本地密码或密码无效，则检查是否需要密码验证
+                checkResourcePasswordForItem(item, index);
+            };
+            
+            // cookie和本地存储相关
+            const getCookie = (name) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            };
+            
+            const setCookie = (name, value, hours = 24) => {
+                const expires = new Date();
+                expires.setTime(expires.getTime() + (hours * 60 * 60 * 1000));
+                document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/`;
+            };
+            
+            const deleteCookie = (name) => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            };
+            
+            // 从本地cookie获取密码
+            const getLocalPassword = () => {
+                try {
+                    const password = localStorage.getItem('resource_password') || '';
+                    debugLog.log('[密码验证日志] 获取本地密码:', password ? '已存在' : '不存在');
+                    return password;
+                } catch (error) {
+                    debugLog.error('[密码验证日志] 获取本地密码失败:', error);
+                    return '';
+                }
+            };
+            
+            // 保存密码到本地cookie
+            const saveLocalPassword = (password) => {
+                try {
+                    localStorage.setItem('resource_password', password);
+                    debugLog.log('[密码验证日志] 密码已保存到本地存储');
+                } catch (error) {
+                    debugLog.error('[密码验证日志] 保存本地密码失败:', error);
+                }
+            };
+            
+            // 校验本地密码与后台是否一致
+            const verifyLocalPassword = async (password) => {
+                if (!password) return false;
+                
+                try {
+                    debugLog.log('[密码验证日志] 开始校验本地密码与后台一致性');
+                    const response = await fetch('/api/other/verify_local_password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            password: password
+                        })
+                    });
+                    
+                    debugLog.log('[密码验证日志] API响应状态:', response.status);
+                    
+                    if (!response.ok) {
+                        debugLog.log('[密码验证日志] API响应失败');
+                        return false;
+                    }
+                    
+                    const result = await response.json();
+                    debugLog.log('[密码验证日志] API响应结果:', result);
+                    const isValid = result.code === 200 && result.data && result.data.valid === true;
+                    debugLog.log('[密码验证日志] 密码验证结果:', isValid ? '一致' : '不一致');
+                    return isValid;
+                } catch (error) {
+                    debugLog.error('[密码验证日志] 校验本地密码失败:', error);
+                    return false;
+                }
+            };
+            
+            // 密码验证相关方法
+            const showPasswordDialog = (resourceId) => {
+                currentResourceId.value = resourceId;
+                passwordInput.value = '';
+                passwordError.value = '';
+                passwordDialogVisible.value = true;
+                // 弹窗打开后自动聚焦到输入框
+                Vue.nextTick(() => {
+                    if (passwordInputRef.value) {
+                        passwordInputRef.value.focus();
+                    }
+                });
+            };
+            
+            // 输入验证函数
+            const validatePasswordInput = (password) => {
+                if (!password || password.trim().length === 0) {
+                    return '请输入访问密码';
+                }
+                if (password.length < 1 || password.length > 50) {
+                    return '密码长度应在1-50个字符之间';
+                }
+                // 检查是否包含特殊字符（基本安全检查）
+                const dangerousChars = /<script|javascript:|data:|vbscript:/i;
+                if (dangerousChars.test(password)) {
+                    return '密码包含非法字符';
+                }
+                return null;
+            };
+            
+            // 提交密码验证
+            const submitPassword = async () => {
+                // 输入验证
+                const validationError = validatePasswordInput(passwordInput.value);
+                if (validationError) {
+                    passwordError.value = validationError;
+                    return;
+                }
+                
+                passwordLoading.value = true;
+                passwordError.value = '';
+                
+                try {
+                    // 添加请求超时控制
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+                    
+                    // 发送密码验证请求
+                    const response = await fetch('/api/other/verify_password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest' // 防止CSRF攻击
+                        },
+                        body: JSON.stringify({
+                            resource_id: currentResourceId.value,
+                            password: passwordInput.value.trim(),
+                            timestamp: Date.now() // 添加时间戳防重放攻击
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.success || result.code === 200) {
+                        debugLog.log('[密码验证日志] 密码验证成功，开始保存到本地存储');
+                        // 密码验证成功，保存明文密码到本地存储
+                        const passwordToSave = passwordInput.value.trim();
+                        debugLog.log('[密码验证日志] 准备保存的密码长度:', passwordToSave.length);
+                        saveLocalPassword(passwordToSave);
+                        
+                        // 验证保存是否成功
+                        const savedPassword = getLocalPassword();
+                        debugLog.log('[密码验证日志] 保存后验证 - 本地密码是否存在:', savedPassword ? '是' : '否');
+                        debugLog.log('[密码验证日志] 保存后验证 - 密码是否一致:', savedPassword === passwordToSave ? '是' : '否');
+                        
+                        passwordDialogVisible.value = false;
+                        showMessage('密码验证成功', 'success');
+                        
+                        // 使用验证成功的密码处理资源项
+                        if (currentResourceItem.value && currentResourceIndex.value !== null) {
+                            processResourceItem(currentResourceItem.value, currentResourceIndex.value, passwordInput.value);
+                        }
+                        
+                        // 清空密码输入和当前资源信息
+                        passwordInput.value = '';
+                        currentResourceItem.value = null;
+                        currentResourceIndex.value = null;
+                    } else {
+                        // 密码验证失败
+                        // 使用配置的错误提示信息
+                        passwordError.value = passwordErrorMessage.value;
+                        
+                        // 清空密码输入
+                        passwordInput.value = '';
+                        
+                        // 重新聚焦到输入框
+                        Vue.nextTick(() => {
+                            if (passwordInputRef.value) {
+                                passwordInputRef.value.focus();
+                            }
+                        });
+                    }
+                } catch (error) {
+                    debugLog.error('密码验证失败:', error);
+                    
+                    if (error.name === 'AbortError') {
+                        passwordError.value = '请求超时，请检查网络连接';
+                    } else if (error.message.includes('Failed to fetch')) {
+                        passwordError.value = '网络连接失败，请检查网络设置';
+                    } else {
+                        passwordError.value = passwordErrorMessage.value;
+                    }
+                } finally {
+                    passwordLoading.value = false;
+                }
+            };
+            
+            // 取消密码验证
+            const cancelPassword = () => {
+                passwordDialogVisible.value = false;
+                passwordInput.value = '';
+                passwordError.value = '';
+                currentResourceId.value = null;
+                currentResourceItem.value = null;
+                currentResourceIndex.value = null;
+            };
+            
+            // 检查资源是否需要密码验证
+            const checkResourcePassword = async (resourceId) => {
+                try {
+                    // 检查是否已有有效的密码验证cookie
+                    const cookies = document.cookie.split(';');
+                    const passwordCookie = cookies.find(cookie => 
+                        cookie.trim().startsWith('resource_password_verified=')
+                    );
+                    
+                    // 检查资源是否需要密码
+                    const response = await fetch(`/api/check_password_required?resource_id=${resourceId}`);
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.password_required) {
+                        if (passwordCookie) {
+                            // 已有密码验证cookie，直接获取资源
+                            return getResourceUrl(resourceId);
+                        } else {
+                            // 需要密码验证
+                            showPasswordDialog(resourceId);
+                        }
+                    } else {
+                        // 不需要密码，直接获取资源
+                        getResourceUrl(resourceId);
+                    }
+                } catch (error) {
+                    debugLog.error('检查密码要求失败:', error);
+                    showMessage('检查资源状态失败', 'error');
+                }
+            };
+            
+            // 获取资源URL（使用cookie验证）
+            const getResourceUrl = async (resourceId) => {
+                dialogLoading.value = true;
+                dialogUrl.value = true;
+                
+                try {
+                    const response = await fetch(`/api/other/get_resource_url?resource_id=${resourceId}`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include' // 确保发送cookie
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.code === 200) {
+                        dialogItem.value = mergeDialogMedia(result.data, currentResourceItem.value || {});
+                    } else {
+                        dialogItem.value = {
+                            showUrl: false,
+                            message: result.message || '获取资源失败'
+                        };
+                    }
+                } catch (error) {
+                    debugLog.error('获取资源URL失败:', error);
+                    dialogItem.value = {
+                        showUrl: false,
+                        message: '网络错误，请稍后重试'
+                    };
+                } finally {
+                    dialogLoading.value = false;
+                }
+            };
+
+
+             // 滚动监听方法
+            const handleScroll = () => {
+                const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                elementOpacity.value = scrollTop >= scrollThreshold.value
+                    ? Math.min((scrollTop - scrollThreshold.value) / 100, 1)
+                    : Math.max(1 - (scrollThreshold.value - scrollTop) / 100, 0);
+                showBackTop.value = scrollTop > Math.max(300, window.innerHeight * 0.4);
+    
+                const boxElement = document.querySelector('.listBox .screen .fixed .box');
+                // 检查元素是否存在，避免null错误
+                if (boxElement && boxElement.style.display === 'block' && is_m.value) {
+                    boxElement.style.display = 'none'; // 隐藏元素
+                }
+            };
+
+            const scrollToTop = () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            };
+
+            const searchModule = window.SearchModule.create({
+                axios,
+                debugLog,
+                keyword,
+                suggestions,
+                showSuggestions,
+                loadingSuggestions,
+                showMessage
+            });
+            const searchBtn = searchModule.searchBtn;
+            const handleInput = searchModule.handleInput;
+            const handleFocus = searchModule.handleFocus;
+            const handleBlur = searchModule.handleBlur;
+            const fetchSuggestions = searchModule.fetchSuggestions;
+            const selectSuggestion = searchModule.selectSuggestion;
+            
+            // 保存按钮点击事件
+            const saveBtn = async () => {
+                if (!content.value) {
+                    return showMessage('请输入你想看的资源信息~', 'error');
+                }
+                if (load.value) return;
+    
+                load.value = true;
+                try {
+                    // 提交数据包含内容和邮箱
+                    const response = await axios.post('/api/tool/feedback', { 
+                        content: content.value,
+                        email: email.value 
+                    });
+                    showMessage(response.data.message, response.data.code === 200 ? 'success' : 'error');
+                    if (response.data.code === 200) {
+                        layerVisible.value = false;
+                        content.value = '';
+                        email.value = ''; // 清空邮箱输入框
+                    }
+                } finally {
+                    load.value = false;
+                }
+            };
+            
+            const setnum = (num) => (num / 10000).toFixed(2) + 'W';
+            
+            const goLink = (event,id) => {
+                event.preventDefault();
+                window.location.href = `/d/${id}.html`;
+            }
+            
+            const changeBtn = (e) => {
+                const category_id = `{$category_id}`;
+                if(category_id){
+                    window.location.href = `/s/${keyword.value}-${e}-${category_id}.html`;
+                }else{
+                    window.location.href = `/s/${keyword.value}-${e}.html`;
+                }
+            };
+            
+            const copyText = async(event,title,url,code) => {
+                event.preventDefault();
+                var text = '标题：'+title+'\n链接：'+url
+                if (code) text += `\n提取码：${code}`;
+                text += `\n由【${'{$config.app_name}'}${window.location.hostname}】提供网盘分享链接`;
+                
+                
+                try {
+                    // 优先使用 navigator.clipboard
+                    await navigator.clipboard.writeText(text);
+                    showMessage('复制成功', 'success');
+                } catch (err) {
+                    // 如果 navigator.clipboard 失败，使用 document.execCommand 作为回退
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';  // 避免滚动
+                    textArea.style.opacity = 0;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+            
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            showMessage('复制成功', 'success');
+                        } else {
+                            throw new Error('复制失败');
+                        }
+                    } catch (err) {
+                        showMessage('复制失败，请手动复制', 'error');
+                    }
+            
+                    document.body.removeChild(textArea);
+                }
+            }
+            
+            const selectBtn = () => {
+                if ('{$config.is_quan}' == 1) {
+                    panSelectOpen.value = !panSelectOpen.value;
+                    return;
+                }
+
+                if(!is_m.value) return;
+                const boxElement = document.querySelector('.listBox .screen .fixed .box');
+                if (!boxElement) {
+                    return;
+                }
+                // 切换 display 属性，显示或隐藏
+                if (boxElement.style.display === 'none' || boxElement.style.display === '') {
+                    boxElement.style.display = 'block'; // 显示
+                } else {
+                    boxElement.style.display = ''; // 隐藏
+                }
+            }
+            
+            // 启动网络资源搜索
+            const startNetworkSearch = () => {
+                debugLog.log('[搜索优化] ========== startNetworkSearch 开始 ==========');
+                debugLog.log('[搜索优化] keyword.value:', keyword.value);
+                debugLog.log('[搜索优化] is_type.value 当前值:', is_type.value, '(类型:', typeof is_type.value, ')');
+                
+                if (!keyword.value || !keyword.value.trim()) {
+                    debugLog.error('[搜索优化] 关键词为空，取消搜索');
+                    return;
+                }
+                
+                // 关闭之前的搜索连接
+                if (currentEventSource) {
+                    debugLog.log('[搜索优化] ✅ 关闭之前的搜索连接');
+                    currentEventSource.close();
+                    currentEventSource = null;
+                } else {
+                    debugLog.log('[搜索优化] ℹ️  没有活动的搜索连接');
+                }
+                
+                debugLog.log('[搜索优化] 开始新的网络搜索...');
+                QLoading.value = true;
+                
+                // 保留本地缓存资源，只清除网络资源
+                const localItems = QList.value.filter(item => item.isLocal);
+                QList.value = Array.isArray(localItems) ? localItems.slice() : [];
+                debugLog.log('[搜索优化] 保留本地资源:', localItems.length, '条');
+                
+                searchProgress.value = {
+                    total: 0,
+                    current: 0,
+                    message: '正在连接搜索线路...',
+                    visible: true
+                };
+                
+                // 在构建URL前再次确认is_type的值
+                debugLog.log('[搜索优化] 构建URL时 is_type.value =', is_type.value);
+                const searchUrl = `/api/other/web_search?title=${encodeURIComponent(keyword.value)}&is_type=${is_type.value}&is_show=0`;
+                debugLog.log('[搜索优化] 🔗 最终搜索URL:', searchUrl);
+                debugLog.log('[搜索优化] ========================================');
+                
+                // 生成唯一ID标识本次搜索
+                const searchId = Date.now();
+                debugLog.log('[搜索优化] 🆔 本次搜索ID:', searchId);
+                
+                let sseFinished = false;
+                let sseMessageCount = 0;
+                let sseResultCount = 0;
+                let sseErrorHandled = false;
+                currentEventSource = new EventSource(searchUrl);
+                
+                currentEventSource.onmessage = (event) => {
+                    sseMessageCount++;
+                    debugLog.log(`[搜索优化] [ID:${searchId}] [type:${is_type.value}] 收到消息:`, event.data.substring(0, 80));
+                    
+                    if (event.data === '[DONE]') {
+                        sseFinished = true;
+                        debugLog.log('[搜索优化] 搜索完成，总结果数:', QList.value.length);
+                        if (currentEventSource) {
+                            currentEventSource.close();
+                            currentEventSource = null;
+                        }
+                        QLoading.value = false;
+                        searchProgress.value.visible = false;
+                        return;
+                    }
+                    
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'progress') {
+                            searchProgress.value = {
+                                total: data.total,
+                                current: data.current,
+                                message: data.message,
+                                visible: true
+                            };
+                            debugLog.log('[搜索优化] 进度更新:', data.current, '/', data.total);
+                        } else if (data.type === 'cache_start') {
+                            // 缓存开始标记
+                            debugLog.log('[搜索缓存] 🚀 开始显示缓存结果，数量:', data.count, '缓存时间:', data.cache_time);
+                            showMessage('正在显示上次搜索结果（' + data.count + '条）', 'info');
+                        } else if (data.type === 'cache_end') {
+                            // 缓存结束标记
+                            debugLog.log('[搜索缓存] ✅ 缓存结果显示完成，继续搜索新资源...');
+                        } else {
+                            sseResultCount++;
+                            // 🆕 智能插入：根据 is_new 标记决定插入位置
+                            if (data.is_new === true) {
+                                // 新增资源：插入到所有新增结果的末尾（数据库缓存结果之前）
+                                // 找到第一个不是本地缓存且不是新增的结果（即数据库缓存结果）的位置
+                                let insertPos = QList.value.findIndex(item => !item.isLocal && !item.is_new);
+                                if (insertPos === -1) {
+                                    // 如果没有找到数据库缓存结果，追加到最后
+                                    QList.value.push(data);
+                                    debugLog.log('[搜索缓存] 🆕 新增资源追加到末尾，位置:', QList.value.length - 1);
+                                } else {
+                                    // 在第一个数据库缓存结果前插入，保持搜索顺序
+                                    QList.value.splice(insertPos, 0, data);
+                                    debugLog.log('[搜索缓存] 🆕 新增资源按顺序插入，位置:', insertPos);
+                                }
+                            } else {
+                                // 缓存资源或普通资源：追加到列表末尾
+                                QList.value.push(data);
+                                debugLog.log('[搜索优化] 添加网络结果，当前总数:', QList.value.length);
+                            }
+                        }
+                    } catch (err) {
+                        debugLog.error('[搜索优化] 解析搜索结果失败:', err, '原始数据:', event.data);
+                    }
+                };
+                
+                currentEventSource.onerror = (err) => {
+                    if (sseErrorHandled) {
+                        return;
+                    }
+                    sseErrorHandled = true;
+                    const hasResult = sseResultCount > 0 || QList.value.some(item => !item.isLocal);
+                    if (sseFinished) {
+                        debugLog.log('[搜索优化] EventSource已正常结束，忽略关闭回调');
+                    } else if (hasResult || sseMessageCount > 0) {
+                        debugLog.warn('[搜索优化] EventSource连接提前结束，已保留当前结果:', {
+                            searchId: searchId,
+                            messages: sseMessageCount,
+                            results: sseResultCount
+                        });
+                        searchProgress.value = {
+                            total: searchProgress.value.total || 0,
+                            current: searchProgress.value.current || 0,
+                            message: hasResult ? '搜索连接已结束，已保留当前结果' : '搜索连接中断，请稍后重试',
+                            visible: false
+                        };
+                    } else {
+                        debugLog.error('[搜索优化] EventSource连接失败:', err);
+                        searchProgress.value = {
+                            total: 0,
+                            current: 0,
+                            message: '搜索连接失败，请稍后重试',
+                            visible: false
+                        };
+                    }
+                    if (currentEventSource) {
+                        currentEventSource.close();
+                        currentEventSource = null;
+                    }
+                    QLoading.value = false;
+                    searchProgress.value.visible = false;
+                };
+            };
+            
+            // 切换网盘类型
+            const switchPanType = (type) => {
+                debugLog.log('[搜索优化] switchPanType 被调用，切换到类型:', type);
+                debugLog.log('[搜索优化] 当前类型:', is_type.value);
+                
+                if (is_type.value === type) {
+                    debugLog.log('[搜索优化] 类型相同，取消切换');
+                    return;
+                }
+                
+                is_type.value = type;
+                debugLog.log('[搜索优化] 类型已更新为:', type, '准备重新搜索...');
+                startNetworkSearch();
+            };
+
+            const choosePanType = (type) => {
+                panSelectOpen.value = false;
+                switchPanType(type);
+            };
+
+            const getCurrentPanLabel = () => {
+                const type = Number(is_type.value);
+                if (type === 2) return '百度';
+                if (type === 3) return 'UC';
+                if (type === 4) return '迅雷';
+                return '夸克';
+            };
+
+            const closePanSelect = () => {
+                panSelectOpen.value = false;
+            };
+
+            let homeRankList = [];
+            try {
+                homeRankList = JSON.parse('<?php echo json_encode($rankList, JSON_UNESCAPED_UNICODE); ?>');
+            } catch (err) {
+                debugLog.error('解析热搜榜单配置失败:', err);
+                homeRankList = [];
+            }
+            const homeModule = window.HomeModule.create({
+                axios,
+                debugLog,
+                mobileLimit: '<?php echo (int)($config["ranking_m_num"] ?? 6); ?>',
+                desktopLimit: '<?php echo (int)($config["ranking_num"] ?? 10); ?>',
+                rankingType: '<?php echo Config('qfshop.ranking_type') ?? 0; ?>',
+                rankList: homeRankList
+            });
+            const switchCategory = homeModule.switchCategory;
+            const getCurrentResourceLimit = homeModule.getCurrentResourceLimit;
+            const updateActiveResourceCount = homeModule.updateActiveResourceCount;
+            const applyResponsiveResourceLimit = homeModule.applyResponsiveResourceLimit;
+            const renderImageModeList = homeModule.renderImageModeList;
+            const loadImageModeRankings = homeModule.loadImageModeRankings;
+            
+            const handleDeviceType = () => {
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                if (isMobile) {
+                    // 手机端的逻辑
+                    is_m.value = 1
+                    pc_type.value = 1
+                } else {
+                    // 电脑端的逻辑
+                    is_m.value = 0
+                    pc_type.value = '{$config.pc_type}';
+                }
+                applyResponsiveResourceLimit();
+            };
+
+
+            // 组件挂载时添加滚动监听
+            onMounted(() => {
+                debugLog.log('[搜索优化] onMounted 开始执行');
+                debugLog.log('[搜索优化] keyword初始值:', keyword.value);
+                debugLog.log('[搜索优化] 当前路径:', window.location.pathname);
+                debugLog.log('[搜索优化] is_quan配置:', '{$config.is_quan}');
+                if (!document.querySelector('.ios-announcement-overlay')) {
+                    document.documentElement.style.overflow = '';
+                    document.body.style.overflow = '';
+                }
+                
+                handleDeviceType();
+                loadImageModeRankings();
+                
+                // 仅首页检查公告；公告容器本身是 v-if 渲染，不能用容器是否存在判断。
+                if (document.querySelector('[data-page="home"]')) {
+                    checkAnnouncement();
+                }
+                
+                // 初始化本地资源并合并到QList（仅在搜索结果页有本地结果时）
+                try {
+                    {notempty name="list.items"}
+                    const localData = JSON.parse('<?php echo json_encode($list["items"] ?? [], JSON_UNESCAPED_UNICODE); ?>');
+                    if (localData && localData.length > 0) {
+                        // 将本地资源标记为缓存并添加到QList开头
+                        const localItems = localData.map(item => ({
+                            title: item.name || item.title,
+                            url: item.url,
+                            code: item.code,
+                            is_type: item.is_type,
+                            image: item.image || '',
+                            isLocal: true,  // 标记为本地缓存
+                            localIndex: item.id // 保存原始索引用于linkBtn
+                        }));
+                        QList.value = Array.isArray(localItems) ? localItems.slice() : [];
+                        localList.value = localData; // 保留原始数据
+                        debugLog.log('[搜索优化] 本地资源已合并到列表:', localItems.length, '条');
+                    } else {
+                        debugLog.log('[搜索优化] 本地资源为空');
+                    }
+                    {else /}
+                    debugLog.log('[搜索优化] 没有本地资源数据（list.items为空）');
+                    {/notempty}
+                } catch (err) {
+                    debugLog.error('[搜索优化] 解析本地资源列表失败:', err);
+                    localList.value = [];
+                }
+                
+                // 自动触发全网搜索（搜索结果页且开启全网搜）
+                const currentPath = window.location.pathname;
+                const isSearchPage = currentPath.includes('/s/');
+                debugLog.log('[搜索优化] 是否为搜索页:', isSearchPage);
+                
+                if ('{$config.is_quan}' == 1 && isSearchPage) {
+                    if (keyword.value && keyword.value.trim()) {
+                        debugLog.log('[搜索优化] ✅ 条件满足，准备自动触发网络搜索');
+                        debugLog.log('[搜索优化] 关键词:', keyword.value);
+                        setTimeout(() => {
+                            startNetworkSearch();
+                        }, 300); // 延迟300ms，让本地结果先显示
+                    } else {
+                        debugLog.error('[搜索优化] ❌ 关键词为空，无法触发网络搜索');
+                    }
+                } else {
+                    debugLog.log('[搜索优化] ❌ 不满足自动搜索条件');
+                    debugLog.log('[搜索优化] is_quan:', '{$config.is_quan}', 'isSearchPage:', isSearchPage);
+                }
+                
+                window.addEventListener('scroll', handleScroll);
+                window.addEventListener('resize', handleDeviceType);
+                handleScroll();
+                document.addEventListener('click', handleAnnouncementContentClick);
+                document.addEventListener('click', handleAnnouncementInlineClipboardClick, true);
+                document.addEventListener('click', closePanSelect);
+            });
+
+            // 组件卸载时移除滚动监听
+            onUnmounted(() => {
+                window.removeEventListener('scroll', handleScroll);
+                window.removeEventListener('resize', handleDeviceType);
+                document.removeEventListener('click', handleAnnouncementContentClick);
+                document.removeEventListener('click', handleAnnouncementInlineClipboardClick, true);
+                document.removeEventListener('click', closePanSelect);
+                searchModule.dispose();
+                if (window.copyToClipboard) {
+                    delete window.copyToClipboard;
+                }
+            });
+
+            // 图片加载错误处理
+            const handleImageError = (event, item) => {
+                if (item) {
+                    item.image = '';
+                    item.imageLoaded = false;
+                }
+                if (event && event.target) {
+                    event.target.style.display = 'none';
+                }
+            };
+
+            const handleImageLoad = (event, item) => {
+                if (item) {
+                    item.imageLoaded = true;
+                    if (event && event.target) {
+                        const width = event.target.naturalWidth || 0;
+                        const height = event.target.naturalHeight || 0;
+                        item.imageLandscape = width > 0 && height > 0 ? width / height >= 1.18 : false;
+                    }
+                }
+            };
+
+            // 高亮搜索关键词（只针对新增内容）
+            const highlightKeyword = (title, isNew) => {
+                if (typeof isNew === 'undefined') {
+                    const text = title || '';
+                    if (!keyword.value || !keyword.value.trim()) {
+                        return text;
+                    }
+                    const escapedKeyword = keyword.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escapedKeyword, 'gi');
+                    return text.replace(regex, match => {
+                        return `<span class="suggestion-highlight">${match}</span>`;
+                    });
+                }
+
+                // 如果不是新增内容，直接返回原标题
+                if (!isNew || !keyword.value || keyword.value.trim() === '') {
+                    return title;
+                }
+                
+                // 对关键词进行转义，避免正则表达式特殊字符问题
+                const escapedKeyword = keyword.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                // 使用正则表达式全局替换，不区分大小写
+                const regex = new RegExp(escapedKeyword, 'gi');
+                
+                // 高亮替换
+                return title.replace(regex, match => {
+                    return `<span class="keyword-highlight">${match}</span>`;
+                });
+            };
+            
+            // 返回数据和方法
+            return { 
+                elementOpacity, scrollThreshold, keyword, searchBtn, handleInput, handleFocus, handleBlur,
+                suggestions, showSuggestions, loadingSuggestions, selectSuggestion, rankList, newList, setnum, 
+                qcodeVisible, layerVisible, content, email, saveBtn, rankDj, goLink, changeBtn, 
+                copyText, drawer, selectBtn, is_m, QList, QLoading, total_result, currentSource, 
+                dialogUrl, dialogLoading, dialogItem, is_type, pc_type, searchProgress, handleImageError, handleImageLoad,
+                showBackTop, scrollToTop,
+                // 智能合并搜索相关
+                localList, startNetworkSearch, switchPanType,
+                switchCategory,
+                // 公告弹窗相关
+                announcementVisible, announcementData, announcementScrollable, checkAnnouncement, confirmAnnouncement, hideAnnouncementTemporarily,
+                // 密码验证相关
+                passwordDialogVisible, passwordInput, passwordError, passwordLoading, passwordInputRef,
+                currentResourceId, currentResourceItem, currentResourceIndex,
+                passwordHintText, passwordPlaceholder, passwordErrorMessage, passwordDialogWidth, isMobile,
+                showPasswordDialog, submitPassword, cancelPassword, validatePasswordInput,
+                checkResourcePassword, getResourceUrl, showMessage, loadPasswordConfig,
+                // 资源处理相关
+                processResourceItem, showUrlFun, checkResourcePasswordForItem, getUrlBtn, loadItemPanTree, toggleItemTree, getPanName, getPanIcon,
+                canShowDialogTree, toggleDialogTree, copyDialogLink,
+                // cookie和本地存储相关
+                getCookie, setCookie, deleteCookie, getLocalPassword, saveLocalPassword, verifyLocalPassword,
+                // 关键词高亮
+                highlightKeyword, panSelectOpen, choosePanType, getCurrentPanLabel
+            };
+        }
+    })
+    .use(ElementPlus) // 使用 Element Plus
+    .mount('#app'); // 挂载 Vue 实例
+</script>
+

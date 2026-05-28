@@ -1,0 +1,271 @@
+{include file="news/common/header"}
+</head>
+
+<body>
+    <div class="headBg" style="background-image: url({$config.home_bg});"></div>
+    <div id="app" v-cloak>
+        {include file="news/common/head"}
+        <div class="searchBox searchList">
+            <div class="search">
+                {if condition="$config.is_quan == 1"}
+                <div class="pan-select-wrap">
+                    <div class="select pan-search-select" @click.stop="selectBtn">
+                        <span>{{getCurrentPanLabel()}}</span>
+                        <i class="iconfont icon-xiala"></i>
+                    </div>
+                    <div class="pan-select-menu" v-show="panSelectOpen" @click.stop>
+                        {foreach $displayList as $item}
+                        <div class="pan-select-item" :class="{active: is_type=={$item.type}}" @click="choosePanType({$item.type})">
+                            {$item.name}
+                        </div>
+                        {/foreach}
+                    </div>
+                </div>
+                {else /}
+                <div class="select" @click="selectBtn">
+                    {if condition="$category_id == ''"}全部{/if}
+                    {foreach $category as $key=>$vo }
+                    {if condition='$category_id == $vo.id'}{$vo.name}{/if}
+                    {/foreach}
+                    <i class="iconfont icon-xiala" style="font-size: 3vw"></i>
+                </div>
+                {/if}
+                <input type="text" v-model="keyword" placeholder="输入关键字进行搜索" @keyup.enter="searchBtn"
+                    confirm-type="search" @confirm="searchBtn">
+                <div class="btn" @click="searchBtn">
+                    <i class="iconfont icon-sousuo"></i>
+                </div>
+            </div>
+        </div>
+        <div class="listBox">
+            <div class="left">
+                {if condition="$config.is_quan == 1"}
+                <!-- 统一搜索结果区域 -->
+                <div class="search-results-section" :class="{'is-loading': QLoading}">
+                    <!-- 两行布局：标题行 + 筛选行 -->
+                    <div class="section-header-compact">
+                        <h3>
+                            关键词【<span class="keyword-highlight">{$keyword}</span>】- 
+                            <span v-if="QLoading" class="search-status">搜索中... {{searchProgress.current}}/{{searchProgress.total}}</span>
+                            <span v-else class="search-status">{{QList.length}}条</span>
+                        </h3>
+                        <!-- 网盘类型筛选 -->
+                        {if condition="$config.is_quan == 1"}
+                        <div class="pan-filter-minimal">
+                            {foreach $displayList as $item}
+                            <a href="javascript:;" @click="switchPanType({$item.type})" :class="{active: is_type=={$item.type}}">
+                                {$item.name}
+                            </a>
+                            {/foreach}
+                        </div>
+                        {/if}
+                    </div>
+
+                    <!-- 简化的加载动画 -->
+                    <div class="loading-minimal" v-if="QLoading">
+                        <div class="loader-minimal"></div>
+                    </div>
+                    <div class="list resource-result-list">
+                        <div class="item resource-result-card" v-for="(item,index) in QList" :key="index" :class="{'is-new': item.is_new}">
+                            <div class="resource-card-main">
+                                <div class="resource-card-content">
+                                    <div class="resource-card-header">
+                                        <a href="javascript:;" @click="getUrlBtn($event, index)" class="resource-title red-bar-title" :title="item.title">
+                                            <span v-if="item.isLocal" class="cache-badge">缓存</span>
+                                            <span v-html="highlightKeyword(item.title, item.is_new)"></span>
+                                        </a>
+                                    </div>
+                                    <div class="resource-card-footer">
+                                        <div class="resource-pan-meta">
+                                            <img :src="getPanIcon(item)" :alt="getPanName(item)" class="resource-pan-icon">
+                                        </div>
+                                        <div class="result-actions">
+                                            <button type="button" class="resource-tree-btn" @click.stop="toggleItemTree(item)">
+                                                <span v-if="item.treeLoading">加载中</span>
+                                                <span v-else-if="item.treeExpanded">收起目录</span>
+                                                <span v-else>目录</span>
+                                            </button>
+                                            <button type="button" class="resource-get-btn" @click.stop="getUrlBtn($event, index)">
+                                                获取资源
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="resource-tree-panel" v-if="item.treeExpanded || item.treeLoading">
+                                <div class="resource-tree-header">
+                                    <span>资源目录结构</span>
+                                    <em v-if="item.treeData && item.treeData.total">共 {{item.treeData.total}} 项</em>
+                                </div>
+                                <div class="resource-tree-loading" v-if="item.treeLoading">目录加载中...</div>
+                                <div class="resource-tree-error" v-else-if="item.treeError">
+                                    <span>{{item.treeError}}</span>
+                                    <button type="button" @click.stop="loadItemPanTree(item, true)">重试</button>
+                                </div>
+                                <div class="resource-tree-body" v-else-if="item.treeData && item.treeData.tree && item.treeData.tree.length">
+                                    <pan-tree-node
+                                        v-for="(node, treeIndex) in item.treeData.tree"
+                                        :key="(node.fid || node.fs_id || node.path || node.name || 'root') + '_' + treeIndex"
+                                        :node="node"
+                                        :level="0">
+                                    </pan-tree-node>
+                                </div>
+                                <div class="resource-tree-empty" v-else>暂无目录信息</div>
+                                <div class="resource-tree-tip" v-if="item.treeData && item.treeData.truncated">目录内容较多，已截取前部分展示。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <block v-if="!QLoading && QList.length==0">
+                        {if condition="$blocked == 1"}
+                        <div style="padding-top: 16px;">
+                            <el-alert title="搜索词中包含违规内容，请修改后重试" style="padding: 12px 0; font-weight: bold;" type="error"
+                                center :closable="false">
+                            </el-alert>
+                        </div>
+                        {/if}
+                        <el-empty style="margin-top: 10%;" :image-size="200" image="{$config.search_bg??''}"
+                            description="{$config.search_tips|default='未找到，可换个关键词尝试哦~'}">
+                        </el-empty>
+                    </block>
+                </div>
+
+                <!-- 非全网搜模式（纯本地搜索） -->
+                {else /}
+                <div class="local-section">
+                    <div class="section-header">
+                        <h3 v-if="total_result>0">为您找到【<span>{$keyword}</span>】相关资源<span>&nbsp;{{total_result}}&nbsp;</span>条</h3>
+                        <h3 v-else>为您找到【<span>{$keyword}</span>】相关资源<span>&nbsp;{$list.total_result}&nbsp;</span>条</h3>
+                    </div>
+                    {if condition="$list.total_result>0"}
+                    <div class="list">
+                        {foreach $list.items as $key=>$vo }
+                        <div class="item">
+                            <a href="javascript:;" onclick="linkBtn(this)" data-index="{$key}" class="title">
+                                {$vo.name|raw}
+                            </a>
+                            <div class="type time">{$vo.times}</div>
+                            <div class="type">
+                                {if condition="$vo.is_type==1"}
+                                <span>来源：阿里云盘</span>
+                                {elseif condition="$vo.is_type==2"/}
+                                <span>来源：百度网盘</span>
+                                {elseif condition="$vo.is_type==3"/}
+                                <span>来源：UC网盘</span>
+                                {elseif condition="$vo.is_type==4"/}
+                                <span>来源：迅雷网盘</span>
+                                {else /}
+                                <span>来源：夸克网盘</span>
+                                {/if}
+                                {notempty name="vo.code"}
+                                <span>提取码：<span>{$vo.code}</span></span>
+                                {/notempty}
+                            </div>
+                            <div class="btns">
+                                <div class="btn"
+                                    @click.stop="copyText($event,'{$vo.title|trim}','{$vo.url}','{$vo.code}')"><i
+                                        class="iconfont icon-fenxiang1"></i>复制分享</div>
+                                <a href="/d/{$vo.id}.html" class="btn"><i class="iconfont icon-fangwen"></i>查看详情</a>
+                                <a href="javascript:;" onclick="linkBtn(this)" data-index="{$key}" class="btn">
+                                    <img src="__STATIC__/news/common/static/images/{$vo.is_type}.png" class="icon"
+                                        alt="立即访问" />
+                                    立即访问
+                                </a>
+                            </div>
+                        </div>
+                        {/foreach}
+                    </div>
+                    <div class="page">
+                        {notempty name="list.total_result"}
+                        <el-pagination background layout="prev, pager, next" :pager-count="3"
+                            :default-current-page="{$page_no}" :default-page-size="{$page_size}"
+                            :total="{$list.total_result}" @change="changeBtn"></el-pagination>
+                        {/notempty}
+                    </div>
+                    {else /}
+                    {if condition="$blocked == 1"}
+                    <div style="padding-top: 16px;">
+                        <el-alert title="搜索词中包含违规内容，请修改后重试" style="padding: 12px 0; font-weight: bold;" type="error"
+                            center :closable="false">
+                        </el-alert>
+                    </div>
+                    {/if}
+                    <el-empty style="margin-top: 10%;" :image-size="200" image="{$config.search_bg??''}"
+                        description="{$config.search_tips|default='未找到，可换个关键词尝试哦~'}">
+                    </el-empty>
+                    {/if}
+                </div>
+                {/if}
+            </div>
+            <div class="right">
+                {volist name="hotList" id="vo"}
+                <div class="nav">
+                    {notempty name="vo.image"}
+                    <img src="{$vo.image}" alt="{$vo.name}">
+                    {/notempty}
+                    {$vo.name}
+                </div>
+                <div class="box">
+                    <div class="list">
+                        {volist name="vo.list" id="vos" length="5"}
+                        <a href="/s/{$vos.title}.html" class="item">
+                            <p>
+                                <span>{$key+1}</span>
+                                {$vos.title}
+                            </p>
+                        </a>
+                        {/volist}
+                    </div>
+                </div>
+                {/volist}
+            </div>
+        </div>
+        {include file="news/common/foot"}
+    </div>
+    {include file="news/common/footer"}
+    <script type="text/javascript" charset="utf-8">
+        app.rankList = JSON.parse('<?php echo json_encode($rankList, JSON_UNESCAPED_UNICODE); ?>');
+        for (const item of app.rankList) {
+            axios.get('/api/tool/ranking', {
+                params: {
+                    channel: item.name
+                }
+            })
+        }
+
+        // 本地搜索结果的"立即访问"按钮处理（非全网搜索）
+        function linkBtn(element) {
+            const index = element.getAttribute('data-index');
+            var jsonData = '<?php echo json_encode($list["items"], JSON_UNESCAPED_UNICODE); ?>';
+            jsonData = jsonData.replace(/[\x00-\x1F\x7F]/g, '');
+            var list = JSON.parse(jsonData);
+            const item = list[index];
+            if (app.pc_type == 1) {
+                window.open(item.url);
+            } else {
+                item.showUrl = item.url
+                app.dialogUrl = true;
+                app.showUrlFun(item);
+            }
+        }
+        
+        // ========================================
+        // 注意：getUrlBtn、checkResourcePasswordForItem、processResourceItem、showUrlFun 
+        // 这些函数已在 footer.html 的 Vue setup() 中定义并导出
+        // 通过 @click="getUrlBtn($event, index)" 调用
+        // ========================================
+
+        // ========================================
+        // 旧的搜索逻辑已废弃，统一使用 footer.html 中的新逻辑
+        // 新逻辑使用 startNetworkSearch() 函数，支持：
+        // 1. 智能合并本地和网络资源
+        // 2. 自动触发全网搜索（开启is_quan时）
+        // 3. 网盘类型切换使用 switchPanType() 函数
+        // ========================================
+
+        app.is_type = '{$firstKey}'
+        // 自动触发逻辑已由 footer.html 的 onMounted 统一处理
+    </script>
+</body>
+
+</html>

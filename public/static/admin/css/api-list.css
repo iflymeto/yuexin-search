@@ -1,0 +1,294 @@
+.api-list-page .api-toolbar {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 18px;
+}
+
+.api-list-page .api-toolbar-group {
+    align-items: center;
+    border-left: 1px solid #ebeef5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-left: 16px;
+}
+
+.api-list-page .api-toolbar-primary {
+    border-left: 0;
+    padding-left: 0;
+}
+
+.api-list-page .api-toolbar .el-button + .el-button {
+    margin-left: 0;
+}
+
+.api-list-page .api-row-more {
+    margin-left: 14px;
+}
+
+.api-list-page .api-config-table .cell {
+    overflow: visible;
+}
+
+.api-list-page .api-config-table {
+    width: 100%;
+}
+
+.api-list-page .api-config-table .el-table__body-wrapper {
+    max-height: calc(100vh - 360px);
+    overflow-y: auto;
+}
+
+.api-list-page .api-latency-pill {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 12px;
+    gap: 5px;
+    justify-content: center;
+    line-height: 20px;
+    max-width: 72px;
+    padding: 0 7px;
+    white-space: nowrap;
+}
+
+.api-list-page .api-latency-dot {
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    height: 7px;
+    width: 7px;
+}
+
+.api-list-page .api-latency-pill.is-pending {
+    background: #f4f4f5;
+    color: #909399;
+}
+
+.api-list-page .api-latency-pill.is-pending .api-latency-dot {
+    background: #c0c4cc;
+}
+
+.api-list-page .api-latency-pill.is-ok {
+    background: #f0f9eb;
+    color: #67c23a;
+}
+
+.api-list-page .api-latency-pill.is-ok .api-latency-dot {
+    background: #67c23a;
+}
+
+.api-list-page .api-latency-pill.is-slow {
+    background: #fdf6ec;
+    color: #e6a23c;
+}
+
+.api-list-page .api-latency-pill.is-slow .api-latency-dot {
+    background: #e6a23c;
+}
+
+.api-list-page .api-latency-pill.is-failed {
+    background: #fef0f0;
+    color: #f56c6c;
+}
+
+.api-list-page .api-latency-pill.is-failed .api-latency-dot {
+    background: #f56c6c;
+}
+
+.api-list-page .api-pan-tags {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+}
+
+.api-list-page .api-line-main {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+}
+
+.api-list-page .api-line-name {
+    color: #303133;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.api-list-page .api-latency-tag {
+    flex-shrink: 0;
+}
+
+.api-list-page .api-line-summary {
+    color: #909399;
+    font-size: 12px;
+    line-height: 1.4;
+    margin-top: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.api-list-page .api-url-cell {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+}
+
+.api-list-page .api-url-ellipsis {
+    color: #606266;
+    display: block;
+    flex: 1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.api-list-page .api-url-copy {
+    color: #c0c4cc;
+    flex-shrink: 0;
+    font-size: 14px;
+    padding: 0;
+}
+
+.api-list-page .api-url-cell:hover .api-url-copy {
+    color: #5b7cfa;
+}
+
+.api-list-page .api-number-input {
+    width: 120px;
+}
+
+.api-list-page .api-form-section-title {
+    border-left: 3px solid #5b7cfa;
+    color: #303133;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    margin: 18px 0 14px;
+    padding-left: 8px;
+}
+
+.api-list-page .api-advanced-collapse {
+    border-bottom: 0;
+    border-top: 1px solid #ebeef5;
+    margin: 12px 0 18px;
+}
+
+.api-list-page .api-advanced-collapse .el-collapse-item__header {
+    color: #606266;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.api-list-page .api-advanced-collapse .el-collapse-item__content {
+    padding-bottom: 4px;
+}
+
+.api-list-page .api-option-scroll {
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    box-sizing: border-box;
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px 10px;
+}
+
+.api-list-page .api-option-scroll .el-checkbox {
+    margin-bottom: 6px;
+    margin-right: 18px;
+}
+
+.api-list-page .api-help {
+    color: #999;
+}
+
+.api-list-page .api-help-block {
+    color: #999;
+    line-height: 1.4;
+    display: block;
+}
+
+.api-list-page .api-help-offset {
+    color: #999;
+    margin-top: 5px;
+    display: block;
+}
+
+.api-list-page .api-danger {
+    color: red;
+}
+
+.api-list-page .api-warning {
+    color: #e6a23c;
+}
+
+.api-list-page .api-import-tip {
+    color: #909399;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.api-list-page .tg-channel-tools,
+.api-list-page .pansou-option-tools,
+.api-list-page .api-list-manage-tools {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.api-list-page .tg-channel-table {
+    width: 100%;
+}
+
+.api-list-page .api-list-manage-tools .el-button-group {
+    align-items: center;
+    display: flex;
+}
+
+.api-list-page .api-list-manage-tools .el-button--mini {
+    padding-left: 7px;
+    padding-right: 7px;
+}
+
+.api-list-page .api-count-chip {
+    align-items: center;
+    background: #f5f7fa;
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    color: #606266;
+    display: inline-flex;
+    font-size: 12px;
+    height: 26px;
+    line-height: 24px;
+    padding: 0 7px;
+    white-space: nowrap;
+}
+
+.api-list-page .api-list-filter-input {
+    width: 180px;
+}
+
+.api-list-page .api-list-manage-tools .api-list-filter-input {
+    max-width: 220px;
+    min-width: 140px;
+    width: 28%;
+}
+
+.api-list-page .api-dialog-footer {
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid #ebeef5;
+    bottom: 0;
+    margin: 0 -20px -20px;
+    padding: 12px 20px;
+    position: sticky;
+    z-index: 2;
+}

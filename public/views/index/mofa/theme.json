@@ -1,0 +1,89 @@
+{
+    "key": "mofa",
+    "name": "仿魔法影视模板",
+    "version": "1.0.0",
+    "author": "xinyue",
+    "description": "参考 mac 首页视觉方向改造的前台主题，保留当前项目搜索、榜单、公告和资源获取逻辑。",
+    "screenshot": "screenshot.png",
+    "settings": {
+        "download_url": "https:\/\/www.google.com\/?authuser=0",
+        "notice_text": "公告：世事如棋局局新，从来兴废由天定",
+        "banners": [
+            {
+                "title": "黑袍纠察队",
+                "subtitle": "",
+                "keyword": "黑袍纠察队",
+                "image": "https:\/\/img.qwapp.top\/friday\/banner\/20260401\/o_ca3d9ba8839e4923b9fafb0b29bc3607.png"
+            },
+            {
+                "title": "剑来",
+                "subtitle": "少年仗剑，一路向前",
+                "keyword": "剑来",
+                "image": "https:\/\/tv.puui.qpic.cn\/tv\/0\/mz_tv_image_frontend_442f1e-8_195920731_1768384693513190_pic_1920x800\/0?imageView2\/2\/w\/1600"
+            },
+            {
+                "title": "御赐小仵作",
+                "subtitle": "王子奇苏晓彤破奇案洗冤情",
+                "keyword": "御赐小仵作",
+                "image": "https:\/\/tv.puui.qpic.cn\/tv\/0\/mz_tv_image_frontend_442f1e-8_1212520037_1768650960239121_pic_1920x800\/0?imageView2\/2\/w\/1600"
+            }
+        ],
+        "cards": [
+            {
+                "key": "theme",
+                "title": "白天模式",
+                "subtitle": "点击切换主题",
+                "image": "",
+                "action": "theme",
+                "url": ""
+            },
+            {
+                "key": "history",
+                "title": "历史搜索",
+                "subtitle": "查看搜索记录",
+                "image": "\/views\/index\/mofa\/common\/static\/mac\/historypt.svg",
+                "action": "history",
+                "url": ""
+            },
+            {
+                "key": "download",
+                "title": "下载APP",
+                "subtitle": "追剧不迷路",
+                "image": "\/views\/index\/mofa\/common\/static\/mac\/logo1.PNG",
+                "action": "url",
+                "url": "https:\/\/www.google.com\/?authuser=0"
+            }
+        ],
+        "bottom_tabs": [
+            {
+                "title": "首页",
+                "type": "panel",
+                "target": "home",
+                "icon": "\/views\/index\/mofa\/common\/static\/mac\/home-1.svg",
+                "active_icon": "\/views\/index\/mofa\/common\/static\/mac\/home-2.svg"
+            },
+            {
+                "title": "发现",
+                "type": "panel",
+                "target": "discover",
+                "icon": "\/views\/index\/mofa\/common\/static\/mac\/fx-1.svg",
+                "active_icon": "\/views\/index\/mofa\/common\/static\/mac\/fx-2.svg"
+            },
+            {
+                "title": "我的",
+                "type": "panel",
+                "target": "mine",
+                "icon": "\/views\/index\/mofa\/common\/static\/mac\/user-1.svg",
+                "active_icon": "\/views\/index\/mofa\/common\/static\/mac\/user-2.svg"
+            }
+        ],
+        "friend_links": [
+            {
+                "title": "悦心搜索",
+                "url": "https:\/\/pan.033030.xyz",
+                "icon": "",
+                "description": "发现和分享优质资源"
+            }
+        ]
+    }
+}

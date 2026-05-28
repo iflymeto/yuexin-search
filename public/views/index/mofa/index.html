@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{$seo_title}</title>
+  <link rel="stylesheet" href="/views/index/mofa/common/static/css/mofa-page.css?v=20260528c">
+</head>
+<body class="cinema is-home-panel">
+  <header class="top-nav">
+    <button class="logo-button" id="homeNavBtn">
+      {notempty name="config.logo"}
+      <img class="logo-image" src="{$config.logo}" alt="{$config.app_name}">
+      {else /}
+      <span class="logo-mark">m</span>
+      {/notempty}
+      <span>
+        <strong id="topSiteName">{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</strong>
+        <small>即刻搜索 即刻播放</small>
+      </span>
+    </button>
+    <nav class="nav-links" aria-label="主导航">
+      <button class="nav-link active" id="navHomeBtn">首页</button>
+      <button class="nav-link" id="navDiscoverBtn">发现</button>
+    </nav>
+    <div class="top-search-wrap">
+      <div class="top-search">
+        <span><img class="search-icon-img" src="/views/index/mofa/common/static/mac/search.svg" alt=""></span>
+        <input id="topKeyword" placeholder="即刻搜索，即刻播放" autocomplete="off">
+        <button id="topSearchBtn">搜索</button>
+      </div>
+      <div class="top-suggestions" id="topSuggestions"></div>
+    </div>
+    <div class="desktop-nav-actions">
+      <button class="desktop-nav-btn" id="desktopSearchHistoryBtn" type="button">历史搜索</button>
+      {empty name="config.app_demand"}
+      <button class="desktop-nav-btn" id="desktopFeedbackBtn" type="button">提交反馈</button>
+      {/empty}
+      <button class="desktop-nav-btn" id="desktopDownloadBtn" type="button">下载APP</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" aria-label="切换夜间模式">☀</button>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">m</div>
+        <div>
+          <h1 id="siteName">{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</h1>
+          <p>{notempty name="config.app_subname"}{$config.app_subname}{else /}即刻搜索 即刻播放{/notempty}</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="apiSelect">资源站</label>
+        <select id="apiSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="apiBase">接口地址</label>
+        <input id="apiBase">
+      </div>
+
+      <div class="field">
+        <label for="proxyPrefix">代理前缀，可留空</label>
+        <input id="proxyPrefix" placeholder="例如：http://localhost:3000/proxy?url=">
+      </div>
+
+      <div class="field">
+        <label for="proxyMode">代理拼接方式</label>
+        <select id="proxyMode">
+          <option value="raw">原样拼接：proxy/http://example.com/a?b=1</option>
+          <option value="encoded">URL 编码：proxy/http%3A%2F%2Fexample.com</option>
+          <option value="query">查询参数：proxy?url=http%3A%2F%2Fexample.com</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="parserPrefix">播放解析前缀</label>
+        <input id="parserPrefix">
+      </div>
+
+      <div class="field">
+        <label for="category">分类</label>
+        <select id="category">
+          <option value="">全部分类</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="source">播放来源</label>
+        <select id="source">
+          <option value="">全部来源</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="keyword">关键词</label>
+        <input id="keyword" placeholder="输入片名搜索">
+      </div>
+
+      <div class="field">
+        <label for="pageInput">页码</label>
+        <input id="pageInput" type="number" min="1" value="1">
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="loadBtn">请求列表</button>
+        <button class="btn secondary" id="classBtn">加载分类</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn warn" id="copyUrlBtn">复制 URL</button>
+        <button class="btn secondary" id="clearBtn">清空</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="favoritesBtn">我的收藏</button>
+        <button class="btn secondary" id="historyBtn">播放历史</button>
+      </div>
+
+      <div class="field">
+        <label for="requestUrl">本次请求 URL</label>
+        <textarea id="requestUrl" readonly></textarea>
+      </div>
+
+      <div class="hint">
+        如果浏览器提示 Failed to fetch，多半是接口没有开放 CORS。学习时可以用本地后端代理转发，或把上面的请求 URL 放进 Postman、curl、Apifox 调试。      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <h2 id="heroTitle">发现最新影视资源</h2>
+        <p id="heroText">用一个本地 HTML 学会分类、搜索、分页、详情、播放地址解析与代理请求。</p>
+        <div class="hero-actions">
+          <button class="hero-search-btn" id="heroSearchBtn">点击前往</button>
+          <button class="hero-ghost-btn" id="heroToolsBtn">接口配置</button>
+        </div>
+        <div class="banner-thumbs" id="bannerThumbs"></div>
+        <div class="banner-dots" id="bannerDots"></div>
+      </section>
+
+      <section class="theme-page active" id="homePanel">
+        <section class="continue-watch" id="continueWatch">
+          <span id="continueText">点击继续观看 雨霖铃 - 01</span>
+          <button id="closeContinueBtn" aria-label="关闭继续观看">×</button>
+        </section>
+
+        <section class="feature-cards">
+          <button class="feature-card feature-blue" id="featureThemeBtn"><strong>白天模式</strong><span>点击切换主题</span></button>
+          <button class="feature-card feature-orange" id="featureHistoryBtn"><strong>历史搜索</strong><span>查看搜索记录</span><i><img src="/views/index/mofa/common/static/mac/historypt.svg" alt=""></i></button>
+          <button class="feature-card feature-purple" id="featureFavoritesBtn"><strong>下载APP</strong><span>追剧不迷路</span><i><img src="/views/index/mofa/common/static/mac/logo1.PNG" alt=""></i></button>
+        </section>
+
+        <section class="discover-more">
+          <h3>发现更多</h3>
+          <div class="discover-links">
+            <button>Kimi</button>
+            <button>每日壁纸</button>
+          </div>
+        </section>
+
+        <section class="section-title-row">
+          <h3>热门推荐</h3>
+          <button class="refresh-btn" id="refreshBtn" aria-label="切换热榜分类" title="切换热榜分类"><span class="refresh-icon"><img src="/views/index/mofa/common/static/mac/Refresh.svg" alt=""></span></button>
+        </section>
+
+        <div id="quickCats" class="quick-cats"></div>
+
+        <div id="homeSections" class="home-sections"></div>
+
+        <div id="message" class="empty">点击“请求列表”开始调用接口。</div>
+        <div id="grid" class="grid"></div>
+        <div class="home-bottom-loader" id="homeBottomLoader" aria-live="polite">
+          <div class="home-bottom-loader-inner">
+            <span class="home-bottom-spinner"></span>
+            <span id="homeBottomLoaderText">正在加载更多</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="theme-page theme-panel" id="discoverPanel"></section>
+      <section class="theme-page theme-panel" id="minePanel"></section>
+
+      <footer class="site-footer">
+        <nav>首页　短剧　发现　历史　个人中心</nav>
+        <p>{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</p>
+      </footer>
+    </main>
+  </div>
+
+  <nav class="bottom-tabs" id="bottomTabs" aria-label="底部导航"></nav>
+
+  <div class="external-confirm" id="externalConfirm" aria-hidden="true">
+    <div class="external-confirm-card">
+      <h3>即将离开本站</h3>
+      <p id="externalConfirmText"></p>
+      <div class="external-confirm-actions">
+        <button class="external-confirm-cancel" id="externalCancelBtn">取消</button>
+        <button class="external-confirm-ok" id="externalOkBtn">继续访问</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-announcement-overlay" id="homeAnnouncementOverlay" aria-hidden="true">
+    <section class="home-announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="homeAnnouncementTitle">
+      <div class="home-announcement-head">
+        <h3 class="home-announcement-title" id="homeAnnouncementTitle">平台公告</h3>
+        <div class="home-announcement-subtitle" id="homeAnnouncementSubtitle">最新发布</div>
+      </div>
+      <div class="home-announcement-content" id="homeAnnouncementContent"></div>
+      <div class="home-announcement-actions" id="homeAnnouncementActions">
+        <button class="home-announcement-btn" id="homeAnnouncementLaterBtn" type="button">近期不再显示</button>
+        <button class="home-announcement-btn primary" id="homeAnnouncementOkBtn" type="button">确认</button>
+      </div>
+    </section>
+  </div>
+
+  <button class="back-top" id="backTopBtn" aria-label="返回顶部">
+    <img src="/views/index/mofa/common/static/mac/top.svg" alt="">
+  </button>
+
+  <div class="mine-toast" id="mineToast"></div>
+
+  {empty name="config.app_demand"}
+  <div class="mofa-feedback-overlay" id="mofaFeedbackOverlay" aria-hidden="true">
+    <section class="mofa-feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="mofaFeedbackTitle">
+      <div class="mofa-feedback-head">
+        <div>
+          <h3 id="mofaFeedbackTitle">提交反馈</h3>
+          <p>告诉我们你想看的资源，或反馈使用问题。</p>
+        </div>
+        <button class="mofa-feedback-close" id="mofaFeedbackCloseBtn" type="button" aria-label="关闭">×</button>
+      </div>
+      <label class="mofa-feedback-field">
+        <span>反馈内容</span>
+        <textarea id="mofaFeedbackContent" rows="5" placeholder="请输入你想看的资源信息~"></textarea>
+      </label>
+      <label class="mofa-feedback-field">
+        <span>联系邮箱（选填）</span>
+        <input id="mofaFeedbackEmail" type="email" placeholder="方便我们回复你">
+      </label>
+      <button class="mofa-feedback-submit" id="mofaFeedbackSubmitBtn" type="button">提交</button>
+    </section>
+  </div>
+  {/empty}
+
+  <div class="search-page" id="searchPage">
+    <div class="search-topbar">
+      <button class="search-back" id="searchBackBtn" aria-label="返回">‹</button>
+      <div class="search-input-wrap">
+        <span class="search-input-icon"><img class="search-icon-img" src="/views/index/mofa/common/static/mac/search.svg" alt=""></span>
+        <input class="search-input" id="searchInput" placeholder="今天看点什么" autocomplete="off">
+      </div>
+      <button class="search-submit" id="searchSubmitBtn">搜索</button>
+    </div>
+    <div class="mobile-suggestions" id="mobileSuggestions"></div>
+
+    <div class="search-body" id="searchBody">
+      <section class="search-section">
+        <div class="search-sec-head">
+          <div class="search-sec-title"><img class="search-sec-title-icon" src="/views/index/mofa/common/static/mac/history.svg" alt=""><span>搜索历史</span></div>
+          <button class="search-sec-action" id="clearSearchHistoryBtn">清空</button>
+        </div>
+        <div class="history-chips" id="searchHistoryChips"></div>
+        <div class="search-toast" id="searchToast"></div>
+      </section>
+    </div>
+
+    <div class="search-result" id="searchResult">
+      <div class="result-bar">
+        <div class="result-summary">
+          <span id="resultText">关键词</span>
+          <span id="resultCount" class="result-count">- 0条</span>
+        </div>
+        <div class="result-pan-tabs" id="resultPanTabs"></div>
+      </div>
+      <div class="grid search-result-grid" id="resultGrid"></div>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <section class="detail">
+      <div class="detail-head">
+        <div>
+          <h2 id="detailTitle">详情</h2>
+          <div class="meta" id="detailMeta"></div>
+        </div>
+        <button class="close" id="closeBtn" aria-label="关闭">×</button>
+      </div>
+      <div class="detail-body">
+        <img id="detailPic" alt="">
+        <div class="content">
+          <p id="detailContent"></p>
+          <div id="episodes" class="episodes"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="drawer player-drawer" id="playerDrawer">
+    <section class="player">
+      <div class="detail-head">
+        <div>
+          <h2 id="playerTitle">播放</h2>
+          <div class="meta" id="playerUrl"></div>
+        </div>
+        <button class="close" id="playerCloseBtn" aria-label="关闭">×</button>
+      </div>
+      <iframe id="playerFrame" class="player-frame" allowfullscreen referrerpolicy="no-referrer"></iframe>
+      <div class="player-actions">
+        <button class="small-btn primary" id="openPlayerBtn">新窗口打开</button>
+        <button class="small-btn" id="copyPlayerBtn">复制解析地址</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="resource-modal" id="resourceModal">
+    <section class="resource-modal-card" role="dialog" aria-modal="true">
+      <div class="resource-modal-head">
+        <h3 id="resourceModalTitle">资源获取结果</h3>
+        <button class="resource-modal-close" id="resourceModalClose" aria-label="关闭">×</button>
+      </div>
+      <div class="resource-modal-body" id="resourceModalBody">
+        <div class="resource-modal-loading">资源获取中...</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    window.MOFA_THEME_SETTINGS = {
+      download_url: "{$theme_settings.download_url|default=''}",
+      notice_text: "{$theme_settings.notice_text|default='点击继续观看 雨霖铃 - 01'}",
+      banners: <?php echo json_encode($theme_settings['banners'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+      cards: <?php echo json_encode($theme_settings['cards'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+      bottom_tabs: <?php echo json_encode($theme_settings['bottom_tabs'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+      friend_links: <?php echo json_encode($theme_settings['friend_links'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+    };
+    window.MOFA_IS_QUAN_TYPE = "{$config.is_quan_type|default='0'}";
+  </script>
+  <script src="/views/index/mofa/common/static/js/mofa-feedback.js?v=20260528a"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-state.js?v=20260528a"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-utils.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-config.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-suggestions.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-pan-results.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-home.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-panels.js?v=20260528b"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-player.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-catalog.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-navigation.js?v=20260528b"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-search.js?v=20260527k"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-events.js?v=20260528b"></script>
+  <script src="/views/index/mofa/common/static/js/mofa-app.js?v=20260528a"></script>
+</body>
+</html>
+
+

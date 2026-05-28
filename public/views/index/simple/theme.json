@@ -1,0 +1,8 @@
+{
+  "key": "simple",
+  "name": "简洁主题",
+  "version": "1.0.0",
+  "author": "xinyue",
+  "description": "基于默认主题复制的独立主题，用于验证主题切换和后续视觉迭代。",
+  "screenshot": "screenshot.png"
+}

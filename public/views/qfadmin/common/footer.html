@@ -1,0 +1,113 @@
+</el-main>
+</el-container>
+</el-container>
+<Uploads ref="upload"></Uploads>
+<Goodslists ref="goodslist"></Goodslists>
+</div>
+</body>
+{include file="component/view"/}
+<script src="/static/admin/js/vue-2.6.10.min.js"></script>
+<script src="/static/admin/js/axios.min.js"></script>
+<script src="/static/admin/js/element.js"></script>
+<script src="/static/admin/js/YAdmin.js"></script>
+<script src="/static/admin/js/SkuForm.umd.js"></script>
+<script src="/static/admin/UEditor/vue-ueditor-wrap.min.js"></script>
+<script src="/static/admin/UEditor/ueditor.config.js"></script>
+<script src="/static/admin/UEditor/ueditor.all.js"></script>
+<script src="/static/admin/js/component.js"></script>
+<script src="/static/admin/js/Sortable.min.js"></script>
+<script src="/static/admin/js/vuedraggable.umd.min.js"></script>
+
+<!-- 后台缓存监控：在Console显示缓存命中率 -->
+<script>
+(function() {
+    let cacheStats = {
+        totalRequests: 0,
+        hits: 0,
+        misses: 0,
+        totalTime: 0,
+        hitTime: 0,
+        missTime: 0
+    };
+    
+    // 保存原始的axios.post和axios.get方法
+    const originalPost = axios.post;
+    const originalGet = axios.get;
+    
+    // 处理响应的通用函数
+    function handleResponse(response) {
+        const cacheStatus = response.headers['x-cache-status'];
+        const cacheDriver = response.headers['x-cache-driver'];
+        const cacheTime = response.headers['x-cache-time'];
+        
+        if (cacheStatus) {
+            cacheStats.totalRequests++;
+            const timeMs = parseFloat(cacheTime) || 0;
+            cacheStats.totalTime += timeMs;
+            
+            if (cacheStatus === 'HIT') {
+                cacheStats.hits++;
+                cacheStats.hitTime += timeMs;
+                debugLog.log(
+                    '%c✓ 缓存命中 %c' + cacheDriver + ' %c' + cacheTime,
+                    'color: #67C23A; font-weight: bold;',
+                    'color: #409EFF; font-weight: bold;',
+                    'color: #909399;'
+                );
+            } else if (cacheStatus === 'MISS') {
+                cacheStats.misses++;
+                cacheStats.missTime += timeMs;
+                debugLog.log(
+                    '%c✗ 缓存未命中 %c' + cacheDriver + ' %c' + cacheTime,
+                    'color: #F56C6C; font-weight: bold;',
+                    'color: #409EFF; font-weight: bold;',
+                    'color: #909399;'
+                );
+            }
+            
+            // 每3次请求输出一次统计信息
+            if (cacheStats.totalRequests % 3 === 0) {
+                const hitRate = ((cacheStats.hits / cacheStats.totalRequests) * 100).toFixed(2);
+                const avgHitTime = cacheStats.hits > 0 ? (cacheStats.hitTime / cacheStats.hits).toFixed(2) : 0;
+                const avgMissTime = cacheStats.misses > 0 ? (cacheStats.missTime / cacheStats.misses).toFixed(2) : 0;
+                
+                debugLog.group('%c📊 缓存统计（最近' + cacheStats.totalRequests + '次请求）', 'color: #E6A23C; font-weight: bold; font-size: 14px;');
+                debugLog.log('%c命中率: %c' + hitRate + '%', 'color: #606266;', 'color: #67C23A; font-weight: bold; font-size: 16px;');
+                debugLog.log('%c命中次数: %c' + cacheStats.hits + ' %c| 未命中: %c' + cacheStats.misses,
+                    'color: #606266;', 'color: #67C23A;',
+                    'color: #909399;', 'color: #F56C6C;'
+                );
+                debugLog.log('%c平均耗时(HIT): %c' + avgHitTime + 'ms %c| 平均耗时(MISS): %c' + avgMissTime + 'ms',
+                    'color: #606266;', 'color: #67C23A;',
+                    'color: #909399;', 'color: #F56C6C;'
+                );
+                debugLog.groupEnd();
+            }
+        }
+        
+        return response;
+    }
+    
+    // 重写axios.post方法
+    axios.post = function() {
+        return originalPost.apply(this, arguments).then(handleResponse);
+    };
+    
+    // 重写axios.get方法
+    axios.get = function() {
+        return originalGet.apply(this, arguments).then(handleResponse);
+    };
+    
+    // 页面加载完成时输出欢迎信息
+    window.addEventListener('load', function() {
+        debugLog.log(
+            '%c🔧 新月搜索后台 - 缓存监控已启用',
+            'color: #409EFF; font-size: 16px; font-weight: bold; padding: 10px;'
+        );
+        debugLog.log(
+            '%c💡 提示：每次API请求都会在控制台显示缓存命中情况',
+            'color: #909399; font-size: 12px;'
+        );
+    });
+})();
+</script>

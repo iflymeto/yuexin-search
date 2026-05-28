@@ -1,0 +1,27 @@
+.deposit-manage-page textarea {
+    height: 300px;
+}
+
+.deposit-manage-page .deposit-section {
+    font-size: 14px;
+    color: #666;
+}
+
+.deposit-manage-page .deposit-input {
+    width: 100%;
+}
+
+.deposit-manage-page .deposit-picker {
+    position: relative;
+}
+
+.deposit-manage-page .deposit-cascader {
+    opacity: 0;
+    height: 38px;
+    position: absolute;
+    inset: 0;
+}
+
+.deposit-manage-page .deposit-warning {
+    color: orangered;
+}

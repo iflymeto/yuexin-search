@@ -1,0 +1,3547 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{$seo_title}</title>
+  <link rel="stylesheet" href="/views/index/mofa/common/static/css/mofa-page.css?v=20260527">
+</head>
+<body class="cinema is-home-panel">
+  <header class="top-nav">
+    <button class="logo-button" id="homeNavBtn">
+      {notempty name="config.logo"}
+      <img class="logo-image" src="{$config.logo}" alt="{$config.app_name}">
+      {else /}
+      <span class="logo-mark">m</span>
+      {/notempty}
+      <span>
+        <strong id="topSiteName">{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</strong>
+        <small>鍗冲埢鎼滅储 鍗冲埢鎾斁</small>
+      </span>
+    </button>
+    <nav class="nav-links" aria-label="涓诲鑸?>
+      <button class="nav-link active" id="navHomeBtn">棣栭〉</button>
+      <button class="nav-link" id="navShortBtn">鐭墽</button>
+      <button class="nav-link" id="navDiscoverBtn">鍙戠幇</button>
+      <button class="nav-link" id="navHistoryBtn">鍘嗗彶</button>
+    </nav>
+    <div class="top-search-wrap">
+      <div class="top-search">
+        <span><img class="search-icon-img" src="/views/index/mofa/common/static/mac/search.svg" alt=""></span>
+        <input id="topKeyword" placeholder="鍗冲埢鎼滅储锛屽嵆鍒绘挱鏀? autocomplete="off">
+        <button id="topSearchBtn">鎼滅储</button>
+      </div>
+      <div class="top-suggestions" id="topSuggestions"></div>
+    </div>
+    <div class="desktop-nav-actions">
+      <button class="desktop-nav-btn" id="desktopSearchHistoryBtn" type="button">鍘嗗彶鎼滅储</button>
+      <button class="desktop-nav-btn" id="desktopDownloadBtn" type="button">涓嬭浇APP</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" aria-label="鍒囨崲澶滈棿妯″紡">鈽€</button>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">褰?/div>
+        <div>
+          <h1 id="siteName">{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</h1>
+          <p>{notempty name="config.app_subname"}{$config.app_subname}{else /}鍗冲埢鎼滅储 鍗冲埢鎾斁{/notempty}</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="apiSelect">璧勬簮绔?/label>
+        <select id="apiSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="apiBase">鎺ュ彛鍦板潃</label>
+        <input id="apiBase">
+      </div>
+
+      <div class="field">
+        <label for="proxyPrefix">浠ｇ悊鍓嶇紑锛屽彲鐣欑┖</label>
+        <input id="proxyPrefix" placeholder="渚嬪锛歨ttp://localhost:3000/proxy?url=">
+      </div>
+
+      <div class="field">
+        <label for="proxyMode">浠ｇ悊鎷兼帴鏂瑰紡</label>
+        <select id="proxyMode">
+          <option value="raw">鍘熸牱鎷兼帴锛歱roxy/http://example.com/a?b=1</option>
+          <option value="encoded">URL 缂栫爜锛歱roxy/http%3A%2F%2Fexample.com</option>
+          <option value="query">鏌ヨ鍙傛暟锛歱roxy?url=http%3A%2F%2Fexample.com</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="parserPrefix">鎾斁瑙ｆ瀽鍓嶇紑</label>
+        <input id="parserPrefix">
+      </div>
+
+      <div class="field">
+        <label for="category">鍒嗙被</label>
+        <select id="category">
+          <option value="">鍏ㄩ儴鍒嗙被</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="source">鎾斁鏉ユ簮</label>
+        <select id="source">
+          <option value="">鍏ㄩ儴鏉ユ簮</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="keyword">鍏抽敭璇?/label>
+        <input id="keyword" placeholder="杈撳叆鐗囧悕鎼滅储">
+      </div>
+
+      <div class="field">
+        <label for="pageInput">椤电爜</label>
+        <input id="pageInput" type="number" min="1" value="1">
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="loadBtn">璇锋眰鍒楄〃</button>
+        <button class="btn secondary" id="classBtn">鍔犺浇鍒嗙被</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn warn" id="copyUrlBtn">澶嶅埗 URL</button>
+        <button class="btn secondary" id="clearBtn">娓呯┖</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="favoritesBtn">鎴戠殑鏀惰棌</button>
+        <button class="btn secondary" id="historyBtn">鎾斁鍘嗗彶</button>
+      </div>
+
+      <div class="field">
+        <label for="requestUrl">鏈璇锋眰 URL</label>
+        <textarea id="requestUrl" readonly></textarea>
+      </div>
+
+      <div class="hint">
+        濡傛灉娴忚鍣ㄦ彁绀?Failed to fetch锛屽鍗婃槸鎺ュ彛娌℃湁寮€鏀?CORS銆傚涔犳椂鍙互鐢ㄦ湰鍦板悗绔唬鐞嗚浆鍙戯紝鎴栨妸涓婇潰鐨勮姹?URL 鏀捐繘 Postman銆乧url銆丄pifox 璋冭瘯銆?      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <h2 id="heroTitle">鍙戠幇鏈€鏂板奖瑙嗚祫婧?/h2>
+        <p id="heroText">鐢ㄤ竴涓湰鍦?HTML 瀛︿細鍒嗙被銆佹悳绱€佸垎椤点€佽鎯呫€佹挱鏀惧湴鍧€瑙ｆ瀽涓庝唬鐞嗚姹傘€?/p>
+        <div class="hero-actions">
+          <button class="hero-search-btn" id="heroSearchBtn">鐐瑰嚮鍓嶅線</button>
+          <button class="hero-ghost-btn" id="heroToolsBtn">鎺ュ彛閰嶇疆</button>
+        </div>
+        <div class="banner-thumbs" id="bannerThumbs"></div>
+        <div class="banner-dots" id="bannerDots"></div>
+      </section>
+
+      <section class="theme-page active" id="homePanel">
+        <section class="continue-watch" id="continueWatch">
+          <span id="continueText">鐐瑰嚮缁х画瑙傜湅 闆ㄩ湒閾?- 绗?闆?/span>
+          <button id="closeContinueBtn" aria-label="鍏抽棴缁х画瑙傜湅">脳</button>
+        </section>
+
+        <section class="feature-cards">
+          <button class="feature-card feature-blue" id="featureThemeBtn"><strong>鐧藉ぉ妯″紡</strong><span>鐐瑰嚮鍒囨崲涓婚</span></button>
+          <button class="feature-card feature-orange" id="featureHistoryBtn"><strong>鍘嗗彶鎼滅储</strong><span>鏌ョ湅鎼滅储璁板綍</span><i><img src="/views/index/mofa/common/static/mac/historypt.svg" alt=""></i></button>
+          <button class="feature-card feature-purple" id="featureFavoritesBtn"><strong>涓嬭浇APP</strong><span>杩藉墽涓嶈糠璺?/span><i><img src="/views/index/mofa/common/static/mac/logo1.PNG" alt=""></i></button>
+        </section>
+
+        <section class="discover-more">
+          <h3>鍙戠幇鏇村</h3>
+          <div class="discover-links">
+            <button>Kimi</button>
+            <button>姣忔棩澹佺焊</button>
+          </div>
+        </section>
+
+        <section class="section-title-row">
+          <h3>鐑棬鎺ㄨ崘</h3>
+          <button class="refresh-btn" id="refreshBtn" aria-label="鍒囨崲鐑鍒嗙被" title="鍒囨崲鐑鍒嗙被"><span class="refresh-icon"><img src="/views/index/mofa/common/static/mac/Refresh.svg" alt=""></span></button>
+        </section>
+
+        <div id="quickCats" class="quick-cats"></div>
+
+        <div id="homeSections" class="home-sections"></div>
+
+        <div id="message" class="empty">鐐瑰嚮鈥滆姹傚垪琛ㄢ€濆紑濮嬭皟鐢ㄦ帴鍙ｃ€?/div>
+        <div id="grid" class="grid"></div>
+        <div class="home-bottom-loader" id="homeBottomLoader" aria-live="polite">
+          <div class="home-bottom-loader-inner">
+            <span class="home-bottom-spinner"></span>
+            <span id="homeBottomLoaderText">姝ｅ湪鍔犺浇鏇村</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="theme-page theme-panel" id="discoverPanel"></section>
+      <section class="theme-page theme-panel" id="minePanel"></section>
+
+      <footer class="site-footer">
+        <nav>棣栭〉銆€鐭墽銆€鍙戠幇銆€鍘嗗彶銆€涓汉涓績</nav>
+        <p>{if condition="$config.app_name && $config.app_name_hide!=1"}{$config.app_name}{else /}Twilight Cinema{/if}</p>
+      </footer>
+    </main>
+  </div>
+
+  <nav class="bottom-tabs" id="bottomTabs" aria-label="搴曢儴瀵艰埅"></nav>
+
+  <div class="external-confirm" id="externalConfirm" aria-hidden="true">
+    <div class="external-confirm-card">
+      <h3>鍗冲皢绂诲紑鏈珯</h3>
+      <p id="externalConfirmText"></p>
+      <div class="external-confirm-actions">
+        <button class="external-confirm-cancel" id="externalCancelBtn">鍙栨秷</button>
+        <button class="external-confirm-ok" id="externalOkBtn">缁х画璁块棶</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-announcement-overlay" id="homeAnnouncementOverlay" aria-hidden="true">
+    <section class="home-announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="homeAnnouncementTitle">
+      <div class="home-announcement-head">
+        <h3 class="home-announcement-title" id="homeAnnouncementTitle">骞冲彴鍏憡</h3>
+        <div class="home-announcement-subtitle" id="homeAnnouncementSubtitle">鏈€鏂板彂甯?/div>
+      </div>
+      <div class="home-announcement-content" id="homeAnnouncementContent"></div>
+      <div class="home-announcement-actions" id="homeAnnouncementActions">
+        <button class="home-announcement-btn" id="homeAnnouncementLaterBtn" type="button">杩戞湡涓嶅啀鏄剧ず</button>
+        <button class="home-announcement-btn primary" id="homeAnnouncementOkBtn" type="button">纭</button>
+      </div>
+    </section>
+  </div>
+
+  <button class="back-top" id="backTopBtn" aria-label="杩斿洖椤堕儴">
+    <img src="/views/index/mofa/common/static/mac/top.svg" alt="">
+  </button>
+
+  <div class="mine-toast" id="mineToast"></div>
+
+  <div class="search-page" id="searchPage">
+    <div class="search-topbar">
+      <button class="search-back" id="searchBackBtn" aria-label="杩斿洖">鈥?/button>
+      <div class="search-input-wrap">
+        <span class="search-input-icon"><img class="search-icon-img" src="/views/index/mofa/common/static/mac/search.svg" alt=""></span>
+        <input class="search-input" id="searchInput" placeholder="浠婂ぉ鐪嬬偣鍟? autocomplete="off">
+      </div>
+      <button class="search-submit" id="searchSubmitBtn">鎼滅储</button>
+    </div>
+    <div class="mobile-suggestions" id="mobileSuggestions"></div>
+
+    <div class="search-body" id="searchBody">
+      <section class="search-section">
+        <div class="search-sec-head">
+          <div class="search-sec-title"><img class="search-sec-title-icon" src="/views/index/mofa/common/static/mac/history.svg" alt=""><span>鎼滅储鍘嗗彶</span></div>
+          <button class="search-sec-action" id="clearSearchHistoryBtn">娓呯┖</button>
+        </div>
+        <div class="history-chips" id="searchHistoryChips"></div>
+        <div class="search-toast" id="searchToast"></div>
+      </section>
+    </div>
+
+    <div class="search-result" id="searchResult">
+      <div class="result-bar">
+        <div class="result-summary">
+          <span id="resultText">鍏抽敭璇?/span>
+          <span id="resultCount" class="result-count">- 0鏉?/span>
+        </div>
+        <div class="result-pan-tabs" id="resultPanTabs"></div>
+      </div>
+      <div class="grid search-result-grid" id="resultGrid"></div>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <section class="detail">
+      <div class="detail-head">
+        <div>
+          <h2 id="detailTitle">璇︽儏</h2>
+          <div class="meta" id="detailMeta"></div>
+        </div>
+        <button class="close" id="closeBtn" aria-label="鍏抽棴">脳</button>
+      </div>
+      <div class="detail-body">
+        <img id="detailPic" alt="">
+        <div class="content">
+          <p id="detailContent"></p>
+          <div id="episodes" class="episodes"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="drawer player-drawer" id="playerDrawer">
+    <section class="player">
+      <div class="detail-head">
+        <div>
+          <h2 id="playerTitle">鎾斁</h2>
+          <div class="meta" id="playerUrl"></div>
+        </div>
+        <button class="close" id="playerCloseBtn" aria-label="鍏抽棴">脳</button>
+      </div>
+      <iframe id="playerFrame" class="player-frame" allowfullscreen referrerpolicy="no-referrer"></iframe>
+      <div class="player-actions">
+        <button class="small-btn primary" id="openPlayerBtn">鏂扮獥鍙ｆ墦寮€</button>
+        <button class="small-btn" id="copyPlayerBtn">澶嶅埗瑙ｆ瀽鍦板潃</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="resource-modal" id="resourceModal">
+    <section class="resource-modal-card" role="dialog" aria-modal="true">
+      <div class="resource-modal-head">
+        <h3 id="resourceModalTitle">璧勬簮鑾峰彇缁撴灉</h3>
+        <button class="resource-modal-close" id="resourceModalClose" aria-label="鍏抽棴">脳</button>
+      </div>
+      <div class="resource-modal-body" id="resourceModalBody">
+        <div class="resource-modal-loading">璧勬簮鑾峰彇涓?..</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      page: 1,
+      pageCount: 1,
+      total: 0,
+      list: [],
+      config: null,
+      currentDetail: null,
+      bannerIndex: 0,
+      bannerTimer: null,
+      bannerDrag: {
+        active: false,
+        pointerId: null,
+        startX: 0,
+        startY: 0,
+        lastX: 0,
+        moved: false,
+        switched: false
+      },
+      bannerClickSuppressUntil: 0,
+      themeSettings: {},
+      bottomTabs: [],
+      activePanel: "home",
+      pendingExternalUrl: "",
+      mineInfoLoaded: false,
+      mineInfo: null,
+      panelRendered: {
+        discover: false,
+        mine: false
+      },
+      viewMode: "ranking",
+      ranking: {
+        channel: "",
+        list: [],
+        shown: 0
+      },
+      searchEventSource: null,
+      searchItems: [],
+      searchKeyword: "",
+      searchPanType: 0,
+      searchCache: new Map(),
+      searchPendingReplace: false,
+      searchRequestId: 0,
+      panTreeCache: new Map(),
+      rankingCache: new Map(),
+      autoLoadingMore: false,
+      homeLoaded: false,
+      searchLoading: false,
+      clearHistoryArmed: false,
+      clearHistoryTimer: null
+    };
+
+    const el = {
+      siteName: document.querySelector("#siteName"),
+      topSiteName: document.querySelector("#topSiteName"),
+      homeNavBtn: document.querySelector("#homeNavBtn"),
+      navHomeBtn: document.querySelector("#navHomeBtn"),
+      navShortBtn: document.querySelector("#navShortBtn"),
+      navDiscoverBtn: document.querySelector("#navDiscoverBtn"),
+      navHistoryBtn: document.querySelector("#navHistoryBtn"),
+      topKeyword: document.querySelector("#topKeyword"),
+      topSearchBtn: document.querySelector("#topSearchBtn"),
+      topSuggestions: document.querySelector("#topSuggestions"),
+      searchPage: document.querySelector("#searchPage"),
+      searchBackBtn: document.querySelector("#searchBackBtn"),
+      searchInput: document.querySelector("#searchInput"),
+      searchSubmitBtn: document.querySelector("#searchSubmitBtn"),
+      mobileSuggestions: document.querySelector("#mobileSuggestions"),
+      searchBody: document.querySelector("#searchBody"),
+      searchResult: document.querySelector("#searchResult"),
+      resultText: document.querySelector("#resultText"),
+      resultCount: document.querySelector("#resultCount"),
+      resultBackBtn: document.querySelector("#resultBackBtn"),
+      resultPanTabs: document.querySelector("#resultPanTabs"),
+      resultGrid: document.querySelector("#resultGrid"),
+      searchHistoryChips: document.querySelector("#searchHistoryChips"),
+      clearSearchHistoryBtn: document.querySelector("#clearSearchHistoryBtn"),
+      searchToast: document.querySelector("#searchToast"),
+      hotSearchGrid: document.querySelector("#hotSearchGrid"),
+      guessCats: document.querySelector("#guessCats"),
+      guessRefreshBtn: document.querySelector("#guessRefreshBtn"),
+      guessGrid: document.querySelector("#guessGrid"),
+      themeBtn: document.querySelector("#themeBtn"),
+      desktopSearchHistoryBtn: document.querySelector("#desktopSearchHistoryBtn"),
+      desktopDownloadBtn: document.querySelector("#desktopDownloadBtn"),
+      heroTitle: document.querySelector("#heroTitle"),
+      heroText: document.querySelector("#heroText"),
+      hero: document.querySelector(".hero"),
+      bannerThumbs: document.querySelector("#bannerThumbs"),
+      bannerDots: document.querySelector("#bannerDots"),
+      heroSearchBtn: document.querySelector("#heroSearchBtn"),
+      heroToolsBtn: document.querySelector("#heroToolsBtn"),
+      featureFavoritesBtn: document.querySelector("#featureFavoritesBtn"),
+      featureThemeBtn: document.querySelector("#featureThemeBtn"),
+      featureHistoryBtn: document.querySelector("#featureHistoryBtn"),
+      continueWatch: document.querySelector("#continueWatch"),
+      continueText: document.querySelector("#continueText"),
+      closeContinueBtn: document.querySelector("#closeContinueBtn"),
+      homePanel: document.querySelector("#homePanel"),
+      refreshBtn: document.querySelector("#refreshBtn"),
+      loadMoreBtn: document.querySelector("#loadMoreBtn"),
+      homeBottomLoader: document.querySelector("#homeBottomLoader"),
+      homeBottomLoaderText: document.querySelector("#homeBottomLoaderText"),
+      bottomTabs: document.querySelector("#bottomTabs"),
+      discoverPanel: document.querySelector("#discoverPanel"),
+      minePanel: document.querySelector("#minePanel"),
+      mineToast: document.querySelector("#mineToast"),
+      externalConfirm: document.querySelector("#externalConfirm"),
+      externalConfirmText: document.querySelector("#externalConfirmText"),
+      externalCancelBtn: document.querySelector("#externalCancelBtn"),
+      externalOkBtn: document.querySelector("#externalOkBtn"),
+      homeAnnouncementOverlay: document.querySelector("#homeAnnouncementOverlay"),
+      homeAnnouncementTitle: document.querySelector("#homeAnnouncementTitle"),
+      homeAnnouncementSubtitle: document.querySelector("#homeAnnouncementSubtitle"),
+      homeAnnouncementContent: document.querySelector("#homeAnnouncementContent"),
+      homeAnnouncementActions: document.querySelector("#homeAnnouncementActions"),
+      homeAnnouncementLaterBtn: document.querySelector("#homeAnnouncementLaterBtn"),
+      homeAnnouncementOkBtn: document.querySelector("#homeAnnouncementOkBtn"),
+      backTopBtn: document.querySelector("#backTopBtn"),
+      apiSelect: document.querySelector("#apiSelect"),
+      apiBase: document.querySelector("#apiBase"),
+      proxyPrefix: document.querySelector("#proxyPrefix"),
+      proxyMode: document.querySelector("#proxyMode"),
+      parserPrefix: document.querySelector("#parserPrefix"),
+      category: document.querySelector("#category"),
+      source: document.querySelector("#source"),
+      keyword: document.querySelector("#keyword"),
+      pageInput: document.querySelector("#pageInput"),
+      requestUrl: document.querySelector("#requestUrl"),
+      loadBtn: document.querySelector("#loadBtn"),
+      classBtn: document.querySelector("#classBtn"),
+      copyUrlBtn: document.querySelector("#copyUrlBtn"),
+      clearBtn: document.querySelector("#clearBtn"),
+      favoritesBtn: document.querySelector("#favoritesBtn"),
+      historyBtn: document.querySelector("#historyBtn"),
+      prevBtn: document.querySelector("#prevBtn"),
+      nextBtn: document.querySelector("#nextBtn"),
+      countPill: document.querySelector("#countPill"),
+      pageInfo: document.querySelector("#pageInfo"),
+      searchStatus: document.querySelector("#searchStatus"),
+      quickCats: document.querySelector("#quickCats"),
+      homeSections: document.querySelector("#homeSections"),
+      message: document.querySelector("#message"),
+      grid: document.querySelector("#grid"),
+      debug: document.querySelector("#debug"),
+      drawer: document.querySelector("#drawer"),
+      closeBtn: document.querySelector("#closeBtn"),
+      detailTitle: document.querySelector("#detailTitle"),
+      detailMeta: document.querySelector("#detailMeta"),
+      detailPic: document.querySelector("#detailPic"),
+      detailContent: document.querySelector("#detailContent"),
+      episodes: document.querySelector("#episodes"),
+      playerDrawer: document.querySelector("#playerDrawer"),
+      playerCloseBtn: document.querySelector("#playerCloseBtn"),
+      playerTitle: document.querySelector("#playerTitle"),
+      playerUrl: document.querySelector("#playerUrl"),
+      playerFrame: document.querySelector("#playerFrame"),
+      openPlayerBtn: document.querySelector("#openPlayerBtn"),
+      copyPlayerBtn: document.querySelector("#copyPlayerBtn")
+      ,
+      resourceModal: document.querySelector("#resourceModal"),
+      resourceModalTitle: document.querySelector("#resourceModalTitle"),
+      resourceModalBody: document.querySelector("#resourceModalBody"),
+      resourceModalClose: document.querySelector("#resourceModalClose")
+    };
+    if (!el.debug) {
+      el.debug = { textContent: "" };
+    }
+
+    const fallbackConfig = {
+      site: {
+        name: "Twilight Cinema",
+        tagline: "鑱氬悎褰辫娴忚涓庢帴鍙ｅ涔犵ず渚?,
+        heroTitle: "鍙戠幇鏈€鏂板奖瑙嗚祫婧?,
+        heroText: "鐢ㄤ竴涓湰鍦?HTML 瀛︿細鍒嗙被銆佹悳绱€佸垎椤点€佽鎯呫€佹挱鏀惧湴鍧€瑙ｆ瀽涓庝唬鐞嗚姹傘€?
+      },
+      api: {
+        baseUrl: "http://cj.10010888.xyz/api.php/provide/vod/",
+        proxyPrefix: "https://proxyd.picpi.top/",
+        proxyMode: "raw",
+        parserPrefix: "https://jx.xmflv.com/?url="
+      },
+      sources: [
+        { value: "", label: "鍏ㄩ儴鏉ユ簮" },
+        { value: "qq", label: "鑵捐瑙嗛" },
+        { value: "qiyi", label: "鐖卞鑹? },
+        { value: "youku", label: "浼橀叿" },
+        { value: "mgtv", label: "鑺掓灉 TV" },
+        { value: "bilibili", label: "B 绔? }
+      ],
+      defaults: {
+        keyword: "",
+        page: 1,
+        autoLoad: true
+      },
+      apis: [],
+      sections: [
+        { title: "鏈€鏂颁笂绾?, type: "", source: "", page: 1 },
+        { title: "鐢靛奖绮鹃€?, type: "1", source: "", page: 1 },
+        { title: "鐭墽鐑洿", type: "7", source: "", page: 1 }
+      ],
+      ranking: {
+        url: "/api/tool/ranking",
+        channels: ["鐭墽", "鐢靛奖", "鐢佃鍓?, "鍔ㄦ极", "缁艰壓"],
+        defaultChannel: "鐭墽",
+        mobileMode: false,
+        initialCount: 6,
+        pageSize: 6
+      },
+      images: {
+        proxyVodImages: true,
+        proxyRankingImages: false,
+        proxyBannerImages: false,
+        lazyRootMargin: "160px 0px"
+      },
+      banners: {
+        interval: 4500,
+        items: [
+          {
+            title: "寰¤祼灏忎坏浣?,
+            subtitle: "鐜嬪瓙濂囪嫃鏅撳饯鐮村妗堟礂鍐ゆ儏",
+            keyword: "寰¤祼灏忎坏浣?,
+            image: "https://tv.puui.qpic.cn/tv/0/mz_tv_image_frontend_442f1e-8_195920731_1768384693513190_pic_1920x800/0?imageView2/2/w/1600"
+          },
+          {
+            title: "鍓戞潵",
+            subtitle: "灏戝勾浠楀墤锛屼竴璺悜鍓?,
+            keyword: "鍓戞潵",
+            image: "https://tv.puui.qpic.cn/tv/0/mz_tv_image_frontend_442f1e-8_1212520037_1768650960239121_pic_1920x800/0?imageView2/2/w/1600"
+          }
+        ]
+      }
+    };
+
+    const pcSuggestionState = {
+      timer: null,
+      activeIndex: -1,
+      items: [],
+      loading: false,
+      requestId: 0
+    };
+
+    const mobileSuggestionState = {
+      timer: null,
+      activeIndex: -1,
+      items: [],
+      loading: false,
+      requestId: 0
+    };
+
+    async function loadConfig() {
+      try {
+        const res = await fetch("/views/index/mofa/common/static/mac/config.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("/views/index/mofa/common/static/mac/config.json HTTP " + res.status);
+        return await res.json();
+      } catch (error) {
+        console.warn("浣跨敤鍐呯疆閰嶇疆锛?, error);
+        return fallbackConfig;
+      }
+    }
+
+    function themeSettingsFromBackend() {
+      return {
+        download_url: "{$theme_settings.download_url|default=''}",
+        notice_text: "{$theme_settings.notice_text|default='鐐瑰嚮缁х画瑙傜湅 闆ㄩ湒閾?- 绗?闆?}",
+        banners: <?php echo json_encode($theme_settings['banners'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+        cards: <?php echo json_encode($theme_settings['cards'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+        bottom_tabs: <?php echo json_encode($theme_settings['bottom_tabs'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+        friend_links: <?php echo json_encode($theme_settings['friend_links'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+      };
+    }
+
+    function normalizeThemeBanner(item) {
+      if (!item || !item.image) return null;
+      return {
+        title: item.title || item.keyword || "鎺ㄨ崘",
+        subtitle: item.subtitle || "",
+        keyword: item.keyword || item.title || "",
+        image: item.image
+      };
+    }
+
+    function applyConfig(config) {
+      state.config = config;
+      state.themeSettings = themeSettingsFromBackend();
+      const settingBanners = Array.isArray(state.themeSettings.banners)
+        ? state.themeSettings.banners.map(normalizeThemeBanner).filter(Boolean)
+        : [];
+      if (settingBanners.length) {
+        state.config.banners = {
+          ...(state.config.banners || {}),
+          items: settingBanners
+        };
+      }
+      const backendSiteName = (el.topSiteName?.textContent || el.siteName?.textContent || "").trim();
+      const backendTagline = (el.siteName?.nextElementSibling?.textContent || "").trim();
+      const siteName = backendSiteName || config.site?.name || fallbackConfig.site.name;
+      const tagline = backendTagline || config.site?.tagline || fallbackConfig.site.tagline;
+      document.title = siteName;
+      el.siteName.textContent = siteName;
+      el.topSiteName.textContent = siteName;
+      el.siteName.nextElementSibling.textContent = tagline;
+      el.heroTitle.textContent = config.site?.heroTitle || fallbackConfig.site.heroTitle;
+      el.heroText.textContent = config.site?.heroText || fallbackConfig.site.heroText;
+      el.apiBase.value = config.api?.baseUrl || fallbackConfig.api.baseUrl;
+      el.proxyPrefix.value = config.api?.proxyPrefix || "";
+      el.proxyMode.value = config.api?.proxyMode || "raw";
+      el.parserPrefix.value = config.api?.parserPrefix || "";
+      el.keyword.value = config.defaults?.keyword || "";
+      el.pageInput.value = config.defaults?.page || 1;
+      applyThemeCardSettings();
+      renderBottomTabs();
+      renderSources(config.sources || fallbackConfig.sources);
+      renderApis(config.apis?.length ? config.apis : [{ name: "榛樿璧勬簮", ...config.api }]);
+    }
+
+    function pcSearchUrl(keyword) {
+      return "/s/" + encodeURIComponent(String(keyword || "").trim()) + ".html";
+    }
+
+    function highlightPcSuggestion(text, keyword) {
+      const safeText = escapeHtml(text || "");
+      const term = String(keyword || "").trim();
+      if (!term) return safeText;
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return safeText.replace(new RegExp(escapedTerm, "gi"), '<span class="top-suggestion-highlight">$&</span>');
+    }
+
+    function hidePcSuggestions() {
+      pcSuggestionState.activeIndex = -1;
+      pcSuggestionState.items = [];
+      pcSuggestionState.loading = false;
+      if (el.topSuggestions) {
+        el.topSuggestions.classList.remove("open");
+        el.topSuggestions.innerHTML = "";
+      }
+    }
+
+    function renderPcSuggestions() {
+      if (!el.topSuggestions) return;
+      const keyword = el.topKeyword.value.trim();
+      if (!keyword) {
+        hidePcSuggestions();
+        return;
+      }
+      const items = pcSuggestionState.items || [];
+      el.topSuggestions.classList.add("open");
+      if (pcSuggestionState.loading) {
+        el.topSuggestions.innerHTML = '<div class="top-suggestion-status">姝ｅ湪鑱旀兂...</div>';
+        return;
+      }
+      if (!items.length) {
+        el.topSuggestions.innerHTML = '<div class="top-suggestion-status">鏆傛棤鑱旀兂璇?/div>';
+        return;
+      }
+      el.topSuggestions.innerHTML = items.map((item, index) => {
+        return '<button type="button" class="top-suggestion-item' + (index === pcSuggestionState.activeIndex ? ' active' : '') + '" data-index="' + index + '">' + highlightPcSuggestion(item, keyword) + '</button>';
+      }).join("");
+      el.topSuggestions.querySelectorAll(".top-suggestion-item").forEach(btn => {
+        btn.addEventListener("mousedown", event => {
+          event.preventDefault();
+          const index = Number(btn.dataset.index || 0);
+          selectPcSuggestion(index);
+        });
+      });
+    }
+
+    function selectPcSuggestion(index) {
+      const item = pcSuggestionState.items[index];
+      if (!item) return;
+      el.topKeyword.value = item;
+      hidePcSuggestions();
+      window.location.href = pcSearchUrl(item);
+    }
+
+    function fetchPcSuggestions() {
+      const keyword = el.topKeyword.value.trim();
+      if (!keyword) {
+        hidePcSuggestions();
+        return;
+      }
+      const requestId = ++pcSuggestionState.requestId;
+      pcSuggestionState.loading = true;
+      renderPcSuggestions();
+      fetch("/api/search/suggestion?keyword=" + encodeURIComponent(keyword), { cache: "no-store" })
+        .then(res => res.json())
+        .then(data => {
+          if (requestId !== pcSuggestionState.requestId) return;
+          pcSuggestionState.loading = false;
+          pcSuggestionState.items = Array.isArray(data?.data) ? data.data.slice(0, 8) : [];
+          pcSuggestionState.activeIndex = -1;
+          renderPcSuggestions();
+        })
+        .catch(() => {
+          if (requestId !== pcSuggestionState.requestId) return;
+          pcSuggestionState.loading = false;
+          pcSuggestionState.items = [];
+          renderPcSuggestions();
+        });
+    }
+
+    function highlightMobileSuggestion(text, keyword) {
+      const safeText = escapeHtml(text || "");
+      const term = String(keyword || "").trim();
+      if (!term) return safeText;
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return safeText.replace(new RegExp(escapedTerm, "gi"), '<span class="mobile-suggestion-highlight">$&</span>');
+    }
+
+    function hideMobileSuggestions() {
+      mobileSuggestionState.activeIndex = -1;
+      mobileSuggestionState.items = [];
+      mobileSuggestionState.loading = false;
+      if (el.mobileSuggestions) {
+        el.mobileSuggestions.classList.remove("open");
+        el.mobileSuggestions.innerHTML = "";
+      }
+    }
+
+    function renderMobileSuggestions() {
+      if (!el.mobileSuggestions) return;
+      const keyword = el.searchInput.value.trim();
+      if (!keyword || el.searchResult.style.display === "flex") {
+        hideMobileSuggestions();
+        return;
+      }
+      const items = mobileSuggestionState.items || [];
+      el.mobileSuggestions.classList.add("open");
+      if (mobileSuggestionState.loading) {
+        el.mobileSuggestions.innerHTML = '<div class="mobile-suggestion-status">姝ｅ湪鑱旀兂...</div>';
+        return;
+      }
+      if (!items.length) {
+        el.mobileSuggestions.innerHTML = '<div class="mobile-suggestion-status">鏆傛棤鑱旀兂璇?/div>';
+        return;
+      }
+      el.mobileSuggestions.innerHTML = items.map((item, index) => {
+        return '<button type="button" class="mobile-suggestion-item' + (index === mobileSuggestionState.activeIndex ? ' active' : '') + '" data-index="' + index + '">' + highlightMobileSuggestion(item, keyword) + '</button>';
+      }).join("");
+      el.mobileSuggestions.querySelectorAll(".mobile-suggestion-item").forEach(btn => {
+        btn.addEventListener("mousedown", event => {
+          event.preventDefault();
+          const index = Number(btn.dataset.index || 0);
+          selectMobileSuggestion(index);
+        });
+      });
+    }
+
+    function selectMobileSuggestion(index) {
+      const item = mobileSuggestionState.items[index];
+      if (!item) return;
+      el.searchInput.value = item;
+      hideMobileSuggestions();
+      commitSearch(item);
+    }
+
+    function fetchMobileSuggestions() {
+      const keyword = el.searchInput.value.trim();
+      if (!keyword || el.searchResult.style.display === "flex") {
+        hideMobileSuggestions();
+        return;
+      }
+      const requestId = ++mobileSuggestionState.requestId;
+      mobileSuggestionState.loading = true;
+      renderMobileSuggestions();
+      fetch("/api/search/suggestion?keyword=" + encodeURIComponent(keyword), { cache: "no-store" })
+        .then(res => res.json())
+        .then(data => {
+          if (requestId !== mobileSuggestionState.requestId) return;
+          mobileSuggestionState.loading = false;
+          mobileSuggestionState.items = Array.isArray(data?.data) ? data.data.slice(0, 8) : [];
+          mobileSuggestionState.activeIndex = -1;
+          renderMobileSuggestions();
+        })
+        .catch(() => {
+          if (requestId !== mobileSuggestionState.requestId) return;
+          mobileSuggestionState.loading = false;
+          mobileSuggestionState.items = [];
+          renderMobileSuggestions();
+        });
+    }
+
+    function applyThemeCardSettings() {
+      const notice = (state.themeSettings.notice_text || "").trim();
+      if (notice) el.continueText.textContent = notice;
+      const downloadUrl = (state.themeSettings.download_url || "").trim();
+      const cards = Array.isArray(state.themeSettings.cards) ? state.themeSettings.cards : [];
+      const targets = [el.featureThemeBtn, el.featureHistoryBtn, el.featureFavoritesBtn];
+      targets.forEach((target, index) => {
+        const card = cards[index] || {};
+        if (!target) return;
+        if (card.title) target.querySelector("strong").textContent = card.title;
+        if (card.subtitle) target.querySelector("span").textContent = card.subtitle;
+        if (card.image) {
+          const img = target.querySelector("i img");
+          if (img) img.src = card.image;
+        }
+        target.dataset.action = card.action || target.dataset.action || "";
+        target.dataset.url = card.url || "";
+      });
+      if (!el.featureFavoritesBtn.dataset.url) el.featureFavoritesBtn.dataset.url = downloadUrl;
+      if (downloadUrl && !cards[2]) {
+        el.featureFavoritesBtn.querySelector("strong").textContent = "涓嬭浇APP";
+        el.featureFavoritesBtn.querySelector("span").textContent = "鐐瑰嚮绔嬪嵆涓嬭浇";
+      }
+      if (el.desktopDownloadBtn) {
+        el.desktopDownloadBtn.dataset.action = el.featureFavoritesBtn.dataset.action || "download";
+        el.desktopDownloadBtn.dataset.url = el.featureFavoritesBtn.dataset.url || downloadUrl;
+      }
+      if (el.desktopSearchHistoryBtn) {
+        el.desktopSearchHistoryBtn.dataset.action = "history";
+      }
+    }
+
+    function defaultBottomTabs() {
+      return [
+        { title: "棣栭〉", type: "panel", target: "home", icon: "/views/index/mofa/common/static/mac/home-1.svg", active_icon: "/views/index/mofa/common/static/mac/home-2.svg" },
+        { title: "鍙戠幇", type: "panel", target: "discover", icon: "/views/index/mofa/common/static/mac/fx-1.svg", active_icon: "/views/index/mofa/common/static/mac/fx-2.svg" },
+        { title: "鎴戠殑", type: "panel", target: "mine", icon: "/views/index/mofa/common/static/mac/user-1.svg", active_icon: "/views/index/mofa/common/static/mac/user-2.svg" }
+      ];
+    }
+
+    function renderBottomTabs() {
+      state.bottomTabs = Array.isArray(state.themeSettings.bottom_tabs) && state.themeSettings.bottom_tabs.length
+        ? state.themeSettings.bottom_tabs
+        : defaultBottomTabs();
+      el.bottomTabs.innerHTML = "";
+      el.bottomTabs.style.setProperty("--tab-count", String(Math.max(1, state.bottomTabs.length)));
+      state.bottomTabs.forEach((tab, index) => {
+        const btn = document.createElement("button");
+        btn.className = "tab";
+        btn.type = "button";
+        btn.dataset.index = String(index);
+        btn.dataset.type = tab.type || "panel";
+        btn.dataset.target = tab.target || "";
+        const icon = tab.icon ? '<img class="tab-icon tab-icon-off" src="' + escapeHtml(tab.icon) + '" alt="">' : "";
+        const activeIcon = tab.active_icon ? '<img class="tab-icon tab-icon-on" src="' + escapeHtml(tab.active_icon) + '" alt="">' : icon;
+        btn.innerHTML = '<span>' + icon + activeIcon + '</span>' + escapeHtml(tab.title || "瀵艰埅");
+        btn.addEventListener("click", () => handleBottomTab(tab));
+        el.bottomTabs.appendChild(btn);
+      });
+      updateBottomTabsActive();
+    }
+
+    function updateBottomTabsActive() {
+      Array.from(el.bottomTabs.children).forEach((btn, index) => {
+        const tab = state.bottomTabs[index] || {};
+        const active = (tab.type || "panel") === "panel" && (tab.target || "home") === state.activePanel;
+        btn.classList.toggle("active", active);
+      });
+    }
+
+    function renderSources(sources) {
+      el.source.innerHTML = "";
+      sources.forEach(source => {
+        const option = document.createElement("option");
+        option.value = source.value;
+        option.textContent = source.label;
+        el.source.appendChild(option);
+      });
+    }
+
+    function renderApis(apis) {
+      el.apiSelect.innerHTML = "";
+      apis.forEach((api, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = api.name || ("璧勬簮绔?" + (index + 1));
+        el.apiSelect.appendChild(option);
+      });
+      el.apiSelect.addEventListener("change", () => {
+        const api = apis[Number(el.apiSelect.value)] || apis[0];
+        el.apiBase.value = api.baseUrl || "";
+        el.proxyPrefix.value = api.proxyPrefix || "";
+        el.proxyMode.value = api.proxyMode || "raw";
+        el.parserPrefix.value = api.parserPrefix || "";
+        el.pageInput.value = "1";
+        el.requestUrl.value = buildUrl("videolist");
+        el.debug.textContent = "宸插垏鎹㈣祫婧愮珯銆傞椤电户缁娇鐢ㄧ儹姒滄暟鎹紱鎼滅储鎴栧垎椤垫椂鎵嶄細璇锋眰閲囬泦鎺ュ彛銆?;
+      });
+    }
+
+    function normalizeBase(value) {
+      return value.trim().replace(/\?+$/, "").replace(/\/?$/, "/");
+    }
+
+    function applyProxy(realUrl) {
+      const proxy = el.proxyPrefix.value.trim();
+      if (!proxy) return realUrl;
+
+      if (el.proxyMode.value === "encoded") {
+        return proxy + encodeURIComponent(realUrl);
+      }
+
+      if (el.proxyMode.value === "query") {
+        const separator = proxy.includes("?") ? "&" : "?";
+        return proxy + separator + "url=" + encodeURIComponent(realUrl);
+      }
+
+      return proxy.replace(/\/?$/, "/") + realUrl;
+    }
+
+    function proxiedAssetUrl(url) {
+      if (!url || !/^https?:\/\//i.test(url)) return url || "";
+      return applyProxy(url);
+    }
+
+    function imageUrl(url, kind = "vod") {
+      if (!url || !/^https?:\/\//i.test(url)) return url || "";
+      const imageConfig = state.config?.images || fallbackConfig.images;
+      const shouldProxy =
+        (kind === "vod" && imageConfig.proxyVodImages) ||
+        (kind === "ranking" && imageConfig.proxyRankingImages) ||
+        (kind === "banner" && imageConfig.proxyBannerImages);
+      return shouldProxy ? applyProxy(url) : url;
+    }
+
+    function imageFallbackSvg(label = "鏆傛棤灏侀潰") {
+      const text = String(label || "鏆傛棤灏侀潰").slice(0, 8);
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="450" viewBox="0 0 320 450"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef4ff"/><stop offset="1" stop-color="#f8fafc"/></linearGradient></defs><rect width="320" height="450" rx="24" fill="url(#g)"/><circle cx="160" cy="178" r="42" fill="#dbeafe"/><path d="M112 282h96M132 318h56" stroke="#94a3b8" stroke-width="14" stroke-linecap="round"/><text x="160" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#94a3b8">' + escapeHtml(text) + '</text></svg>');
+    }
+
+    let lazyImageObserver = null;
+
+    function getLazyImageObserver() {
+      if (lazyImageObserver) return lazyImageObserver;
+      const imageConfig = state.config?.images || fallbackConfig.images;
+      lazyImageObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const img = entry.target;
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+          lazyImageObserver.unobserve(img);
+        });
+      }, { rootMargin: imageConfig.lazyRootMargin || "160px 0px" });
+      return lazyImageObserver;
+    }
+
+    function setLazyImage(img, rawUrl, kind = "vod", eager = false) {
+      const src = imageUrl(rawUrl, kind);
+      img.classList.add("lazy-image");
+      img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+      if (!src) return;
+      if (eager || !("IntersectionObserver" in window)) {
+        img.src = src;
+        return;
+      }
+      img.dataset.src = src;
+      getLazyImageObserver().observe(img);
+    }
+
+    function setHeroFromItem(item) {
+      if (!item) return;
+      const image = item.src || item.vod_pic_slide || item.vod_pic || "";
+      if (image) {
+        const heroImage = 'url("' + imageUrl(image, "banner") + '")';
+        el.hero.style.setProperty("--hero-image", heroImage);
+        if (el.hero.parentElement) {
+          el.hero.parentElement.style.setProperty("--hero-image", heroImage);
+        }
+        document.body.style.setProperty("--hero-image", heroImage);
+      }
+      el.heroTitle.textContent = item.title || item.vod_name || state.config?.site?.heroTitle || fallbackConfig.site.heroTitle;
+      el.heroText.textContent = item.desc || item.vod_blurb || item.vod_content || item.vod_remarks || state.config?.site?.heroText || fallbackConfig.site.heroText;
+    }
+
+    function bannerItems() {
+      return state.config?.banners?.items?.length ? state.config.banners.items : fallbackConfig.banners.items;
+    }
+
+    function renderBanners() {
+      const items = bannerItems();
+      el.bannerThumbs.innerHTML = "";
+      el.bannerDots.innerHTML = "";
+      const interval = state.config?.banners?.interval || fallbackConfig.banners.interval || 4500;
+      el.hero.style.setProperty("--banner-duration", interval + "ms");
+      items.forEach((item, index) => {
+        const thumb = document.createElement("button");
+        thumb.className = "banner-thumb";
+        thumb.style.backgroundImage = 'linear-gradient(180deg, transparent, rgba(0,0,0,.55)), url("' + imageUrl(item.image, "banner") + '")';
+        thumb.textContent = item.title;
+        thumb.addEventListener("click", event => {
+          event.stopPropagation();
+          setBanner(index);
+        });
+        el.bannerThumbs.appendChild(thumb);
+
+        const dot = document.createElement("button");
+        dot.className = "banner-dot";
+        dot.setAttribute("aria-label", "鍒囨崲鍒?" + item.title);
+        dot.addEventListener("click", event => {
+          event.stopPropagation();
+          setBanner(index);
+        });
+        el.bannerDots.appendChild(dot);
+      });
+      setBanner(0);
+      initBannerSwipe();
+      startBannerTimer();
+    }
+
+    function setBanner(index) {
+      const items = bannerItems();
+      if (!items.length) return;
+      const nextIndex = (index + items.length) % items.length;
+      const previousIndex = state.bannerIndex;
+      state.bannerIndex = nextIndex;
+      const item = items[state.bannerIndex];
+      const nextImage = 'url("' + imageUrl(item.image, "banner") + '")';
+      if (el.hero.parentElement) {
+        el.hero.parentElement.style.setProperty("--hero-image", nextImage);
+      }
+      document.body.style.setProperty("--hero-image", nextImage);
+      if (previousIndex === nextIndex || !el.hero.style.getPropertyValue("--hero-image")) {
+        el.hero.style.setProperty("--hero-image", nextImage);
+        el.hero.style.setProperty("--hero-next-image", nextImage);
+      } else {
+        el.hero.style.setProperty("--hero-next-image", nextImage);
+        el.hero.classList.add("banner-fading");
+        window.clearTimeout(el.hero.__bannerFadeTimer);
+        el.hero.__bannerFadeTimer = window.setTimeout(() => {
+          el.hero.style.setProperty("--hero-image", nextImage);
+          el.hero.classList.remove("banner-fading");
+        }, 430);
+      }
+      el.heroTitle.textContent = item.title;
+      el.heroText.textContent = item.subtitle || item.keyword || "";
+      [...el.bannerThumbs.children].forEach((node, i) => {
+        const active = i === state.bannerIndex;
+        node.classList.toggle("active", active);
+        if (active) {
+          node.style.animation = "none";
+          void node.offsetWidth;
+          node.style.animation = "";
+        }
+      });
+      [...el.bannerDots.children].forEach((node, i) => node.classList.toggle("active", i === state.bannerIndex));
+    }
+
+    function startBannerTimer() {
+      window.clearInterval(state.bannerTimer);
+      const interval = state.config?.banners?.interval || fallbackConfig.banners.interval || 4500;
+      state.bannerTimer = window.setInterval(() => setBanner(state.bannerIndex + 1), interval);
+    }
+
+    function pauseBannerTimer() {
+      window.clearInterval(state.bannerTimer);
+      state.bannerTimer = null;
+    }
+
+    function restartBannerTimer() {
+      pauseBannerTimer();
+      startBannerTimer();
+    }
+
+    function moveBanner(step) {
+      const items = bannerItems();
+      if (items.length <= 1) return;
+      setBanner(state.bannerIndex + step);
+      restartBannerTimer();
+    }
+
+    function resetBannerDrag() {
+      state.bannerDrag.active = false;
+      state.bannerDrag.pointerId = null;
+      state.bannerDrag.startX = 0;
+      state.bannerDrag.startY = 0;
+      state.bannerDrag.lastX = 0;
+      state.bannerDrag.moved = false;
+      state.bannerDrag.switched = false;
+    }
+
+    function initBannerSwipe() {
+      if (!el.hero || el.hero.__bannerSwipeReady) return;
+      el.hero.__bannerSwipeReady = true;
+      const threshold = 44;
+      const verticalTolerance = 42;
+
+      el.hero.addEventListener("pointerdown", event => {
+        if (event.target.closest("button")) return;
+        if (bannerItems().length <= 1) return;
+        state.bannerDrag.active = true;
+        state.bannerDrag.pointerId = event.pointerId;
+        state.bannerDrag.startX = event.clientX;
+        state.bannerDrag.startY = event.clientY;
+        state.bannerDrag.lastX = event.clientX;
+        state.bannerDrag.moved = false;
+        state.bannerDrag.switched = false;
+        pauseBannerTimer();
+        if (el.hero.setPointerCapture) {
+          try {
+            el.hero.setPointerCapture(event.pointerId);
+          } catch (error) {}
+        }
+      });
+
+      el.hero.addEventListener("pointermove", event => {
+        const drag = state.bannerDrag;
+        if (!drag.active || drag.pointerId !== event.pointerId) return;
+        const dx = event.clientX - drag.startX;
+        const dy = event.clientY - drag.startY;
+        drag.lastX = event.clientX;
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          drag.moved = true;
+        }
+        if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+          event.preventDefault();
+        }
+      });
+
+      function finishSwipe(event) {
+        const drag = state.bannerDrag;
+        if (!drag.active || drag.pointerId !== event.pointerId) return false;
+        const dx = (event.clientX || drag.lastX) - drag.startX;
+        const dy = (event.clientY || drag.startY) - drag.startY;
+        if (Math.abs(dx) >= threshold && Math.abs(dy) <= verticalTolerance) {
+          moveBanner(dx < 0 ? 1 : -1);
+          drag.switched = true;
+        } else {
+          restartBannerTimer();
+        }
+        const wasMoved = drag.moved || drag.switched;
+        if (wasMoved) {
+          state.bannerClickSuppressUntil = Date.now() + 350;
+        }
+        resetBannerDrag();
+        return wasMoved;
+      }
+
+      el.hero.addEventListener("pointerup", event => {
+        finishSwipe(event);
+      });
+      el.hero.addEventListener("pointercancel", event => {
+        if (state.bannerDrag.active && state.bannerDrag.pointerId === event.pointerId) {
+          restartBannerTimer();
+          resetBannerDrag();
+        }
+      });
+      el.hero.addEventListener("lostpointercapture", () => {
+        if (state.bannerDrag.active) {
+          restartBannerTimer();
+          resetBannerDrag();
+        }
+      });
+    }
+
+    function searchCurrentBanner() {
+      const item = bannerItems()[state.bannerIndex];
+      searchByKeyword(item?.keyword || item?.title || "");
+    }
+
+    function buildParsedPlayUrl(url) {
+      const prefix = el.parserPrefix.value.trim();
+      if (!prefix || !url) return url || "";
+      return prefix + encodeURIComponent(url);
+    }
+
+    function openPlayer(title, url) {
+      el.playerTitle.textContent = title || "鎾斁";
+      el.playerUrl.textContent = url;
+      el.playerFrame.src = url;
+      el.openPlayerBtn.dataset.url = url;
+      el.copyPlayerBtn.dataset.url = url;
+      el.playerDrawer.classList.add("open");
+    }
+
+    function closePlayer() {
+      el.playerDrawer.classList.remove("open");
+      el.playerFrame.removeAttribute("src");
+    }
+
+    function readStore(key) {
+      try {
+        return JSON.parse(localStorage.getItem(key) || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function writeStore(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function lockAnnouncementScroll(locked) {
+      document.documentElement.style.overflow = locked ? "hidden" : "";
+      document.body.style.overflow = locked ? "hidden" : "";
+    }
+
+    function closeHomeAnnouncement(saveMode = "confirm") {
+      const announcement = state.announcementData;
+      el.homeAnnouncementOverlay.classList.remove("open");
+      el.homeAnnouncementOverlay.setAttribute("aria-hidden", "true");
+      lockAnnouncementScroll(false);
+      if (!announcement) return;
+      const storageKey = "announcement_" + announcement.id;
+      if (saveMode === "confirm" && Number(announcement.type) === 2) {
+        localStorage.setItem(storageKey, announcement.content_hash || "");
+      }
+      if (saveMode === "later" && Number(announcement.type) === 3) {
+        const days = Number(announcement.interval_days || 7);
+        localStorage.setItem(storageKey, String(Date.now() + days * 24 * 60 * 60 * 1000));
+      }
+    }
+
+    function openHomeAnnouncement(announcement) {
+      if (!announcement || !el.homeAnnouncementOverlay) return;
+      state.announcementData = announcement;
+      el.homeAnnouncementTitle.textContent = announcement.title || "骞冲彴鍏憡";
+      if (el.homeAnnouncementSubtitle) el.homeAnnouncementSubtitle.style.display = "none";
+      el.homeAnnouncementContent.innerHTML = sanitizeAnnouncementHtml(announcement.content || "");
+      const temporary = Number(announcement.type) === 3;
+      el.homeAnnouncementLaterBtn.style.display = temporary ? "" : "none";
+      el.homeAnnouncementActions.classList.toggle("has-secondary", temporary);
+      el.homeAnnouncementOverlay.classList.add("open");
+      el.homeAnnouncementOverlay.setAttribute("aria-hidden", "false");
+      lockAnnouncementScroll(true);
+      window.setTimeout(() => {
+        const scrollable = el.homeAnnouncementContent.scrollHeight > el.homeAnnouncementContent.clientHeight + 4;
+        el.homeAnnouncementContent.classList.toggle("is-scrollable", scrollable);
+      }, 0);
+    }
+
+    function sanitizeAnnouncementHtml(html) {
+      const template = document.createElement("template");
+      template.innerHTML = html;
+      template.content.querySelectorAll("script").forEach(node => node.remove());
+      return template.innerHTML;
+    }
+
+    function handleAnnouncementContentClick(event) {
+      const dataCopy = event.target.closest(".home-announcement-content [data-copy]");
+      if (dataCopy) {
+        const text = (dataCopy.getAttribute("data-copy") || "").trim();
+        if (text) {
+          event.preventDefault();
+          copyText(text);
+        }
+        return;
+      }
+      const copyFn = event.target.closest('.home-announcement-content [onclick*="copyToClipboard"]');
+      if (copyFn) {
+        const onclickText = copyFn.getAttribute("onclick") || "";
+        const match = onclickText.match(/copyToClipboard\((['"])([\s\S]*?)\1\)/);
+        if (match && match[2]) {
+          event.preventDefault();
+          event.stopPropagation();
+          copyText(match[2]);
+          showAnnouncementCopyFeedback(copyFn);
+        }
+        return;
+      }
+      const inlineCopy = event.target.closest('.home-announcement-content [onclick*="navigator.clipboard.writeText"]');
+      if (!inlineCopy) return;
+      const onclickText = inlineCopy.getAttribute("onclick") || "";
+      const match = onclickText.match(/navigator\.clipboard\.writeText\((['"])([\s\S]*?)\1\)/);
+      if (!match || !match[2]) return;
+      event.preventDefault();
+      event.stopPropagation();
+      copyText(match[2]);
+      showAnnouncementCopyFeedback(inlineCopy);
+    }
+
+    function showAnnouncementCopyFeedback(node) {
+      if (!node) return;
+      node.classList.add("copied");
+      const oldTitle = node.getAttribute("title") || "";
+      node.setAttribute("title", "宸插鍒?);
+      window.clearTimeout(node.__copyTimer);
+      node.__copyTimer = window.setTimeout(() => {
+        node.classList.remove("copied");
+        if (oldTitle) node.setAttribute("title", oldTitle);
+        else node.removeAttribute("title");
+      }, 900);
+    }
+
+    async function checkHomeAnnouncement() {
+      if (!el.homeAnnouncementOverlay || state.announcementChecked) return;
+      state.announcementChecked = true;
+      try {
+        const res = await fetch("/api/announcement/getAnnouncement", { cache: "no-store" });
+        const result = await res.json();
+        if (Number(result.code) !== 200 || !result.data) return;
+        const announcement = result.data;
+        const storageKey = "announcement_" + announcement.id;
+        const stored = localStorage.getItem(storageKey);
+        const type = Number(announcement.type || 1);
+        if (type === 2 && stored && stored === announcement.content_hash) return;
+        if (type === 3 && stored && Date.now() < Number(stored)) return;
+        openHomeAnnouncement(announcement);
+      } catch (error) {
+        state.announcementChecked = false;
+        console.warn("[鍏憡寮圭獥] 鑾峰彇鍏憡澶辫触", error);
+      }
+    }
+
+    function isFavorite(id) {
+      return readStore("cinema:favorites").some(item => String(item.vod_id) === String(id));
+    }
+
+    function toggleFavorite(item) {
+      const list = readStore("cinema:favorites");
+      const exists = list.some(saved => String(saved.vod_id) === String(item.vod_id));
+      const next = exists
+        ? list.filter(saved => String(saved.vod_id) !== String(item.vod_id))
+        : [{ ...item, saved_at: Date.now() }, ...list].slice(0, 80);
+      writeStore("cinema:favorites", next);
+    }
+
+    function addHistory(detail, episodeName, url) {
+      const list = readStore("cinema:history");
+      const entry = {
+        vod_id: detail?.vod_id,
+        vod_name: detail?.vod_name || "鏈煡褰辩墖",
+        vod_pic: detail?.vod_pic || "",
+        type_name: detail?.type_name || detail?.vod_class || "",
+        vod_remarks: episodeName || "",
+        play_url: url,
+        played_at: Date.now()
+      };
+      const next = [
+        entry,
+        ...list.filter(item => !(String(item.vod_id) === String(entry.vod_id) && item.vod_remarks === entry.vod_remarks))
+      ].slice(0, 80);
+      writeStore("cinema:history", next);
+      renderContinueWatch();
+    }
+
+    function renderContinueWatch() {
+      const hidden = sessionStorage.getItem("cinema:continueHidden") === "1";
+      const last = readStore("cinema:history")[0];
+      if (hidden || !last) {
+        el.continueWatch.style.display = hidden ? "none" : "";
+        el.continueText.textContent = state.themeSettings.notice_text || "鐐瑰嚮缁х画瑙傜湅 闆ㄩ湒閾?- 绗?闆?;
+        return;
+      }
+      el.continueWatch.style.display = "";
+      el.continueText.textContent = "鐐瑰嚮缁х画瑙傜湅 " + last.vod_name + " - " + (last.vod_remarks || "涓婃鎾斁");
+      el.continueWatch.dataset.url = last.play_url || "";
+    }
+
+    function continueLastWatch() {
+      const last = readStore("cinema:history")[0];
+      if (last?.play_url) {
+        openPlayer(last.vod_name + " 路 " + (last.vod_remarks || "缁х画瑙傜湅"), last.play_url);
+      }
+    }
+
+    function setText(node, text) {
+      if (node) node.textContent = text;
+    }
+
+    function showStoredList(title, key) {
+      activateThemePage("home");
+      const list = readStore(key);
+      el.homeSections.innerHTML = "";
+      el.grid.innerHTML = "";
+      el.message.style.display = list.length ? "none" : "grid";
+      el.message.textContent = list.length ? "" : title + "鏆傛棤鍐呭銆?;
+      setText(el.countPill, title + " " + list.length + " 鏉?);
+      setText(el.pageInfo, "鏈湴瀛樺偍");
+      setText(el.searchStatus, "");
+      list.forEach(item => el.grid.appendChild(createCard(item)));
+    }
+
+    function hideThemePanels() {
+      activateThemePage("home");
+    }
+
+    function activateThemePage(name) {
+      el.homePanel.classList.toggle("active", name === "home");
+      el.discoverPanel.classList.toggle("active", name === "discover");
+      el.minePanel.classList.toggle("active", name === "mine");
+      document.body.classList.toggle("is-home-panel", name === "home");
+      document.body.classList.toggle("is-tab-subpage", name !== "home");
+      updateBottomTabsActive();
+    }
+
+    function setActiveNav(name) {
+      [
+        el.navHomeBtn,
+        el.navShortBtn,
+        el.navDiscoverBtn,
+        el.navHistoryBtn
+      ].forEach(btn => btn.classList.remove("active"));
+
+      const map = {
+        home: [el.navHomeBtn],
+        short: [el.navShortBtn],
+        discover: [el.navDiscoverBtn],
+        history: [el.navHistoryBtn]
+      };
+      (map[name] || []).forEach(btn => btn.classList.add("active"));
+      updateBottomTabsActive();
+    }
+
+    function toggleCinemaTheme() {
+      document.body.classList.toggle("cinema-night");
+      const night = document.body.classList.contains("cinema-night");
+      el.themeBtn.textContent = night ? "鈽? : "鈽€";
+      el.themeBtn.setAttribute("aria-label", night ? "鍒囨崲鐧藉ぉ妯″紡" : "鍒囨崲澶滈棿妯″紡");
+      el.featureThemeBtn.classList.toggle("is-night", night);
+      el.featureThemeBtn.querySelector("strong").textContent = night ? "澶滈棿妯″紡" : "鐧藉ぉ妯″紡";
+      el.featureThemeBtn.querySelector("span").textContent = "鐐瑰嚮鍒囨崲涓婚";
+      updateNavStuck();
+    }
+
+    function updateNavStuck() {
+      const mobile = window.innerWidth <= 520;
+      const threshold = mobile && el.hero ? Math.max(48, el.hero.offsetTop - 16) : 28;
+      document.body.classList.toggle("nav-stuck", window.scrollY > threshold);
+    }
+
+    function showHome() {
+      state.activePanel = "home";
+      setActiveNav("home");
+      activateThemePage("home");
+      setBanner(state.bannerIndex);
+      el.keyword.value = "";
+      el.topKeyword.value = "";
+      el.category.value = "";
+      el.source.value = "";
+      el.pageInput.value = "1";
+      if (!state.homeLoaded && !el.grid.children.length && !el.homeSections.children.length) {
+        loadHomeSections();
+      }
+      checkHomeAnnouncement();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showShorts() {
+      state.activePanel = "home";
+      setActiveNav("short");
+      activateThemePage("home");
+      el.keyword.value = "";
+      el.topKeyword.value = "";
+      el.category.value = "";
+      el.source.value = "";
+      el.pageInput.value = "1";
+      el.homeSections.innerHTML = "";
+      loadRankingChannel("鐭墽");
+    }
+
+    function showDiscover() {
+      state.activePanel = "discover";
+      setActiveNav("discover");
+      renderDiscoverPanel();
+    }
+
+    function showMine() {
+      state.activePanel = "mine";
+      setActiveNav("history");
+      renderMinePanel();
+    }
+
+    function clearMainContentForPanel() {
+      activateThemePage(state.activePanel);
+      setText(el.countPill, "");
+      setText(el.pageInfo, "");
+      setText(el.searchStatus, "");
+    }
+
+    function renderDiscoverPanel() {
+      clearMainContentForPanel();
+      const links = Array.isArray(state.themeSettings.friend_links) ? state.themeSettings.friend_links : [];
+      const items = links.length ? links : [{ title: "鎮﹀績鎼滅储", url: "https://pan.033030.xyz", icon: "", description: "鍙戠幇鍜屽垎浜紭璐ㄨ祫婧? }];
+      if (state.panelRendered.discover) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      el.discoverPanel.innerHTML =
+        '<div class="discover-page">' +
+          '<section class="discover-head-card"><div class="discover-head-content">' +
+            '<h1 class="discover-title">鍙戠幇</h1>' +
+            '<p class="discover-desc">鍙戠幇鍜屽垎浜紭璐ㄨ祫婧愶紝缃戠珯銆佽蒋浠躲€佸伐鍏枫€佸崥瀹㈤兘鍙互鍦ㄨ繖閲屽睍绀恒€?/p>' +
+            '<div class="discover-tags"><span class="discover-tag">浼樿川璧勬簮</span><span class="discover-tag orange">鍙嬮摼鎺ㄨ崘</span><span class="discover-tag gray">寮€鏀炬敹褰?/span></div>' +
+          '</div></section>' +
+          '<section class="discover-section">' +
+            '<div class="discover-section-header"><h2 class="discover-section-title">璧勬簮鍒楄〃</h2><span class="discover-section-more">鍏?' + items.length + ' 涓?/span></div>' +
+            '<div class="resource-list"></div>' +
+            '<button class="submit-card" type="button" data-discover-submit><div class="submit-icon"><img src="/views/index/mofa/common/static/mac/submit.svg" alt=""></div><div><div class="submit-title">鎻愪氦浣犵殑璧勬簮</div><div class="submit-desc">鏀寔鎻愪氦缃戠珯銆佽蒋浠躲€佸伐鍏枫€佸崥瀹㈢瓑锛屽彧闇€瑕佸浘鏍囥€佹爣棰樺拰浠嬬粛銆?/div></div></button>' +
+          '</section>' +
+          '<div class="discover-footer-tips">寤鸿浼樺厛鏀跺綍绋冲畾銆佸共鍑€銆佸疄鐢ㄧ殑璧勬簮锛岄伩鍏嶄綆璐ㄩ噺鎴栧け鏁堥摼鎺ャ€?/div>' +
+        '</div>';
+      const grid = el.discoverPanel.querySelector(".resource-list");
+      items.forEach((link, index) => {
+        const kind = discoverResourceKind(link, index);
+        const btn = document.createElement("button");
+        btn.className = "resource-card";
+        btn.type = "button";
+        const iconHtml = link.icon
+          ? '<img src="' + escapeHtml(link.icon) + '" alt="">'
+          : escapeHtml(discoverResourceInitial(link, kind));
+        const tags = discoverResourceTags(link, kind).map(tag => '<span class="meta-tag">' + escapeHtml(tag) + '</span>').join("");
+        btn.innerHTML =
+          '<div class="resource-logo ' + kind.className + '">' + iconHtml + '</div>' +
+          '<div class="resource-main"><div class="resource-top"><div class="resource-title">' + escapeHtml(link.title || "鏈懡鍚?) + '</div><span class="resource-badge ' + kind.className + '">' + escapeHtml(kind.label) + '</span></div>' +
+          '<div class="resource-desc">' + escapeHtml(link.description || link.url || "鍙戠幇鍜屽垎浜紭璐ㄨ祫婧?) + '</div>' +
+          '<div class="resource-meta">' + tags + '</div></div>' +
+          '<div class="resource-arrow">' + mineIcon("chevron") + '</div>';
+        btn.addEventListener("click", () => confirmExternalUrl(link.url || ""));
+        grid.appendChild(btn);
+      });
+      const submitBtn = el.discoverPanel.querySelector("[data-discover-submit]");
+      if (submitBtn) {
+        submitBtn.addEventListener("click", () => showMineToast("鎻愪氦璧勬簮鍏ュ彛寰呴厤缃?));
+      }
+      state.panelRendered.discover = true;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function discoverResourceKind(link, index) {
+      const text = [link.title, link.description, link.url].filter(Boolean).join(" ").toLowerCase();
+      if (text.includes("blog") || text.includes("鍗氬") || text.includes("鏂囩珷")) return { label: "鍗氬", className: "blog", tags: ["鍗氬", "鏂囩珷", "鍙嬮摼"] };
+      if (text.includes("tool") || text.includes("宸ュ叿") || text.includes("json") || text.includes("api")) return { label: "宸ュ叿", className: "tool", tags: ["宸ュ叿", "鏁堢巼", "鍙嬮摼"] };
+      if (text.includes("app") || text.includes("杞欢") || text.includes("涓嬭浇")) return { label: "杞欢", className: "software", tags: ["杞欢", "搴旂敤", "鍙嬮摼"] };
+      const fallback = [
+        { label: "缃戠珯", className: "", tags: ["缃戠珯", "璧勬簮瀵艰埅", "鍙嬮摼"] },
+        { label: "杞欢", className: "software", tags: ["杞欢", "鏁堢巼", "宸ュ叿"] },
+        { label: "宸ュ叿", className: "tool", tags: ["宸ュ叿", "瀹炵敤", "鍦ㄧ嚎"] },
+        { label: "鍗氬", className: "blog", tags: ["鍗氬", "鏂囩珷", "鍒嗕韩"] }
+      ];
+      return fallback[index % fallback.length];
+    }
+
+    function discoverResourceInitial(link, kind) {
+      if (kind.label === "宸ュ叿" && (link.title || "").toLowerCase().includes("json")) return "{ }";
+      return (link.title || kind.label || "绔?).slice(0, 1);
+    }
+
+    function discoverResourceTags(link, kind) {
+      const tags = Array.isArray(link.tags) ? link.tags : [];
+      const normalized = tags.map(tag => String(tag || "").trim()).filter(Boolean);
+      return (normalized.length ? normalized : kind.tags).slice(0, 3);
+    }
+
+    function renderMinePanel() {
+      clearMainContentForPanel();
+      const searchCount = readStore("cinema:searchHistory").length;
+      const favoriteCount = readStore("cinema:favorites").length;
+      if (!state.panelRendered.mine) {
+        el.minePanel.innerHTML = renderMinePanelHtml(searchCount, favoriteCount);
+        bindMinePanelEvents();
+        state.panelRendered.mine = true;
+      } else {
+        const searchNode = el.minePanel.querySelector("#mineSearchCount");
+        const favoriteNode = el.minePanel.querySelector("#mineFavoriteCount");
+        if (searchNode) searchNode.innerHTML = searchCount + "<span>鏉?/span>";
+        if (favoriteNode) favoriteNode.innerHTML = favoriteCount + "<span>鏉?/span>";
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (state.mineInfoLoaded && state.mineInfo) {
+        const ipNode = el.minePanel.querySelector("#mineIp");
+        const locationNode = el.minePanel.querySelector("#mineLocation");
+        const descNode = el.minePanel.querySelector("#mineProfileDesc");
+        if (ipNode) ipNode.textContent = state.mineInfo.ip || "鏈煡";
+        if (locationNode) locationNode.innerHTML = '<span class="status-dot success"></span>' + escapeHtml(state.mineInfo.location || "宸茶幏鍙?IP");
+        if (descNode) descNode.textContent = state.mineInfo.ip ? "娆㈣繋鍥炴潵锛屽凡涓轰綘鍚屾鏈湴璁块棶鐘舵€? : "褰撳墠璁垮淇℃伅浠呮湰鍦板睍绀?;
+      } else {
+        loadMineIpInfo();
+      }
+    }
+
+    function getBrowserInfo() {
+      const ua = navigator.userAgent;
+      if (ua.includes("Edg/")) return "Edge " + ((ua.match(/Edg\/([\d.]+)/) || [])[1] || "").split(".")[0];
+      if (ua.includes("Chrome/") && !ua.includes("Edg/")) return "Chrome " + ((ua.match(/Chrome\/([\d.]+)/) || [])[1] || "").split(".")[0];
+      if (ua.includes("Safari/") && ua.includes("Version/")) return "Safari " + ((ua.match(/Version\/([\d.]+)/) || [])[1] || "").split(".")[0];
+      if (ua.includes("Firefox/")) return "Firefox " + ((ua.match(/Firefox\/([\d.]+)/) || [])[1] || "").split(".")[0];
+      return "鏈煡娴忚鍣?;
+    }
+
+    function getSystemInfo() {
+      const ua = navigator.userAgent;
+      if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+      if (/Android/i.test(ua)) return "Android";
+      if (/Windows/i.test(ua)) return "Windows";
+      if (/Mac OS X/i.test(ua)) return "macOS";
+      if (/Linux/i.test(ua)) return "Linux";
+      return "鏈煡绯荤粺";
+    }
+
+    function mineNetworkText() {
+      return navigator.onLine ? "缃戠粶姝ｅ父" : "绂荤嚎妯″紡";
+    }
+
+    function mineProfileDesc() {
+      return navigator.onLine ? "娆㈣繋鍥炴潵锛屽凡涓轰綘鍚屾鏈湴璁块棶鐘舵€? : "褰撳墠澶勪簬绂荤嚎鐘舵€侊紝閮ㄥ垎淇℃伅鍙兘涓嶅彲鐢?;
+    }
+
+    function mineIcon(name) {
+      const icons = {
+        user: '<path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle>',
+        search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>',
+        star: '<path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.9L12 3z"></path>',
+        ip: '<rect x="3" y="4" width="18" height="14" rx="3"></rect><path d="M8 20h8"></path><path d="M12 18v2"></path><path d="M8 9h.01"></path><path d="M12 9h.01"></path><path d="M16 9h.01"></path>',
+        location: '<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"></path><circle cx="12" cy="10" r="2.5"></circle>',
+        browser: '<circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a14 14 0 0 1 0 18"></path><path d="M12 3a14 14 0 0 0 0 18"></path>',
+        system: '<rect x="4" y="5" width="16" height="12" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path>',
+        trash: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
+        info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7h.01"></path>',
+        plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+        chevron: '<path d="m9 6 6 6-6 6"></path>'
+      };
+      return '<svg class="mine-icon" viewBox="0 0 24 24" aria-hidden="true">' + (icons[name] || icons.info) + '</svg>';
+    }
+
+    function renderMinePanelHtml(searchCount, favoriteCount) {
+      return '<div class="mine-page">' +
+        '<section class="profile-card"><div class="profile-main"><div class="avatar">' + mineIcon("user") + '</div><div class="profile-info"><div class="profile-title">鏈湴璁垮</div><div class="profile-desc" id="mineProfileDesc">' + escapeHtml(mineProfileDesc()) + '</div></div></div><div class="tag-row"><span class="tag">鏈満璁块棶</span><span class="tag gray">鏈櫥褰?/span><span class="tag orange" id="mineNetworkTag">' + escapeHtml(mineNetworkText()) + '</span></div></section>' +
+        '<section class="stats-grid"><button class="stat-card blue" type="button" data-mine-action="history"><div class="stat-icon">' + mineIcon("search") + '</div><div class="stat-label">鎼滅储鍘嗗彶</div><div class="stat-value" id="mineSearchCount">' + searchCount + '<span>鏉?/span></div></button><button class="stat-card orange" type="button" data-mine-action="favorites"><div class="stat-icon">' + mineIcon("star") + '</div><div class="stat-label">鏈湴鏀惰棌</div><div class="stat-value" id="mineFavoriteCount">' + favoriteCount + '<span>鏉?/span></div></button></section>' +
+        '<section class="section"><div class="section-header"><h2 class="section-title">璁惧淇℃伅</h2><span class="section-subtitle">浠呮湰鍦板睍绀?/span></div><div class="info-card">' +
+        '<div class="info-item"><div class="info-left"><div class="info-icon">' + mineIcon("ip") + '</div><span>IP 鍦板潃</span></div><div class="info-value" id="mineIp">鏈煡</div></div>' +
+        '<div class="info-item"><div class="info-left"><div class="info-icon">' + mineIcon("location") + '</div><span>浣嶇疆</span></div><div class="info-value" id="mineLocation"><span class="status-dot error"></span>璇诲彇澶辫触</div></div>' +
+        '<div class="info-item" data-mine-action="ua"><div class="info-left"><div class="info-icon">' + mineIcon("browser") + '</div><span>娴忚鍣?/span></div><div class="info-value">' + escapeHtml(getBrowserInfo()) + '</div></div>' +
+        '<div class="info-item"><div class="info-left"><div class="info-icon">' + mineIcon("system") + '</div><span>绯荤粺</span></div><div class="info-value">' + escapeHtml(getSystemInfo()) + '</div></div>' +
+        '</div></section>' +
+        '<section class="section"><div class="section-header"><h2 class="section-title">甯哥敤鍔熻兘</h2><span class="section-subtitle">绠＄悊鏈湴鏁版嵁</span></div><div class="menu-card">' +
+        '<button class="menu-item" type="button" data-mine-action="history"><div class="menu-icon blue">' + mineIcon("search") + '</div><div class="menu-content"><div class="menu-title">鎼滅储鍘嗗彶</div><div class="menu-desc">鏌ョ湅鏈€杩戞悳绱㈣褰?/div></div><div class="menu-arrow">' + mineIcon("chevron") + '</div></button>' +
+        '<button class="menu-item" type="button" data-mine-action="favorites"><div class="menu-icon green">' + mineIcon("star") + '</div><div class="menu-content"><div class="menu-title">鏈湴鏀惰棌</div><div class="menu-desc">绠＄悊浣犳敹钘忕殑鍐呭</div></div><div class="menu-arrow">' + mineIcon("chevron") + '</div></button>' +
+        '<button class="menu-item" type="button" data-mine-action="clear"><div class="menu-icon purple">' + mineIcon("trash") + '</div><div class="menu-content"><div class="menu-title">娓呯悊缂撳瓨</div><div class="menu-desc">閲婃斁鏈湴涓存椂瀛樺偍绌洪棿</div></div><div class="menu-arrow">' + mineIcon("chevron") + '</div></button>' +
+        '<button class="menu-item" type="button" data-mine-action="about"><div class="menu-icon gray">' + mineIcon("info") + '</div><div class="menu-content"><div class="menu-title">鍏充簬搴旂敤</div><div class="menu-desc">鏌ョ湅鐗堟湰淇℃伅涓庝娇鐢ㄨ鏄?/div></div><div class="menu-arrow">' + mineIcon("chevron") + '</div></button>' +
+        '</div></section><div class="footer-tips">褰撳墠淇℃伅浠呯敤浜庢湰鍦板睍绀猴紝涓嶄細涓诲姩涓婁紶浣犵殑闅愮鏁版嵁銆?/div></div>';
+    }
+
+    function bindMinePanelEvents() {
+      el.minePanel.querySelectorAll("[data-mine-action]").forEach(node => {
+        node.addEventListener("click", () => {
+          const action = node.dataset.mineAction;
+          if (action === "history") {
+            openSearchHistoryPage();
+            return;
+          }
+          if (action === "favorites") {
+            showMineToast("寰呭紑鍙?);
+            return;
+          }
+          if (action === "clear") {
+            localStorage.removeItem("cinema:searchHistory");
+            showMineToast("缂撳瓨宸叉竻鐞?);
+            state.panelRendered.mine = false;
+            renderMinePanel();
+            return;
+          }
+          if (action === "ua") {
+            showMineToast(navigator.userAgent);
+            return;
+          }
+          if (action === "about") {
+            showMineToast("褰撳墠鐗堟湰 v1.0.0");
+          }
+        });
+      });
+      window.addEventListener("online", updateMineNetworkStatus);
+      window.addEventListener("offline", updateMineNetworkStatus);
+    }
+
+    function updateMineNetworkStatus() {
+      const networkTag = el.minePanel.querySelector("#mineNetworkTag");
+      const profileDesc = el.minePanel.querySelector("#mineProfileDesc");
+      if (networkTag) networkTag.textContent = mineNetworkText();
+      if (profileDesc) profileDesc.textContent = mineProfileDesc();
+    }
+
+    function showMineToast(message) {
+      if (!el.mineToast) return;
+      el.mineToast.textContent = message;
+      const announcementOpen = el.homeAnnouncementOverlay?.classList.contains("open");
+      document.body.classList.toggle("has-announcement-toast", Boolean(announcementOpen));
+      el.mineToast.classList.add("show");
+      window.clearTimeout(el.mineToast.__timer);
+      el.mineToast.__timer = window.setTimeout(() => {
+        el.mineToast.classList.remove("show");
+        document.body.classList.remove("has-announcement-toast");
+      }, 1800);
+    }
+
+    async function loadMineIpInfo() {
+      const ipNode = el.minePanel.querySelector("#mineIp");
+      const locationNode = el.minePanel.querySelector("#mineLocation");
+      const descNode = el.minePanel.querySelector("#mineProfileDesc");
+      try {
+        const ipRes = await fetch("https://v.api.aa1.cn/api/myip/index.php?aa1=json", { cache: "no-store" });
+        const ipData = await ipRes.json();
+        const ip = ipData.ip || ipData.IP || ipData.myip || ipData.data?.ip || ipData.data?.myip || "";
+        if (ipNode) ipNode.textContent = ip || "鏈煡";
+        if (!ip) throw new Error("IP涓虹┖");
+        const locationRes = await fetch("https://wzapi.com/api/dingwei?ip=" + encodeURIComponent(ip), { cache: "no-store" });
+        const locationData = await locationRes.json();
+        const locationSource = locationData.data || locationData;
+        const location = locationData.address || locationData.addr || locationSource.address || locationSource.location || [
+          locationSource.country,
+          locationSource.prov || locationSource.province,
+          locationSource.city,
+          locationSource.area,
+          locationSource.isp
+        ].filter(Boolean).join(" ");
+        if (locationNode) locationNode.innerHTML = '<span class="status-dot success"></span>' + escapeHtml(location || "宸茶幏鍙?IP");
+        if (descNode) descNode.textContent = "娆㈣繋鍥炴潵锛屽凡涓轰綘鍚屾鏈湴璁块棶鐘舵€?;
+        state.mineInfo = { ip, location: location || "鏈煡" };
+        state.mineInfoLoaded = true;
+      } catch (error) {
+        if (ipNode && ipNode.textContent === "璇诲彇涓?) ipNode.textContent = "璇诲彇澶辫触";
+        if (locationNode) locationNode.innerHTML = '<span class="status-dot error"></span>璇诲彇澶辫触';
+      }
+    }
+
+    function confirmExternalUrl(url) {
+      if (!url) return;
+      state.pendingExternalUrl = url;
+      el.externalConfirmText.textContent = url;
+      el.externalConfirm.classList.add("open");
+      el.externalConfirm.setAttribute("aria-hidden", "false");
+    }
+
+    function closeExternalConfirm() {
+      state.pendingExternalUrl = "";
+      el.externalConfirm.classList.remove("open");
+      el.externalConfirm.setAttribute("aria-hidden", "true");
+    }
+
+    function handleBottomTab(tab) {
+      const type = tab.type || "panel";
+      const target = tab.target || "";
+      if (type === "panel") {
+        if (target === "home") showHome();
+        else if (target === "discover") showDiscover();
+        else if (target === "mine") showMine();
+        return;
+      }
+      if (type === "search") {
+        searchByKeyword(target);
+        return;
+      }
+      if (type === "path") {
+        if (target) window.location.href = target;
+        return;
+      }
+      if (type === "url") {
+        confirmExternalUrl(target);
+        return;
+      }
+      if (type === "action") {
+        if (target === "theme") toggleCinemaTheme();
+        if (target === "history") openSearchHistoryPage();
+      }
+    }
+
+    function applyInitialPanelFromUrl() {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      if (tab === "discover") {
+        showDiscover();
+      } else if (tab === "mine") {
+        showMine();
+      } else {
+        activateThemePage(state.activePanel || "home");
+      }
+    }
+
+    function runSearch() {
+      const keyword = el.topKeyword.value.trim() || el.keyword.value.trim();
+      if (!keyword) return;
+      el.keyword.value = keyword;
+      el.topKeyword.value = keyword;
+      hidePcSuggestions();
+      window.location.href = pcSearchUrl(keyword);
+    }
+
+    function lockPageScroll() {
+      if (document.body.classList.contains("search-lock")) return;
+      state.searchScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = "-" + state.searchScrollY + "px";
+      document.body.classList.add("search-lock");
+    }
+
+    function unlockPageScroll() {
+      if (!document.body.classList.contains("search-lock")) return;
+      const scrollY = state.searchScrollY || 0;
+      document.body.classList.remove("search-lock");
+      document.body.style.top = "";
+      window.scrollTo(0, scrollY);
+      state.searchScrollY = 0;
+    }
+
+    function openSearchPage(preset = "", options = {}) {
+      lockPageScroll();
+      el.searchPage.classList.add("open");
+      el.searchBody.style.display = "block";
+      el.searchResult.style.display = "none";
+      el.searchInput.value = preset;
+      renderSearchHome();
+      if (preset.trim()) fetchMobileSuggestions();
+      else hideMobileSuggestions();
+      if (options.focus !== false) {
+        window.setTimeout(() => el.searchInput.focus(), 80);
+      }
+    }
+
+    function openSearchHistoryPage() {
+      setActiveNav("discover");
+      openSearchPage();
+    }
+
+    function closeSearchPage() {
+      closeSearchEventSource();
+      el.searchPage.classList.remove("open");
+      el.searchInput.value = "";
+      hideMobileSuggestions();
+      el.searchBody.style.display = "block";
+      el.searchResult.style.display = "none";
+      unlockPageScroll();
+    }
+
+    function commitSearch(keyword) {
+      const value = keyword.trim();
+      if (!value) return;
+      hideMobileSuggestions();
+      const history = readStore("cinema:searchHistory");
+      writeStore("cinema:searchHistory", [value, ...history.filter(item => item !== value)].slice(0, 20));
+      el.searchBody.style.display = "none";
+      el.searchResult.style.display = "flex";
+      state.searchKeyword = value;
+      state.searchPanType = 0;
+      el.searchInput.value = value;
+      renderSearchResultHeader(value, 0, true);
+      el.searchResult.classList.add("is-empty");
+      el.resultGrid.className = "search-result-list";
+      el.resultGrid.innerHTML = '<div class="empty">鎼滅储涓?..</div>';
+      startAggregateSearch(value, el.resultGrid);
+    }
+
+    function panTabs() {
+      return [
+        { type: 0, name: "澶稿厠缃戠洏" },
+        { type: 2, name: "鐧惧害缃戠洏" },
+        { type: 3, name: "UC缃戠洏" },
+        { type: 4, name: "杩呴浄缃戠洏" }
+      ];
+    }
+
+    function currentPanName() {
+      const current = panTabs().find(tab => Number(tab.type) === Number(state.searchPanType));
+      return current ? current.name : "褰撳墠缃戠洏";
+    }
+
+    function renderSearchResultHeader(keyword, count, loading = false) {
+      el.resultText.innerHTML = '鍏抽敭璇嶃€?span class="result-keyword">' + escapeHtml(keyword) + '</span>銆?;
+      el.resultCount.textContent = loading ? "- 宸叉壘鍒?" + count + " 鏉? : "- " + count + "鏉?;
+      el.resultPanTabs.innerHTML = "";
+      panTabs().forEach(tab => {
+        const btn = document.createElement("button");
+        btn.className = "result-pan-tab" + (Number(state.searchPanType) === tab.type ? " active" : "") + (state.searchLoading ? " loading" : "");
+        btn.textContent = tab.name;
+        btn.addEventListener("click", () => {
+          if (Number(state.searchPanType) === tab.type) return;
+          state.searchPanType = tab.type;
+          closeSearchEventSource();
+          const cached = state.searchCache.get(searchCacheKey(state.searchKeyword, tab.type));
+          if (cached) {
+            state.searchItems = cached.slice();
+            state.searchLoading = false;
+            state.searchPendingReplace = false;
+            renderSearchResultHeader(state.searchKeyword, state.searchItems.length);
+            renderSearchItems(el.resultGrid, state.searchItems);
+            return;
+          }
+          showSearchToast("姝ｅ湪鎼滅储锛? + tab.name);
+          renderSearchResultHeader(state.searchKeyword, 0, true);
+          startAggregateSearch(state.searchKeyword, el.resultGrid);
+        });
+        el.resultPanTabs.appendChild(btn);
+      });
+    }
+
+    function showSearchToast(message) {
+      if (!el.searchToast) return;
+      el.searchToast.textContent = message;
+      el.searchToast.classList.add("show");
+      window.clearTimeout(el.searchToast.__timer);
+      el.searchToast.__timer = window.setTimeout(() => el.searchToast.classList.remove("show"), 1800);
+    }
+
+    function renderSearchStatus(target, text) {
+      const status = document.createElement("div");
+      status.className = "search-status-line";
+      status.innerHTML = '<span class="search-status-dot"></span><span>' + escapeHtml(text) + '</span>';
+      target.appendChild(status);
+      return status;
+    }
+
+    function setStatusText(status, text, loading = true) {
+      status.className = loading ? "search-status-line" : "search-resource-meta";
+      status.innerHTML = loading ? '<span class="search-status-dot"></span><span>' + escapeHtml(text) + '</span>' : escapeHtml(text);
+    }
+
+    function renderSearchEmpty(target, title, text, error = false) {
+      el.searchResult.classList.add("is-empty");
+      target.innerHTML = "";
+      const empty = document.createElement("div");
+      empty.className = "search-empty-state" + (error ? " error" : "");
+      empty.innerHTML = '<div><strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(text || "") + '</span></div>';
+      target.appendChild(empty);
+    }
+
+    function searchCacheKey(keyword, panType = state.searchPanType) {
+      return String(keyword || "").trim() + "|" + String(panType);
+    }
+
+    function renderSearchItems(target, items) {
+      el.searchResult.classList.toggle("is-empty", !items.length);
+      target.className = "search-result-list";
+      target.innerHTML = "";
+      items.forEach((item, index) => target.appendChild(createSearchResultCard(item, index)));
+    }
+
+    function closeSearchEventSource() {
+      state.searchRequestId += 1;
+      if (state.searchEventSource) {
+        state.searchEventSource.close();
+        state.searchEventSource = null;
+      }
+    }
+
+    function startAggregateSearch(keyword, target, options = {}) {
+      closeSearchEventSource();
+      const requestId = state.searchRequestId;
+      const previousVisibleCount = options.keepPrevious ? target.querySelectorAll(".search-resource-card").length : 0;
+      state.searchItems = [];
+      state.searchKeyword = keyword;
+      state.searchLoading = true;
+      state.searchPendingReplace = Boolean(options.keepPrevious);
+      target.querySelectorAll(".search-status-line").forEach(node => node.remove());
+      renderSearchResultHeader(keyword, state.searchPendingReplace ? previousVisibleCount : 0, true);
+      el.searchResult.classList.add("is-empty");
+      target.className = "search-result-list";
+      if (!state.searchPendingReplace) {
+        target.innerHTML = "";
+      }
+      const status = renderSearchStatus(target, "姝ｅ湪鎼滅储锛? + currentPanName());
+
+      const url = "/api/other/web_search?title=" + encodeURIComponent(keyword) + "&is_type=" + encodeURIComponent(state.searchPanType) + "&is_show=0";
+      el.requestUrl.value = url;
+      const source = new EventSource(url);
+      state.searchEventSource = source;
+
+      source.onmessage = event => {
+        if (requestId !== state.searchRequestId) return;
+        if (event.data === "[DONE]") {
+          closeSearchEventSource();
+          state.searchLoading = false;
+          state.searchPendingReplace = false;
+          state.searchCache.set(searchCacheKey(keyword), state.searchItems.slice());
+          if (state.searchItems.length) {
+            renderSearchResultHeader(keyword, state.searchItems.length);
+            status.remove();
+          } else {
+            if (options.keepPrevious) {
+              renderSearchResultHeader(keyword, previousVisibleCount);
+              status.remove();
+              showSearchToast("褰撳墠缃戠洏鏆傛棤缁撴灉");
+            } else {
+              renderSearchResultHeader(keyword, 0);
+              renderSearchEmpty(target, currentPanName() + "鏆傛棤缁撴灉", "鎹釜鍏抽敭璇嶆垨鍒囨崲鍏跺畠缃戠洏绫诲瀷璇曡瘯");
+            }
+          }
+          return;
+        }
+
+        let data = null;
+        try {
+          data = JSON.parse(event.data);
+        } catch (error) {
+          return;
+        }
+
+        if (data.type === "progress") {
+          setStatusText(status, data.message || ("姝ｅ湪鎼滅储锛? + currentPanName()));
+          return;
+        }
+
+        if (!data || !data.url || !data.title) return;
+        data = normalizeSearchItem(data);
+        el.searchResult.classList.remove("is-empty");
+        if (state.searchPendingReplace) {
+          target.innerHTML = "";
+          target.appendChild(status);
+          state.searchPendingReplace = false;
+        }
+        state.searchItems.push(data);
+        renderSearchResultHeader(keyword, state.searchItems.length, true);
+        setStatusText(status, currentPanName() + "宸叉壘鍒?" + state.searchItems.length + " 鏉★紝缁х画鎼滅储涓?);
+        target.appendChild(createSearchResultCard(data, state.searchItems.length - 1));
+      };
+
+      source.onerror = () => {
+        if (requestId !== state.searchRequestId) return;
+        const hasResult = state.searchItems.length > 0;
+        closeSearchEventSource();
+        state.searchLoading = false;
+        state.searchPendingReplace = false;
+        if (hasResult) state.searchCache.set(searchCacheKey(keyword), state.searchItems.slice());
+        if (hasResult) {
+          renderSearchResultHeader(keyword, state.searchItems.length);
+          status.remove();
+        } else {
+          renderSearchResultHeader(keyword, options.keepPrevious ? previousVisibleCount : 0);
+          if (options.keepPrevious) {
+            status.remove();
+            showSearchToast("鎼滅储宸插垏鎹㈡垨涓柇");
+          } else {
+            renderSearchEmpty(target, currentPanName() + "鎼滅储杩炴帴涓柇", "璇风◢鍚庨噸璇曪紝鎴栧垏鎹㈠叾瀹冪綉鐩樼被鍨?, true);
+          }
+        }
+      };
+    }
+
+    function renderSearchHome() {
+      renderSearchHistory();
+    }
+
+    function renderSearchHistory() {
+      const history = readStore("cinema:searchHistory");
+      el.searchHistoryChips.innerHTML = "";
+      if (!history.length) {
+        el.searchHistoryChips.innerHTML = '<span class="meta">鏆傛棤鎼滅储璁板綍</span>';
+        return;
+      }
+      history.forEach(keyword => {
+        const btn = document.createElement("button");
+        btn.className = "history-chip" + (keyword === state.searchKeyword ? " active" : "");
+        btn.textContent = keyword;
+        btn.addEventListener("click", () => {
+          state.searchKeyword = keyword;
+          commitSearch(keyword);
+        });
+        el.searchHistoryChips.appendChild(btn);
+      });
+    }
+
+    function renderHotSearch() {
+      if (!el.hotSearchGrid) return;
+      const hot = [];
+      bannerItems().forEach(item => {
+        if (item.keyword || item.title) hot.push(item.keyword || item.title);
+      });
+      readStore("cinema:searchHistory").forEach(item => hot.push(item));
+      ["寰¤祼灏忎坏浣?, "鍓戞潵", "娌﹂櫡", "闆ㄩ湒閾?, "浠欓€?, "瀹岀編涓栫晫"].forEach(item => hot.push(item));
+      el.hotSearchGrid.innerHTML = "";
+      [...new Set(hot)].slice(0, 10).forEach((keyword, index) => {
+        const btn = document.createElement("button");
+        btn.className = "hot-item";
+        btn.innerHTML = '<span class="hot-rank ' + (index < 3 ? "top" : "") + '">' + (index + 1) + '</span><span class="hot-text">' + keyword + '</span>';
+        btn.addEventListener("click", () => commitSearch(keyword));
+        el.hotSearchGrid.appendChild(btn);
+      });
+    }
+
+    async function loadGuessList(typeId = "") {
+      if (!el.guessGrid) return;
+      el.guessGrid.innerHTML = '<div class="empty">鍔犺浇涓?..</div>';
+      try {
+        const currentCategory = el.category.value;
+        const currentKeyword = el.keyword.value;
+        el.category.value = typeId;
+        el.keyword.value = "";
+        const data = await requestJson(buildUrl("videolist"));
+        el.category.value = currentCategory;
+        el.keyword.value = currentKeyword;
+        el.guessGrid.innerHTML = "";
+        (data.list || []).slice(0, 6).forEach(item => el.guessGrid.appendChild(createCard(item)));
+      } catch (error) {
+        el.guessGrid.innerHTML = '<div class="empty error">鎺ㄨ崘鍔犺浇澶辫触</div>';
+      }
+    }
+
+    function buildUrl(action) {
+      const base = normalizeBase(el.apiBase.value);
+      const params = new URLSearchParams();
+      params.set("ac", action);
+
+      if (action === "videolist") {
+        params.set("pg", String(Math.max(1, Number(el.pageInput.value) || 1)));
+        if (el.category.value) params.set("t", el.category.value);
+        if (el.keyword.value.trim()) params.set("wd", el.keyword.value.trim());
+      }
+
+      let url = base;
+      if (el.source.value) {
+        url = base.replace(/\/$/, "") + "/from/" + encodeURIComponent(el.source.value) + "/";
+      }
+
+      return applyProxy(url + "?" + params.toString());
+    }
+
+    function buildSectionUrl(section) {
+      const base = normalizeBase(el.apiBase.value);
+      const params = new URLSearchParams();
+      params.set("ac", "videolist");
+      params.set("pg", String(section.page || 1));
+      if (section.type) params.set("t", section.type);
+      if (section.keyword) params.set("wd", section.keyword);
+
+      let url = base;
+      if (section.source) {
+        url = base.replace(/\/$/, "") + "/from/" + encodeURIComponent(section.source) + "/";
+      }
+
+      return applyProxy(url + "?" + params.toString());
+    }
+
+    function buildRankingUrl(channel, mobileMode = false) {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      const params = new URLSearchParams();
+      params.set("channel", channel);
+      if (mobileMode) params.set("is_m", "1");
+      return ranking.url + "?" + params.toString();
+    }
+
+    function getRankingInitialCount() {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      return Number(ranking.initialCount || ranking.mobileCount || 6);
+    }
+
+    function getRankingPageSize() {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      return Number(ranking.pageSize || getRankingInitialCount());
+    }
+
+    function setLoadMoreVisible(visible) {
+      if (el.loadMoreBtn) el.loadMoreBtn.style.display = visible ? "" : "none";
+    }
+
+    function setHomeBottomLoader(visible, text = "姝ｅ湪鍔犺浇鏇村") {
+      if (!el.homeBottomLoader) return;
+      if (el.homeBottomLoaderText) el.homeBottomLoaderText.textContent = text;
+      el.homeBottomLoader.classList.toggle("show", !!visible);
+    }
+
+    function hasMoreContent() {
+      if (state.viewMode === "ranking") {
+        return (state.ranking.shown || 0) < (state.ranking.list || []).length;
+      }
+      return state.viewMode === "list" && Number(el.pageInput.value || 1) < (state.pageCount || 1);
+    }
+
+    async function loadMoreContent() {
+      if (state.autoLoadingMore) return;
+      if (!hasMoreContent()) {
+        const now = Date.now();
+        if (state.endReachedCooldown && now < state.endReachedCooldown) return;
+        state.endReachedCooldown = now + 1800;
+        state.autoLoadingMore = true;
+        setHomeBottomLoader(true, "宸茬粡鍒板簳浜?);
+        window.clearTimeout(state.bottomLoaderTimer);
+        state.bottomLoaderTimer = window.setTimeout(() => {
+          setHomeBottomLoader(false);
+          state.autoLoadingMore = false;
+        }, 900);
+        return;
+      }
+      state.autoLoadingMore = true;
+      state.endReachedCooldown = 0;
+      setHomeBottomLoader(true);
+      const startTime = Date.now();
+      try {
+        if (state.viewMode === "ranking") {
+          renderRankingMore(getRankingPageSize());
+          return;
+        }
+        el.pageInput.value = String(Number(el.pageInput.value || 1) + 1);
+        await loadList({ append: true });
+      } finally {
+        const elapsed = Date.now() - startTime;
+        window.setTimeout(() => {
+          state.autoLoadingMore = false;
+          setHomeBottomLoader(false);
+        }, Math.max(260, 560 - elapsed));
+      }
+    }
+
+    function handleAutoLoadMore() {
+      if (el.searchPage?.classList.contains("open")) return;
+      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 420;
+      if (nearBottom) loadMoreContent();
+    }
+
+    function renderRankingMore(count) {
+      const list = state.ranking.list || [];
+      const start = state.ranking.shown || 0;
+      const end = Math.min(start + count, list.length);
+      list.slice(start, end).forEach((item, index) => {
+        el.grid.appendChild(createRankingCard(item, start + index < 3));
+      });
+      state.ranking.shown = end;
+      el.message.style.display = list.length ? "none" : "grid";
+      el.message.textContent = list.length ? "" : (state.ranking.channel || "鐑") + "鏆傛棤鍐呭銆?;
+      setText(el.countPill, (state.ranking.channel || "鐑") + "鐑 " + state.ranking.shown + " / " + list.length + " 鏉?);
+      setText(el.pageInfo, state.ranking.shown < list.length ? "涓嬫粦缁х画鍔犺浇" : "宸叉樉绀哄叏閮ㄧ儹姒?);
+      setLoadMoreVisible(state.ranking.shown < list.length);
+    }
+
+    function renderRankingList(channel, list) {
+      list = Array.isArray(list) ? list : [];
+      state.viewMode = "ranking";
+      state.ranking = { channel, list: list || [], shown: 0 };
+      el.homeSections.innerHTML = "";
+      el.grid.innerHTML = "";
+      el.message.style.display = list.length ? "none" : "grid";
+      el.message.textContent = list.length ? "" : channel + "鐑鏆傛棤鍐呭銆?;
+      renderRankingMore(getRankingInitialCount());
+    }
+
+    async function requestJson(url) {
+      el.requestUrl.value = url;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }
+
+    async function loadHomeSections() {
+      state.homeLoaded = true;
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      const channels = ranking.channels || fallbackConfig.ranking.channels;
+      const defaultChannel = ranking.defaultChannel || channels[0] || "鐭墽";
+      state.viewMode = "ranking";
+      state.ranking = { channel: defaultChannel, list: [], shown: 0 };
+      renderRankingChannels(defaultChannel);
+      el.homeSections.innerHTML = "";
+      el.grid.innerHTML = "";
+      el.message.style.display = "grid";
+      el.message.textContent = "姝ｅ湪鍔犺浇鐑...";
+
+      for (const channel of channels) {
+        const shelf = document.createElement("section");
+        shelf.className = "shelf";
+        const head = document.createElement("div");
+        head.className = "shelf-head";
+        const title = document.createElement("h3");
+        title.textContent = channel + "鐑";
+        const more = document.createElement("button");
+        more.className = "small-btn";
+        more.textContent = "鎼滅储姒滈";
+        more.addEventListener("click", () => {
+          const first = row.querySelector(".ranking-card .title")?.textContent || "";
+          searchByKeyword(first);
+        });
+        head.append(title, more);
+
+        const row = document.createElement("div");
+        row.className = "shelf-row";
+        shelf.append(head, row);
+        el.homeSections.appendChild(shelf);
+
+        try {
+          const data = await requestJson(buildRankingUrl(channel, Boolean(ranking.mobileMode)));
+          const items = data.list || [];
+          const rankingItems = data.data || items;
+          state.rankingCache.set(channel, rankingItems);
+          rankingItems.slice(0, 12).forEach(item => row.appendChild(createRankingCard(item, false)));
+          if (channel === defaultChannel) {
+            el.message.style.display = rankingItems.length ? "none" : "grid";
+            el.message.textContent = rankingItems.length ? "" : "鐑鏆傛棤鍐呭銆?;
+            state.ranking = { channel: defaultChannel, list: rankingItems, shown: 0 };
+            renderRankingMore(getRankingInitialCount());
+          }
+        } catch (error) {
+          const empty = document.createElement("div");
+          empty.className = "empty error";
+          empty.textContent = channel + "鐑鍔犺浇澶辫触锛? + (error.message || error);
+          row.appendChild(empty);
+        }
+      }
+    }
+
+    function setLoading(text) {
+      el.message.className = "empty";
+      el.message.style.display = "grid";
+      el.message.textContent = text;
+      el.grid.innerHTML = "";
+      if (el.keyword.value.trim()) {
+        setText(el.searchStatus, "姝ｅ湪鎼滅储 鈥? + el.keyword.value.trim() + "鈥?..");
+      }
+    }
+
+    function setError(error) {
+      el.message.className = "empty error";
+      el.message.style.display = "grid";
+      el.message.textContent = error.message || String(error);
+      setText(el.countPill, "璇锋眰澶辫触");
+    }
+
+    function updateSummary(data) {
+      state.page = Number(data.page || 1);
+      state.pageCount = Number(data.pagecount || 1);
+      state.total = Number(data.total || 0);
+      state.list = Array.isArray(data.list) ? data.list : [];
+      el.pageInput.value = state.page;
+      setText(el.countPill, "鍏?" + state.total + " 鏉?);
+      setText(el.pageInfo, "绗?" + state.page + " / " + state.pageCount + " 椤?);
+      el.debug.textContent = JSON.stringify(data, null, 2);
+      if (el.keyword.value.trim()) {
+        setText(el.searchStatus, "鎼滅储 鈥? + el.keyword.value.trim() + "鈥?鎵惧埌 " + state.total + " 鏉?);
+      } else {
+        setText(el.searchStatus, "");
+      }
+    }
+
+    function renderClasses(classes) {
+      const current = el.category.value;
+      el.category.innerHTML = '<option value="">鍏ㄩ儴鍒嗙被</option>';
+      classes.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.type_id;
+        option.textContent = item.type_name + " (" + item.type_id + ")";
+        el.category.appendChild(option);
+      });
+      el.category.value = current;
+    }
+
+    function renderRankingChannels(activeChannel) {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      const channels = ranking.channels || fallbackConfig.ranking.channels;
+      el.quickCats.innerHTML = "";
+      channels.forEach(channel => {
+        const chip = document.createElement("button");
+        chip.className = "cat-chip" + (channel === activeChannel ? " active" : "");
+        chip.textContent = channel;
+        chip.addEventListener("click", () => loadRankingChannel(channel));
+        el.quickCats.appendChild(chip);
+      });
+      updateRankingSwitchHint();
+    }
+
+    function nextRankingChannel() {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      const channels = ranking.channels || fallbackConfig.ranking.channels || [];
+      if (!channels.length) return "";
+      const current = state.ranking.channel || ranking.defaultChannel || channels[0];
+      const index = channels.indexOf(current);
+      return channels[(index + 1 + channels.length) % channels.length];
+    }
+
+    function updateRankingSwitchHint() {
+      if (!el.refreshBtn) return;
+      const next = nextRankingChannel();
+      const text = next ? "鍒囨崲鍒? + next + "鐑" : "鍒囨崲鐑鍒嗙被";
+      el.refreshBtn.setAttribute("aria-label", text);
+      el.refreshBtn.setAttribute("title", text);
+    }
+
+    async function switchNextRankingChannel() {
+      const channel = nextRankingChannel();
+      if (!channel) return;
+      await loadRankingChannel(channel);
+    }
+
+    function setRankingChannelLoading(channel, loading) {
+      Array.from(el.quickCats.querySelectorAll(".cat-chip")).forEach(chip => {
+        const active = chip.textContent === channel;
+        chip.classList.toggle("active", active);
+        chip.classList.toggle("loading", loading && active);
+      });
+      if (loading) setText(el.pageInfo, "姝ｅ湪鍔犺浇" + channel + "鐑...");
+    }
+
+    async function loadRankingChannel(channel) {
+      const ranking = state.config?.ranking || fallbackConfig.ranking;
+      if (state.ranking.channel === channel && (state.ranking.list || []).length) return;
+      state.viewMode = "ranking";
+      renderRankingChannels(channel);
+      if (state.rankingCache.has(channel)) {
+        renderRankingList(channel, state.rankingCache.get(channel));
+        return;
+      }
+      state.ranking = { channel, list: [], shown: 0 };
+      setRankingChannelLoading(channel, true);
+      el.homeSections.innerHTML = "";
+      el.grid.innerHTML = "";
+      el.message.style.display = "grid";
+      el.message.textContent = "姝ｅ湪鍔犺浇" + channel + "鐑...";
+      try {
+        const data = await requestJson(buildRankingUrl(channel, Boolean(ranking.mobileMode)));
+        const list = data.data || [];
+        state.rankingCache.set(channel, list);
+        renderRankingList(channel, list);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setRankingChannelLoading(channel, false);
+      }
+    }
+
+    function renderList(list) {
+      el.grid.innerHTML = "";
+      el.message.style.display = list.length ? "none" : "grid";
+      el.message.textContent = list.length ? "" : "娌℃湁鎵惧埌鏁版嵁銆?;
+
+      list.forEach(item => {
+        el.grid.appendChild(createCard(item));
+      });
+    }
+
+    function createCard(item, compact = false) {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const poster = document.createElement("img");
+      poster.className = "poster";
+      poster.loading = "lazy";
+      poster.decoding = "async";
+      const originalPic = item.vod_pic || "";
+      poster.alt = item.vod_name || "";
+      if (originalPic) {
+        setLazyImage(poster, originalPic, "vod");
+        poster.onerror = () => {
+          if (poster.src !== originalPic && originalPic) {
+            poster.src = originalPic;
+            return;
+          }
+          poster.removeAttribute("src");
+          poster.alt = "灏侀潰鍔犺浇澶辫触";
+        };
+      } else {
+        poster.removeAttribute("src");
+        poster.alt = "鍒楄〃鎺ュ彛鏃犲皝闈㈠瓧娈?;
+      }
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = item.vod_name || "鏈懡鍚?;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = [
+        item.type_name || item.vod_class || "鏈煡鍒嗙被",
+        item.vod_remarks || "",
+        item.vod_play_from || ""
+      ].filter(Boolean).join(" 路 ");
+
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+
+      const detailBtn = document.createElement("button");
+      detailBtn.className = "small-btn primary";
+      detailBtn.textContent = compact ? "鎾斁" : "璇︽儏";
+      detailBtn.addEventListener("click", () => loadDetail(item.vod_id));
+
+      const favoriteBtn = document.createElement("button");
+      favoriteBtn.className = "small-btn";
+      favoriteBtn.textContent = isFavorite(item.vod_id) ? "宸叉敹钘? : "鏀惰棌";
+      favoriteBtn.addEventListener("click", () => {
+        toggleFavorite(item);
+        favoriteBtn.textContent = isFavorite(item.vod_id) ? "宸叉敹钘? : "鏀惰棌";
+      });
+
+      actions.append(detailBtn, favoriteBtn);
+      body.append(title, meta, actions);
+      card.append(poster, body);
+      return card;
+    }
+
+    function createRankingCard(item, eager = false) {
+      const card = document.createElement("article");
+      card.className = "card ranking-card";
+      card.title = "鎼滅储锛? + item.title;
+
+      const poster = document.createElement("img");
+      poster.className = "poster";
+      poster.loading = "lazy";
+      poster.decoding = "async";
+      setLazyImage(poster, item.src || "", "ranking", eager);
+      poster.onerror = () => {
+        poster.onerror = null;
+        poster.src = imageFallbackSvg(item.title || "鐑");
+      };
+      poster.alt = item.title || "";
+
+      const badge = document.createElement("div");
+      badge.className = "rank-badge";
+      badge.textContent = "鐑绗? + (item.ranking || "-") + "鍚?;
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = item.title || "鏈懡鍚?;
+
+      body.append(title);
+      card.append(poster, badge, body);
+      card.addEventListener("click", () => searchByKeyword(item.title || ""));
+      return card;
+    }
+
+    function getPanName(item) {
+      const type = Number(item && item.is_type !== undefined ? item.is_type : 0);
+      if (type === 1) return "闃块噷浜戠洏";
+      if (type === 2) return "鐧惧害缃戠洏";
+      if (type === 3) return "UC缃戠洏";
+      if (type === 4) return "杩呴浄缃戠洏";
+      return "澶稿厠缃戠洏";
+    }
+
+    function getPanIcon(item) {
+      const type = Number(item && item.is_type !== undefined ? item.is_type : 0);
+      if (type === 2) return "/data/鐧惧害缃戠洏.png";
+      if (type === 3) return "/data/UC缃戠洏.png";
+      if (type === 4) return "/data/杩呴浄.png";
+      return "/data/澶稿厠.png";
+    }
+
+    function firstNonEmpty(values) {
+      for (const value of values) {
+        if (Array.isArray(value) && value.length) {
+          const nested = firstNonEmpty(value);
+          if (nested) return nested;
+        } else if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return String(value).trim();
+        }
+      }
+      return "";
+    }
+
+    function normalizeSearchItem(item) {
+      if (!item || typeof item !== "object") return item;
+      const images = Array.isArray(item.images) ? item.images : [];
+      const image = firstNonEmpty([
+        item.image,
+        item.cover,
+        item.poster,
+        item.pic,
+        item.thumb,
+        item.thumbnail,
+        item.vod_pic,
+        images
+      ]);
+      if (image) {
+        item.image = image;
+      }
+      if (!item.originalUrl && item.url) {
+        item.originalUrl = item.url;
+      }
+      if (!item.treeSourceUrl && item.url) {
+        item.treeSourceUrl = item.url;
+      }
+      if (item.tree_key && !item.treeKey) {
+        item.treeKey = item.tree_key;
+      }
+      if (item.treeKey && !item.tree_key) {
+        item.tree_key = item.treeKey;
+      }
+      if (item.is_type === undefined || item.is_type === null || item.is_type === "") {
+        item.is_type = state.searchPanType;
+      }
+      return item;
+    }
+
+    function isDirectLinkMode() {
+      return "{$config.is_quan_type|default='0'}".trim() === "1";
+    }
+
+    function supportsPanTree(item) {
+      const type = Number(item && item.is_type !== undefined ? item.is_type : -1);
+      return [0, 2, 3].includes(type);
+    }
+
+    function ensureTreeState(item) {
+      if (!item) return;
+      if (item.treeExpanded === undefined) item.treeExpanded = false;
+      if (item.treeLoading === undefined) item.treeLoading = false;
+      if (item.treeLoaded === undefined) item.treeLoaded = false;
+      if (item.treeData === undefined) item.treeData = null;
+      if (item.treeError === undefined) item.treeError = "";
+    }
+
+    function extractPanCode(item) {
+      if (item && item.code) return item.code;
+      const url = item?.treeSourceUrl || item?.originalUrl || item?.url || "";
+      if (!url || !/^https?:\/\//i.test(url)) return "";
+      try {
+        return new URL(url).searchParams.get("pwd") || "";
+      } catch (error) {
+        const match = url.match(/[?&]pwd=([^&#\s]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+    }
+
+    function getPanTreeCacheKey(item) {
+      const treeKey = item?.tree_key || item?.treeKey || "";
+      if (treeKey) return "tree_key:" + treeKey;
+      const sourceUrl = item?.treeSourceUrl || item?.originalUrl || item?.url || "";
+      if (!sourceUrl) return "";
+      return ["source", item.is_type ?? -1, sourceUrl, extractPanCode(item), item.stoken || ""].join("|");
+    }
+
+    async function loadItemPanTree(item, force = false) {
+      ensureTreeState(item);
+      if (!item || item.treeLoading) return;
+
+      if (!supportsPanTree(item)) {
+        item.treeExpanded = true;
+        item.treeLoaded = false;
+        item.treeData = null;
+        item.treeError = Number(item?.is_type ?? -1) === 4 ? "鏆備笉鏀寔杩呴浄鐩綍棰勮" : "褰撳墠缃戠洏鏆備笉鏀寔鐩綍棰勮";
+        return;
+      }
+
+      const treeKey = item.tree_key || item.treeKey || "";
+      const sourceUrl = item.treeSourceUrl || item.originalUrl || item.url || "";
+      if (!treeKey && !sourceUrl) {
+        item.treeExpanded = true;
+        item.treeLoaded = false;
+        item.treeData = null;
+        item.treeError = "鏆傛棤鍙В鏋愮殑璧勬簮鍦板潃";
+        return;
+      }
+
+      if (!force && item.treeLoaded && item.treeData) return;
+
+      const cacheKey = getPanTreeCacheKey(item);
+      if (!force && cacheKey && state.panTreeCache.has(cacheKey)) {
+        item.treeData = state.panTreeCache.get(cacheKey);
+        item.treeLoaded = true;
+        item.treeError = "";
+        return;
+      }
+
+      item.treeLoading = true;
+      item.treeError = "";
+      try {
+        const body = new URLSearchParams();
+        if (treeKey) {
+          body.set("tree_key", treeKey);
+        } else {
+          body.set("url", encodeURIComponent(sourceUrl));
+          body.set("is_type", item.is_type ?? -1);
+          body.set("code", extractPanCode(item));
+          body.set("stoken", item.stoken || "");
+        }
+
+        const response = await fetch("/api/other/pan_tree", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body
+        });
+        const result = await response.json();
+        if (result.code === 200 && result.data) {
+          item.treeData = result.data;
+          item.treeLoaded = true;
+          item.treeError = "";
+          if (cacheKey) state.panTreeCache.set(cacheKey, result.data);
+        } else {
+          item.treeData = null;
+          item.treeLoaded = false;
+          item.treeError = result.message || result.msg || "鐩綍鑾峰彇澶辫触";
+        }
+      } catch (error) {
+        item.treeData = null;
+        item.treeLoaded = false;
+        item.treeError = "鐩綍鑾峰彇澶辫触锛岃绋嶅悗閲嶈瘯";
+      } finally {
+        item.treeLoading = false;
+      }
+    }
+
+    async function toggleItemTree(item, panel) {
+      ensureTreeState(item);
+      if (!item || item.treeLoading) return;
+      if (item.treeLoaded && item.treeData) {
+        item.treeExpanded = !item.treeExpanded;
+      } else {
+        item.treeExpanded = true;
+        await loadItemPanTree(item, Boolean(item.treeError));
+      }
+      renderTreePanel(item, panel, "search");
+    }
+
+    function flattenTreeNodes(nodes, level = 0, output = []) {
+      (nodes || []).forEach(node => {
+        output.push({ node, level });
+        const children = node.children || node.list || node.files || [];
+        if (children && children.length) flattenTreeNodes(children, level + 1, output);
+      });
+      return output;
+    }
+
+    function nodeDisplayName(node) {
+      return node.name || node.file_name || node.filename || node.path || "鏈懡鍚?;
+    }
+
+    function nodeDisplaySize(node) {
+      return node.size || node.file_size || node.fsize || "";
+    }
+
+    function renderTreePanel(item, panel, mode = "search") {
+      if (!panel) return;
+      ensureTreeState(item);
+      panel.innerHTML = "";
+      panel.style.display = item.treeExpanded || item.treeLoading ? "block" : "none";
+      if (!item.treeExpanded && !item.treeLoading) return;
+
+      const cls = mode === "resource" ? "resource" : "search";
+      const head = document.createElement("div");
+      head.className = cls + "-tree-head";
+      const total = item.treeData?.total || item.treeData?.count || "";
+      head.innerHTML = '<span>璧勬簮鐩綍缁撴瀯</span><em>' + (total ? "鍏?" + total + " 椤? : "") + '</em>';
+      panel.appendChild(head);
+
+      if (item.treeLoading) {
+        const tip = document.createElement("div");
+        tip.className = "tree-tip";
+        tip.textContent = "鐩綍鍔犺浇涓?..";
+        panel.appendChild(tip);
+        return;
+      }
+      if (item.treeError) {
+        const tip = document.createElement("div");
+        tip.className = "tree-tip error";
+        tip.textContent = item.treeError;
+        panel.appendChild(tip);
+        return;
+      }
+
+      const nodes = item.treeData?.tree || item.treeData?.list || item.treeData?.files || [];
+      if (!nodes.length) {
+        const tip = document.createElement("div");
+        tip.className = "tree-tip empty";
+        tip.textContent = "鏆傛棤鐩綍淇℃伅";
+        panel.appendChild(tip);
+        return;
+      }
+
+      const body = document.createElement("div");
+      body.className = cls + "-tree-body";
+      const flatNodes = flattenTreeNodes(nodes);
+      flatNodes.slice(0, 120).forEach(({ node, level }) => {
+        const row = document.createElement("div");
+        row.className = "tree-row";
+        row.style.paddingLeft = 12 + level * 16 + "px";
+        const icon = node.type === "folder" || node.isdir || node.is_dir ? "鈻? : "鈥?;
+        row.innerHTML = '<span>' + icon + '</span><span class="tree-row-name">' + escapeHtml(nodeDisplayName(node)) + '</span><span class="tree-row-size">' + escapeHtml(nodeDisplaySize(node)) + '</span>';
+        body.appendChild(row);
+      });
+      panel.appendChild(body);
+      if (item.treeData?.truncated || flatNodes.length > 120) {
+        const tip = document.createElement("div");
+        tip.className = "tree-tip more";
+        tip.textContent = "鐩綍鍐呭杈冨锛屽綋鍓嶅睍绀哄墠 120 椤广€?;
+        panel.appendChild(tip);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function highlightKeywordText(text, keyword) {
+      const safeText = escapeHtml(text || "");
+      const term = String(keyword || "").trim();
+      if (!term) return safeText;
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return safeText.replace(new RegExp(escapedTerm, "gi"), match => '<span class="search-highlight">' + match + '</span>');
+    }
+
+    function createSearchResultCard(item) {
+      item = normalizeSearchItem(item);
+      const isPanResource = Boolean(item.url || item.title);
+      const card = document.createElement("article");
+      card.className = "search-resource-card";
+
+      const title = document.createElement("button");
+      title.className = "search-resource-title";
+      const localBadge = item.is_local ? '<span class="search-local-badge">鏈湴</span>' : '';
+      title.innerHTML = '<span class="search-resource-title-text">' + localBadge + highlightKeywordText(item.title || item.vod_name || "鏈懡鍚嶈祫婧?, state.searchKeyword) + '</span>';
+      title.addEventListener("click", () => {
+        if (isPanResource && item.url) {
+          openResourceModal(item);
+        } else {
+          loadDetail(item.vod_id);
+        }
+      });
+
+      const metaText = isPanResource
+        ? (item.desc || (item.is_local ? "" : item.source) || "")
+        : [item.type_name || item.vod_class || "鏈煡鍒嗙被", item.vod_remarks || "", item.vod_play_from || ""].filter(Boolean).join(" 路 ");
+      const meta = document.createElement("div");
+      meta.className = "search-resource-meta";
+      meta.textContent = metaText;
+
+      const footer = document.createElement("div");
+      footer.className = "search-resource-footer";
+
+      const panMeta = document.createElement("div");
+      panMeta.className = "search-pan-meta";
+      if (isPanResource) {
+        const icon = document.createElement("img");
+        icon.className = "search-pan-icon";
+        icon.src = getPanIcon(item);
+        icon.alt = getPanName(item);
+        panMeta.append(icon);
+      } else {
+        panMeta.textContent = item.vod_year || item.vod_area || "褰辫璧勬簮";
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "search-result-actions";
+      const treePanel = document.createElement("div");
+      treePanel.className = "search-tree-panel";
+      treePanel.style.display = "none";
+
+      const treeBtn = document.createElement("button");
+      treeBtn.className = "search-tree-btn";
+      treeBtn.textContent = isPanResource ? "鐩綍" : "璇︽儏";
+      treeBtn.addEventListener("click", async () => {
+        if (isPanResource && item.url) {
+          treeBtn.textContent = item.treeExpanded ? "鐩綍" : "鏀惰捣";
+          await toggleItemTree(item, treePanel);
+          treeBtn.textContent = item.treeExpanded ? "鏀惰捣" : "鐩綍";
+        } else {
+          loadDetail(item.vod_id);
+        }
+      });
+
+      const getBtn = document.createElement("button");
+      getBtn.className = "search-get-btn";
+      getBtn.textContent = isPanResource ? "鑾峰彇璧勬簮" : "鏌ョ湅璇︽儏";
+      getBtn.addEventListener("click", () => {
+        if (isPanResource && item.url) {
+          openResourceModal(item);
+        } else {
+          loadDetail(item.vod_id);
+        }
+      });
+
+      actions.append(treeBtn, getBtn);
+      footer.append(panMeta, actions);
+      card.append(title);
+      if (metaText) card.append(meta);
+      card.append(footer, treePanel);
+      return card;
+    }
+
+    function showResourceModalLoading(item) {
+      el.resourceModalTitle.textContent = item.title || "璧勬簮鑾峰彇缁撴灉";
+      const posterStage = el.resourceModal.querySelector(".resource-poster-stage");
+      if (posterStage) posterStage.remove();
+      el.resourceModal.classList.remove("has-poster");
+      el.resourceModalBody.innerHTML = '<div class="resource-modal-loading">璧勬簮鑾峰彇涓?..</div>';
+      el.resourceModal.classList.add("open");
+    }
+
+    function showResourceModalError(message) {
+      el.resourceModalBody.innerHTML = '<div class="resource-modal-error">' + (message || "璧勬簮鑾峰彇澶辫触锛岃绋嶅悗閲嶈瘯") + '</div>';
+    }
+
+    function renderResourceModal(item) {
+      item = normalizeSearchItem(item);
+      const showUrl = item.showUrl || item.url || "";
+      el.resourceModalTitle.textContent = item.title || "璧勬簮鑾峰彇缁撴灉";
+      el.resourceModalBody.innerHTML = "";
+
+      const image = item.image || item.cover || item.poster || "";
+      let posterStage = el.resourceModal.querySelector(".resource-poster-stage");
+      if (posterStage) posterStage.remove();
+      el.resourceModal.classList.toggle("has-poster", Boolean(image));
+      if (image) {
+        posterStage = document.createElement("div");
+        posterStage.className = "resource-poster-stage";
+        posterStage.innerHTML = '<img class="resource-poster-bg" alt="" loading="lazy"><img class="resource-poster-main" alt="灏侀潰" loading="lazy"><div class="resource-poster-fade"></div>';
+        const bgImg = posterStage.querySelector(".resource-poster-bg");
+        const mainImg = posterStage.querySelector(".resource-poster-main");
+        mainImg.onerror = () => {
+          if (posterStage && posterStage.parentNode) posterStage.remove();
+          el.resourceModal.classList.remove("has-poster");
+        };
+        bgImg.onerror = () => {
+          bgImg.style.display = "none";
+        };
+        bgImg.src = image;
+        mainImg.src = image;
+        el.resourceModal.querySelector(".resource-modal-card").insertBefore(posterStage, el.resourceModal.querySelector(".resource-modal-head").nextSibling);
+      }
+
+      const titleBlock = document.createElement("div");
+      titleBlock.className = "resource-dialog-title-block";
+      const title = document.createElement("h2");
+      title.className = "resource-dialog-title";
+      title.textContent = item.title || "璧勬簮鑾峰彇缁撴灉";
+      if (title.textContent.length > 14) title.classList.add("is-long");
+      titleBlock.appendChild(title);
+      el.resourceModalBody.appendChild(titleBlock);
+
+      const card = document.createElement("div");
+      card.className = "resource-link-card";
+
+      const main = document.createElement("div");
+      main.className = "resource-link-main";
+
+      const icon = document.createElement("img");
+      icon.className = "resource-link-icon";
+      icon.src = getPanIcon(item);
+      icon.alt = getPanName(item);
+
+      const info = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "resource-link-name";
+      name.textContent = getPanName(item);
+
+      const link = document.createElement("a");
+      link.className = "resource-link-url";
+      link.href = showUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = showUrl || "鏆傛棤鍙敤閾炬帴";
+
+      info.append(name, link);
+      main.append(icon, info);
+
+      const actions = document.createElement("div");
+      actions.className = "resource-modal-actions";
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "resource-modal-copy";
+      copyBtn.textContent = "澶嶅埗閾炬帴";
+      copyBtn.addEventListener("click", () => copyText(showUrl));
+
+      const openBtn = document.createElement("a");
+      openBtn.className = "resource-modal-open";
+      openBtn.href = showUrl;
+      openBtn.target = "_blank";
+      openBtn.rel = "noopener noreferrer";
+      openBtn.textContent = "鎵撳紑閾炬帴";
+
+      actions.append(copyBtn, openBtn);
+      card.append(main, actions);
+      el.resourceModalBody.appendChild(card);
+
+      if (supportsPanTree(item)) {
+        const treeBtn = document.createElement("button");
+        treeBtn.className = "resource-dialog-tree-toggle";
+        treeBtn.textContent = item.treeExpanded ? "鏀惰捣鐩綍缁撴瀯" : "鏌ョ湅鐩綍缁撴瀯";
+        const treePanel = document.createElement("div");
+        treePanel.className = "resource-tree-panel";
+        treePanel.style.display = "none";
+        treeBtn.addEventListener("click", async () => {
+          const wasExpanded = Boolean(item.treeExpanded);
+          treeBtn.disabled = true;
+          treeBtn.classList.add("is-loading");
+          treeBtn.textContent = wasExpanded ? "鏀惰捣涓?.." : "鐩綍鍔犺浇涓?..";
+          await toggleItemTree(item, treePanel);
+          treeBtn.disabled = false;
+          treeBtn.classList.remove("is-loading");
+          treeBtn.textContent = item.treeExpanded ? "鏀惰捣鐩綍缁撴瀯" : "鏌ョ湅鐩綍缁撴瀯";
+          if (!wasExpanded && item.treeExpanded) {
+            window.setTimeout(() => {
+              treePanel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }, 60);
+          }
+        });
+        el.resourceModalBody.append(treeBtn, treePanel);
+        renderTreePanel(item, treePanel, "resource");
+      }
+
+      const notice = document.createElement("section");
+      notice.className = "resource-notice-card";
+      notice.innerHTML = '<p>鏈珯閾炬帴鐢辩▼搴忚嚜鍔ㄦ敹闆嗚嚜鍏紑缃戠洏锛屼笉瀛樺偍銆佷笉浼犳挱浠讳綍鏂囦欢锛岃烦杞摼鎺ユ寚鍚戠綉鐩樺畼缃戙€?/p><p>鏂囦欢鍐呭璇疯嚜琛岃鲸鍒紝濡傚彂鐜拌繚瑙勮鍚戠綉鐩樺钩鍙颁妇鎶ャ€傛湰绔欎粎渚涘涔犱氦娴侊紝鏃犱换浣曟敹璐硅涓恒€?/p>';
+      el.resourceModalBody.appendChild(notice);
+    }
+
+    async function openResourceModal(item) {
+      item = normalizeSearchItem(item);
+      if (!item || !item.url) return;
+      showResourceModalLoading(item);
+
+      if (item.resourceFetched && item.showUrl) {
+        renderResourceModal(item);
+        return;
+      }
+
+      try {
+        if (isDirectLinkMode() && item.url && /^https?:\/\//i.test(item.url)) {
+          item.treeSourceUrl = item.url;
+          const displayBody = new URLSearchParams();
+          displayBody.set("url", item.url);
+          displayBody.set("is_type", item.is_type ?? -1);
+          const displayResponse = await fetch("/api/other/get_display_url", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+            body: displayBody
+          });
+          const displayResult = await displayResponse.json();
+          if (displayResult.code === 200 && displayResult.data) {
+            item.showUrl = displayResult.data.showUrl || item.url;
+            if (displayResult.data.is_type !== undefined) item.is_type = displayResult.data.is_type;
+          } else {
+            item.showUrl = item.url;
+          }
+          item.resourceFetched = true;
+          renderResourceModal(item);
+          return;
+        }
+
+        const body = new URLSearchParams();
+        const transferSourceUrl = item.transferSourceUrl || item.treeSourceUrl || item.originalUrl || item.url;
+        item.transferSourceUrl = transferSourceUrl;
+        item.originalUrl = item.originalUrl || transferSourceUrl;
+        item.treeSourceUrl = transferSourceUrl;
+        body.set("url", encodeURIComponent(transferSourceUrl));
+        body.set("title", item.title || "");
+        if (item.stoken) body.set("stoken", item.stoken);
+
+        const response = await fetch("/api/other/save_url", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body
+        });
+        const result = await response.json();
+        if (result.code !== 200 || !result.data || !result.data.url) {
+          showResourceModalError(result.msg || result.message || "鑾峰彇璧勬簮澶辫触");
+          return;
+        }
+
+        item.resourceFetched = true;
+        item.resourceUrl = result.data.url;
+        item.showUrl = result.data.showUrl || result.data.url;
+        if (result.data._source_url) {
+          item.originalUrl = result.data._source_url;
+          item.treeSourceUrl = result.data._source_url;
+        }
+        if (result.data.tree_key) {
+          item.tree_key = result.data.tree_key;
+          item.treeKey = result.data.tree_key;
+          item.treeSourceUrl = "";
+        }
+        if (result.data.is_type !== undefined) item.is_type = result.data.is_type;
+        if (result.data.image && !item.image) item.image = result.data.image;
+        if (result.data.images && !item.images) item.images = result.data.images;
+        normalizeSearchItem(item);
+        renderResourceModal(item);
+      } catch (error) {
+        showResourceModalError(error.message || "缃戠粶閿欒锛岃绋嶅悗閲嶈瘯");
+      }
+    }
+
+    function searchByKeyword(keyword) {
+      keyword = String(keyword || "").trim();
+      if (!keyword) return;
+      setActiveNav("discover");
+      openSearchPage(keyword, { focus: false });
+      commitSearch(keyword);
+    }
+
+    function handleFeatureCardClick(button, fallback) {
+      const action = button?.dataset?.action || fallback || "";
+      const url = button?.dataset?.url || "";
+      if (action === "theme") {
+        toggleCinemaTheme();
+        return;
+      }
+      if (action === "history") {
+        openSearchHistoryPage();
+        return;
+      }
+      if (action === "favorites") {
+        showStoredList("鎴戠殑鏀惰棌", "cinema:favorites");
+        return;
+      }
+      if (action === "search") {
+        openSearchPage();
+        return;
+      }
+      if ((action === "url" || action === "download") && url) {
+        window.open(url, "_blank", "noopener");
+        return;
+      }
+      if (fallback === "theme") toggleCinemaTheme();
+      if (fallback === "history") openSearchHistoryPage();
+      if (fallback === "download") {
+        if (url) {
+          window.open(url, "_blank", "noopener");
+        } else {
+          showStoredList("鎴戠殑鏀惰棌", "cinema:favorites");
+        }
+      }
+    }
+
+    function parsePlayList(fromValue, urlValue) {
+      const sources = String(fromValue || "").split("$$$");
+      const groups = String(urlValue || "").split("$$$");
+
+      return groups.map((group, index) => {
+        const sourceName = sources[index] || "source-" + (index + 1);
+        const episodes = group.split("#").filter(Boolean).map(row => {
+          const cut = row.indexOf("$");
+          return {
+            name: cut >= 0 ? row.slice(0, cut) : row,
+            url: cut >= 0 ? row.slice(cut + 1) : ""
+          };
+        });
+        return { sourceName, episodes };
+      });
+    }
+
+    async function loadClasses() {
+      setLoading("姝ｅ湪鍔犺浇鍒嗙被...");
+      try {
+        const data = await requestJson(buildUrl("list"));
+        if (Array.isArray(data.class)) renderClasses(data.class);
+        el.debug.textContent = JSON.stringify(data, null, 2);
+        el.message.textContent = "鍒嗙被宸插姞杞姐€傞€夋嫨鍒嗙被銆佹悳绱㈡垨缈婚〉鏃舵墠浼氳姹傚垪琛ㄣ€?;
+      } catch (error) {
+        setError(error);
+      }
+    }
+
+    async function loadList(options = {}) {
+      state.viewMode = "list";
+      state.ranking = { channel: "", list: [], shown: 0 };
+      setLoadMoreVisible(true);
+      if (!options.append) {
+        setLoading("姝ｅ湪璇锋眰鍒楄〃...");
+      } else {
+        setText(el.searchStatus, "姝ｅ湪鍔犺浇绗?" + el.pageInput.value + " 椤?..");
+      }
+      if (el.keyword.value.trim()) {
+        el.homeSections.innerHTML = "";
+      }
+      try {
+        const data = await requestJson(buildUrl("videolist"));
+        if (Array.isArray(data.class)) renderClasses(data.class);
+        updateSummary(data);
+        if (options.append) {
+          el.message.style.display = "none";
+          (data.list || []).forEach(item => el.grid.appendChild(createCard(item)));
+        } else {
+          renderList(data.list || []);
+        }
+      } catch (error) {
+        setError(error);
+      }
+    }
+
+    async function loadDetail(id) {
+      if (!id) return;
+      const base = normalizeBase(el.apiBase.value);
+      const params = new URLSearchParams({ ac: "videolist", ids: String(id) });
+      const realUrl = base + "?" + params.toString();
+      const url = applyProxy(realUrl);
+
+      try {
+        const data = await requestJson(url);
+        const item = data.list && data.list[0];
+        if (!item) throw new Error("娌℃湁璇︽儏鏁版嵁");
+        openDetail(item);
+      } catch (error) {
+        setError(error);
+      }
+    }
+
+    function openDetail(item) {
+      state.currentDetail = item;
+      el.detailTitle.textContent = item.vod_name || "璇︽儏";
+      el.detailMeta.textContent = [
+        item.type_name || item.vod_class || "",
+        item.vod_year ? item.vod_year + "骞? : "",
+        item.vod_area || "",
+        item.vod_remarks || ""
+      ].filter(Boolean).join(" 路 ");
+      el.detailPic.loading = "lazy";
+      el.detailPic.decoding = "async";
+      el.detailPic.src = imageUrl(item.vod_pic || "", "vod");
+      el.detailPic.alt = item.vod_name || "";
+      el.detailContent.textContent = item.vod_content || item.vod_blurb || "鏆傛棤绠€浠嬨€?;
+      el.episodes.innerHTML = "";
+
+      parsePlayList(item.vod_play_from, item.vod_play_url).forEach(group => {
+        const block = document.createElement("div");
+        block.className = "source-block";
+
+        const title = document.createElement("div");
+        title.className = "source-title";
+        title.textContent = group.sourceName + " 路 " + group.episodes.length + " 鏉?;
+
+        const list = document.createElement("div");
+        list.className = "episode-grid";
+
+        group.episodes.forEach(ep => {
+          const btn = document.createElement("button");
+          btn.className = "episode";
+          const parsedUrl = buildParsedPlayUrl(ep.url);
+          btn.textContent = ep.name || "鎾斁";
+          btn.title = parsedUrl;
+          btn.addEventListener("click", () => {
+            addHistory(state.currentDetail, ep.name || "鎾斁", parsedUrl);
+            openPlayer(ep.name || "鎾斁", parsedUrl);
+          });
+          list.appendChild(btn);
+        });
+
+        block.append(title, list);
+        el.episodes.appendChild(block);
+      });
+
+      el.drawer.classList.add("open");
+    }
+
+    async function copyText(text) {
+      if (!text) return;
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function" && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          showMineToast("宸插鍒?);
+          return;
+        }
+        const input = document.createElement("textarea");
+        input.value = text;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.left = "-9999px";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+        showMineToast("宸插鍒?);
+      } catch (error) {
+        showMineToast("澶嶅埗澶辫触");
+      }
+    }
+
+    window.copyToClipboard = text => copyText(text);
+
+    el.loadBtn.addEventListener("click", loadList);
+    el.classBtn.addEventListener("click", loadClasses);
+    el.homeNavBtn.addEventListener("click", showHome);
+    el.navHomeBtn.addEventListener("click", showHome);
+    el.navShortBtn.addEventListener("click", showShorts);
+    el.navDiscoverBtn.addEventListener("click", showDiscover);
+    el.navHistoryBtn.addEventListener("click", () => {
+      setActiveNav("history");
+      showStoredList("鎾斁鍘嗗彶", "cinema:history");
+    });
+    el.externalCancelBtn.addEventListener("click", closeExternalConfirm);
+    el.externalConfirm.addEventListener("click", event => {
+      if (event.target === el.externalConfirm) closeExternalConfirm();
+    });
+    el.externalOkBtn.addEventListener("click", () => {
+      const url = state.pendingExternalUrl;
+      closeExternalConfirm();
+      if (url) window.location.href = url;
+    });
+    el.homeAnnouncementOkBtn.addEventListener("click", () => closeHomeAnnouncement("confirm"));
+    el.homeAnnouncementLaterBtn.addEventListener("click", () => closeHomeAnnouncement("later"));
+    el.homeAnnouncementOverlay.addEventListener("click", event => {
+      if (event.target === el.homeAnnouncementOverlay) closeHomeAnnouncement("confirm");
+    });
+    el.homeAnnouncementContent.addEventListener("click", handleAnnouncementContentClick);
+    window.addEventListener("keydown", event => {
+      if (event.key === "Escape" && el.homeAnnouncementOverlay.classList.contains("open")) {
+        closeHomeAnnouncement("confirm");
+      }
+    });
+    el.topSearchBtn.addEventListener("click", runSearch);
+    el.topKeyword.addEventListener("focus", () => {
+      if (window.innerWidth <= 720) openSearchPage(el.topKeyword.value.trim());
+      else if (el.topKeyword.value.trim()) {
+        fetchPcSuggestions();
+      }
+    });
+    el.topKeyword.addEventListener("input", () => {
+      const keyword = el.topKeyword.value.trim();
+      if (!keyword) {
+        hidePcSuggestions();
+        return;
+      }
+      window.clearTimeout(pcSuggestionState.timer);
+      pcSuggestionState.timer = window.setTimeout(fetchPcSuggestions, 240);
+    });
+    el.topKeyword.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (pcSuggestionState.items.length && pcSuggestionState.activeIndex >= 0) {
+          selectPcSuggestion(pcSuggestionState.activeIndex);
+          return;
+        }
+        runSearch();
+        return;
+      }
+      if (event.key === "ArrowDown") {
+        if (!pcSuggestionState.items.length) return;
+        event.preventDefault();
+        pcSuggestionState.activeIndex = (pcSuggestionState.activeIndex + 1) % pcSuggestionState.items.length;
+        renderPcSuggestions();
+      }
+      if (event.key === "ArrowUp") {
+        if (!pcSuggestionState.items.length) return;
+        event.preventDefault();
+        pcSuggestionState.activeIndex = (pcSuggestionState.activeIndex - 1 + pcSuggestionState.items.length) % pcSuggestionState.items.length;
+        renderPcSuggestions();
+      }
+      if (event.key === "Escape") {
+        hidePcSuggestions();
+      }
+    });
+    el.topKeyword.addEventListener("blur", () => {
+      window.setTimeout(hidePcSuggestions, 180);
+    });
+    if (el.topSuggestions) {
+      el.topSuggestions.addEventListener("mousedown", event => event.preventDefault());
+    }
+    el.heroSearchBtn.addEventListener("click", searchCurrentBanner);
+    el.hero.addEventListener("click", event => {
+      if (event.target.closest("button")) return;
+      if (state.bannerDrag.moved || state.bannerDrag.switched || Date.now() < state.bannerClickSuppressUntil) {
+        event.preventDefault();
+        return;
+      }
+      searchCurrentBanner();
+    });
+    el.heroToolsBtn.addEventListener("click", () => document.body.classList.toggle("show-tools"));
+    el.themeBtn.addEventListener("click", toggleCinemaTheme);
+    if (el.desktopSearchHistoryBtn) {
+      el.desktopSearchHistoryBtn.addEventListener("click", () => handleFeatureCardClick(el.desktopSearchHistoryBtn, "history"));
+    }
+    if (el.desktopDownloadBtn) {
+      el.desktopDownloadBtn.addEventListener("click", () => handleFeatureCardClick(el.desktopDownloadBtn, "download"));
+    }
+    el.featureThemeBtn.addEventListener("click", () => handleFeatureCardClick(el.featureThemeBtn, "theme"));
+    el.featureFavoritesBtn.addEventListener("click", () => handleFeatureCardClick(el.featureFavoritesBtn, "download"));
+    el.featureHistoryBtn.addEventListener("click", () => handleFeatureCardClick(el.featureHistoryBtn, "history"));
+    el.searchBackBtn.addEventListener("click", closeSearchPage);
+    el.searchSubmitBtn.addEventListener("click", () => {
+      hideMobileSuggestions();
+      commitSearch(el.searchInput.value);
+    });
+    el.searchInput.addEventListener("focus", () => {
+      if (el.searchInput.value.trim() && el.searchResult.style.display !== "flex") {
+        fetchMobileSuggestions();
+      }
+    });
+    el.searchInput.addEventListener("input", () => {
+      const keyword = el.searchInput.value.trim();
+      if (!keyword) {
+        hideMobileSuggestions();
+        return;
+      }
+      window.clearTimeout(mobileSuggestionState.timer);
+      mobileSuggestionState.timer = window.setTimeout(fetchMobileSuggestions, 240);
+    });
+    el.searchInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (mobileSuggestionState.items.length && mobileSuggestionState.activeIndex >= 0) {
+          selectMobileSuggestion(mobileSuggestionState.activeIndex);
+          return;
+        }
+        hideMobileSuggestions();
+        commitSearch(el.searchInput.value);
+        return;
+      }
+      if (event.key === "ArrowDown") {
+        if (!mobileSuggestionState.items.length) return;
+        event.preventDefault();
+        mobileSuggestionState.activeIndex = (mobileSuggestionState.activeIndex + 1) % mobileSuggestionState.items.length;
+        renderMobileSuggestions();
+      }
+      if (event.key === "ArrowUp") {
+        if (!mobileSuggestionState.items.length) return;
+        event.preventDefault();
+        mobileSuggestionState.activeIndex = (mobileSuggestionState.activeIndex - 1 + mobileSuggestionState.items.length) % mobileSuggestionState.items.length;
+        renderMobileSuggestions();
+      }
+      if (event.key === "Escape") {
+        hideMobileSuggestions();
+      }
+    });
+    el.searchInput.addEventListener("blur", () => {
+      window.setTimeout(hideMobileSuggestions, 180);
+    });
+    if (el.mobileSuggestions) {
+      el.mobileSuggestions.addEventListener("mousedown", event => event.preventDefault());
+    }
+      if (el.resultBackBtn) {
+        el.resultBackBtn.addEventListener("click", () => {
+          closeSearchEventSource();
+          el.searchResult.style.display = "none";
+          el.searchBody.style.display = "block";
+          el.searchInput.value = "";
+          hideMobileSuggestions();
+          renderSearchHome();
+        });
+      }
+    el.clearSearchHistoryBtn.addEventListener("click", () => {
+      if (!state.clearHistoryArmed) {
+        state.clearHistoryArmed = true;
+        showSearchToast("鍐嶇偣涓€娆℃竻绌烘悳绱㈠巻鍙?);
+        window.clearTimeout(state.clearHistoryTimer);
+        state.clearHistoryTimer = window.setTimeout(() => {
+          state.clearHistoryArmed = false;
+        }, 2200);
+        return;
+      }
+      state.clearHistoryArmed = false;
+      window.clearTimeout(state.clearHistoryTimer);
+      writeStore("cinema:searchHistory", []);
+      renderSearchHistory();
+      showSearchToast("鎼滅储鍘嗗彶宸叉竻绌?);
+    });
+    if (el.guessCats) {
+      el.guessCats.addEventListener("click", event => {
+        const btn = event.target.closest(".guess-cat");
+        if (!btn) return;
+        el.guessCats.querySelectorAll(".guess-cat").forEach(item => item.classList.remove("active"));
+        btn.classList.add("active");
+        loadGuessList(btn.dataset.t || "");
+      });
+    }
+    if (el.guessRefreshBtn) {
+      el.guessRefreshBtn.addEventListener("click", () => {
+        const active = el.guessCats?.querySelector(".guess-cat.active")?.dataset.t || "";
+        loadGuessList(active);
+      });
+    }
+    el.refreshBtn.addEventListener("click", async () => {
+      if (el.refreshBtn.classList.contains("spin")) return;
+      el.refreshBtn.classList.remove("bump");
+      void el.refreshBtn.offsetWidth;
+      el.refreshBtn.classList.add("bump");
+      el.refreshBtn.classList.add("spin");
+      el.refreshBtn.disabled = true;
+      try {
+        await switchNextRankingChannel();
+      } finally {
+        el.refreshBtn.classList.remove("spin");
+        window.setTimeout(() => el.refreshBtn.classList.remove("bump"), 320);
+        el.refreshBtn.disabled = false;
+      }
+    });
+    if (el.loadMoreBtn) {
+      el.loadMoreBtn.addEventListener("click", loadMoreContent);
+    }
+    el.continueWatch.addEventListener("click", event => {
+      if (event.target === el.closeContinueBtn) return;
+      continueLastWatch();
+    });
+    el.closeContinueBtn.addEventListener("click", () => {
+      sessionStorage.setItem("cinema:continueHidden", "1");
+      el.continueWatch.style.display = "none";
+    });
+    el.favoritesBtn.addEventListener("click", () => showStoredList("鎴戠殑鏀惰棌", "cinema:favorites"));
+    el.historyBtn.addEventListener("click", () => showStoredList("鎾斁鍘嗗彶", "cinema:history"));
+    el.copyUrlBtn.addEventListener("click", () => copyText(el.requestUrl.value || buildUrl("videolist")));
+    el.clearBtn.addEventListener("click", () => {
+      el.keyword.value = "";
+      el.category.value = "";
+      el.source.value = "";
+      el.pageInput.value = "1";
+      el.requestUrl.value = "";
+      el.debug.textContent = "";
+      el.grid.innerHTML = "";
+      el.message.className = "empty";
+      el.message.style.display = "grid";
+      el.message.textContent = "宸叉竻绌虹瓫閫夋潯浠躲€?;
+      setText(el.countPill, "鏈姹?);
+      setText(el.pageInfo, "绛夊緟鍔犺浇鏁版嵁");
+      setText(el.searchStatus, "");
+      loadHomeSections();
+    });
+
+    if (el.prevBtn) {
+      el.prevBtn.addEventListener("click", () => {
+        el.pageInput.value = Math.max(1, Number(el.pageInput.value || 1) - 1);
+        loadList();
+      });
+    }
+
+    if (el.nextBtn) {
+      el.nextBtn.addEventListener("click", () => {
+        el.pageInput.value = Math.min(state.pageCount || 1, Number(el.pageInput.value || 1) + 1);
+        loadList();
+      });
+    }
+
+    el.keyword.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        el.pageInput.value = "1";
+        loadList();
+      }
+    });
+
+    el.closeBtn.addEventListener("click", () => el.drawer.classList.remove("open"));
+    el.drawer.addEventListener("click", event => {
+      if (event.target === el.drawer) el.drawer.classList.remove("open");
+    });
+    el.playerCloseBtn.addEventListener("click", closePlayer);
+    el.playerDrawer.addEventListener("click", event => {
+      if (event.target === el.playerDrawer) closePlayer();
+    });
+    el.resourceModalClose.addEventListener("click", () => el.resourceModal.classList.remove("open"));
+    el.resourceModal.addEventListener("click", event => {
+      if (event.target === el.resourceModal) el.resourceModal.classList.remove("open");
+    });
+    el.openPlayerBtn.addEventListener("click", () => {
+      if (el.openPlayerBtn.dataset.url) {
+        window.open(el.openPlayerBtn.dataset.url, "_blank", "noopener");
+      }
+    });
+    el.copyPlayerBtn.addEventListener("click", () => copyText(el.copyPlayerBtn.dataset.url || ""));
+    el.backTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    window.addEventListener("scroll", () => {
+      updateNavStuck();
+      handleAutoLoadMore();
+    }, { passive: true });
+
+    async function init() {
+      const config = await loadConfig();
+      applyConfig(config);
+      renderBanners();
+      updateNavStuck();
+      el.requestUrl.value = buildUrl("videolist");
+      if (config.defaults?.autoLoad !== false) {
+        renderContinueWatch();
+        loadHomeSections();
+      }
+      applyInitialPanelFromUrl();
+      if (state.activePanel === "home") checkHomeAnnouncement();
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
+

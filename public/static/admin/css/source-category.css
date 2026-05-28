@@ -1,0 +1,30 @@
+.source-category-page .source-category-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    object-fit: cover;
+    vertical-align: middle;
+}
+
+.source-category-page .source-category-name {
+    vertical-align: middle;
+}
+
+.source-category-page .source-category-icon + .source-category-name {
+    margin-left: 5px;
+}
+
+.source-category-page .source-category-sort {
+    width: 120px;
+}
+
+.source-category-help {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #666;
+    line-height: 2;
+}
+
+.source-category-warning {
+    color: orangered;
+}

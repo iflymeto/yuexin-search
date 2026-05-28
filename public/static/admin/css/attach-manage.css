@@ -1,0 +1,13 @@
+.attach-manage-page .attach-preview {
+    display: flex;
+    align-items: center;
+}
+
+.attach-manage-page .attach-image {
+    width: 80px;
+    height: 80px;
+    flex: none;
+    margin-right: 10px;
+    background-color: #f8f8f9;
+    border-radius: 6px;
+}

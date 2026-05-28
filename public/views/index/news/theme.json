@@ -1,0 +1,8 @@
+{
+  "key": "news",
+  "name": "默认主题",
+  "version": "1.0.0",
+  "author": "xinyue",
+  "description": "当前前台默认主题，作为所有主题的兜底模板。",
+  "screenshot": "screenshot.png"
+}

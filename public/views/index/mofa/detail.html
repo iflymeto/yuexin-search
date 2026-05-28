@@ -1,0 +1,167 @@
+{include file="mofa/common/header"}
+</head>
+
+<body>
+    <div class="headBg" style="background-image: url({$config.home_bg});"></div>
+    <div id="app" v-cloak>
+        {include file="mofa/common/head"}
+        <div class="searchBox searchDetail">
+            <div class="search">
+                <input type="text" v-model="keyword" placeholder="输入关键字进行搜索" @keyup.enter="searchBtn"
+                    confirm-type="search" @confirm="searchBtn">
+                <div class="btn" @click="searchBtn">
+                    <i class="iconfont icon-sousuo"></i>
+                </div>
+            </div>
+        </div>
+        <div class="listBox detailBox">
+            <div class="left">
+                <h3>详情</h3>
+                <div class="box details">
+                    {notempty name="detail.vod_pic"}
+                    <div class="pic">
+                        <img src="{$detail.vod_pic}" alt="{$detail.title}" />
+                    </div>
+                    {/notempty}
+                    <div class="title">{$detail.title}</div>
+                    <div class="cat">
+                        <div class="l">资源分类</div>
+                        <div class="r">
+                            {if condition="$detail.category && $detail.category.name"}
+                            {$detail.category.name}
+                            {else /}
+                            其它
+                            {/if}
+                        </div>
+                    </div>
+                    <div class="cat">
+                        <div class="l">资源描述</div>
+                        <div class="r">
+                            {if condition="$detail.vod_content"}
+                            {$detail.vod_content}
+                            {else /}
+                            -
+                            {/if}
+                        </div>
+                    </div>
+                    <div class="cat">
+                        <div class="l">更新时间</div>
+                        <div class="r">{$detail.times}</div>
+                    </div>
+                    <div class="cat">
+                        <div class="l">资源类型</div>
+                        <div class="r">
+                            <img src="__STATIC__/mofa/common/static/images/{$detail.is_type}.png" class="icon"
+                                alt="网盘图标" />
+                            {if condition="$detail.is_type==1"}
+                            <span>阿里云盘</span>
+                            {elseif condition="$detail.is_type==2"/}
+                            <span>百度网盘</span>
+                            {elseif condition="$detail.is_type==3"/}
+                            <span>UC网盘</span>
+                            {elseif condition="$detail.is_type==4"/}
+                            <span>迅雷网盘</span>
+                            {else /}
+                            <span>夸克网盘</span>
+                            {/if}
+                        </div>
+                    </div>
+                    <div class="cat" v-show="pc_type!=2">
+                        <div class="l">资源地址</div>
+                        <div class="r">
+                            <a href="javascript:;" onclick="linkBtn()" class="btn">{$detail.url}</a>
+                        </div>
+                    </div>
+                    {notempty name="detail.code"}
+                    <div class="cat">
+                        <div class="l">提取码</div>
+                        <div class="r" style="color: #FF3F3D;">{$detail.code}</div>
+                    </div>
+                    {/notempty}
+                    <div class="btns">
+                        <div class="btn"
+                            @click.stop="copyText($event,'{$detail.title|trim}','{$detail.url}','{$detail.code}')"><i
+                                class="iconfont icon-fenxiang1"></i>复制分享</div>
+                        <a class="btn btnCol" href="javascript:;" onclick="linkBtn()"><i
+                                class="iconfont icon-yun_o"></i>立即访问</a>
+                    </div>
+                </div>
+                <h3 class="samelistNav">相关资源</h3>
+                <div class="box details samelistBox">
+                    <div class="samelist">
+                        {volist name="sameList" id="vo"}
+                        <a href="/d/{$vo.source_id}.html" class="item">
+                            <p>
+                                <span>{$key+1}</span>
+                                {$vo.title}
+                            </p>
+                        </a>
+                        {/volist}
+                    </div>
+                </div>
+            </div>
+            <div class="right">
+                {volist name="hotList" id="vo"}
+                <div class="nav">
+                    {notempty name="vo.image"}
+                    <img src="{$vo.image}" alt="{$vo.name}">
+                    {/notempty}
+                    {$vo.name}
+                </div>
+                <div class="box">
+                    <div class="list">
+                        {volist name="vo.list" id="vos" length="5"}
+                        <a href="/s/{$vos.title}.html" class="item">
+                            <p>
+                                <span>{$key+1}</span>
+                                {$vos.title}
+                            </p>
+                        </a>
+                        {/volist}
+                    </div>
+                </div>
+                {/volist}
+            </div>
+        </div>
+        {include file="mofa/common/foot"}
+    </div>
+    {include file="mofa/common/footer"}
+    <script type="text/javascript" charset="utf-8">
+        app.rankList = JSON.parse('<?php echo json_encode($rankList, JSON_UNESCAPED_UNICODE); ?>');
+        for (const item of app.rankList) {
+            axios.get('/api/tool/ranking', {
+                params: {
+                    channel: item.name
+                }
+            })
+        }
+
+        function linkBtn() {
+            var jsonData = '<?php echo json_encode($detail, JSON_UNESCAPED_UNICODE); ?>';
+            jsonData = jsonData.replace(/[\x00-\x1F\x7F]/g, '');
+            var item = JSON.parse(jsonData);
+            if (app.pc_type == 1) {
+                window.open(item.url);
+            } else {
+                item.showUrl = item.url
+                app.dialogUrl = true;
+                showUrlFun(item);
+            }
+        }
+
+        function showUrlFun(item) {
+            app.dialogItem = item
+            if (item.showUrl) {
+                var canvas = qrcanvas.qrcanvas({
+                    data: item.showUrl,
+                    size: 120
+                });
+                setTimeout(() => {
+                    document.getElementById('qrcode').appendChild(canvas);
+                }, 200);
+            }
+        }
+    </script>
+</body>
+
+</html>

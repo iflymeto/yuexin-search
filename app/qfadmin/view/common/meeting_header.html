@@ -1,0 +1,51 @@
+<meta charset="UTF-8">
+<!-- import CSS -->
+<link rel="stylesheet" href="/static/admin/css/element.css">
+<link rel="stylesheet" href="/static/admin/css/YAdmin.css">
+<link rel="stylesheet" href="/static/admin/css/admin-common.css?v=2026051501">
+
+<!-- 统一调试日志管理器（根据.env的APP_DEBUG控制所有console输出） -->
+<script src="/static/debug-logger.js"></script>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <el-container>
+            <el-header>
+                <el-col class="admin-header-nav">
+                    <el-menu class="el-menu-vertical" text-color="#333333" unique-opened
+                        class="admin-top-menu" mode="horizontal" active-text-color="#333333">
+                        <el-menu-item onclick="location.href='./index.html?meeting_id={$datas.meeting_id??''}'" {if
+                                condition="$action=='index'"
+                                }class="is-active" {/if}>
+                            <i class="el-icon-user-solid"></i> 客户管理
+                        </el-menu-item>
+                        <el-menu-item onclick="location.href='./team.html?meeting_id={$datas.meeting_id??''}'" {if
+                                condition="$action=='team'"
+                                }class="is-active" {/if}>
+                            <i class="el-icon-s-custom"></i> 团队管理
+                        </el-menu-item>
+                        <el-menu-item onclick="location.href='./valetor.html?meeting_id={$datas.meeting_id??''}'" {if
+                                condition="$action=='valetor'"
+                                }class="is-active" {/if}>
+                            <i class="el-icon-s-help"></i> 会务人员管理
+                        </el-menu-item>
+                    </el-menu>
+                </el-col>
+
+                <el-col class="admin-user-area">
+                    <span class="topArea">
+                        <el-link :underline="false" class="el-icon-full-screen menuicon" onclick="requestFullScreen()"></el-link>
+                        <!-- <el-link :underline="false" class="el-icon-brush menuicon"></el-link> -->
+                        <el-dropdown>
+                            <el-link :underline="false">&nbsp;{$adminInfo['admin_name']}<i class="el-icon-arrow-down"></i></el-link>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item  onclick="logout()">退出登录</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </span>
+                </el-col>
+            </el-header>
+            <el-container class="body">
+                {include file="common/menu"/}
+                <el-main>

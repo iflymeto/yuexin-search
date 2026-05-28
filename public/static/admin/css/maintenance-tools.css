@@ -1,0 +1,185 @@
+.maintenance-page {
+    color: #303133;
+}
+
+.maintenance-page .maintenance-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.maintenance-page .maintenance-title-card,
+.maintenance-page .maintenance-note-card,
+.maintenance-page .maintenance-card,
+.maintenance-page .maintenance-panel {
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.maintenance-page .maintenance-title-card {
+    flex: 1;
+    padding: 16px 18px;
+}
+
+.maintenance-page .maintenance-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.maintenance-page .maintenance-desc {
+    margin-top: 7px;
+    color: #909399;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.maintenance-page .maintenance-note-card {
+    width: 360px;
+    padding: 14px 16px;
+}
+
+.maintenance-page .maintenance-note-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
+.maintenance-page .maintenance-note-list {
+    margin: 0;
+    padding-left: 18px;
+    color: #606266;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.maintenance-page .maintenance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.maintenance-page .maintenance-card {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
+}
+
+.maintenance-page .maintenance-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.maintenance-page .maintenance-card-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.maintenance-page .maintenance-card-desc {
+    color: #909399;
+    font-size: 12px;
+    line-height: 1.6;
+    min-height: 38px;
+}
+
+.maintenance-page .maintenance-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0 14px;
+}
+
+.maintenance-page .maintenance-stat {
+    padding: 8px 9px;
+    border-radius: 5px;
+    background: #f7f8fa;
+}
+
+.maintenance-page .maintenance-stat span {
+    display: block;
+    color: #909399;
+    font-size: 12px;
+}
+
+.maintenance-page .maintenance-stat strong {
+    display: block;
+    margin-top: 4px;
+    color: #303133;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.maintenance-page .maintenance-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.maintenance-page .maintenance-panel {
+    padding: 16px;
+}
+
+.maintenance-page .maintenance-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.maintenance-page .maintenance-panel-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.maintenance-page .maintenance-panel-sub {
+    margin-top: 4px;
+    color: #909399;
+    font-size: 12px;
+}
+
+.maintenance-page .schema-result {
+    margin-top: 12px;
+}
+
+.maintenance-page .schema-result-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #606266;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+    .maintenance-page .maintenance-hero {
+        display: block;
+    }
+
+    .maintenance-page .maintenance-note-card {
+        width: auto;
+        margin-top: 12px;
+    }
+}
+
+@media (max-width: 640px) {
+    .maintenance-page .maintenance-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .maintenance-page .maintenance-panel-head {
+        display: block;
+    }
+
+    .maintenance-page .maintenance-panel-head .el-button {
+        margin-top: 10px;
+    }
+}

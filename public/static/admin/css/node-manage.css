@@ -1,0 +1,22 @@
+.node-manage-page .node-toolbar {
+    float: right;
+}
+
+.node-manage-page .node-filter {
+    width: 120px;
+}
+
+.node-manage-page .node-icon {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .node-manage-page .node-toolbar {
+        float: none;
+        margin-top: 8px;
+    }
+
+    .node-manage-page .node-filter {
+        width: 100%;
+    }
+}

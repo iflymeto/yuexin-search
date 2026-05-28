@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>诊断日志</title>
+    {include file="common/header"/}
+
+    <div class="diag-page">
+        <div class="diag-head">
+            <div class="diag-title-card">
+                <div class="diag-title">搜索 / 转存 / 目录树诊断日志</div>
+                <div class="diag-desc">用于排查搜索线路、转存分享、目录树解析异常。日志默认关闭，只在需要调试时开启。</div>
+            </div>
+            <div class="diag-switch-card">
+                <div class="diag-switch-row">
+                    <div>
+                        <div class="diag-switch-title">日志记录</div>
+                        <div class="diag-muted">{{diagnostic.enabled ? '已开启' : '已关闭'}}</div>
+                    </div>
+                    <el-switch v-model="diagnostic.enabled" :active-value="1" :inactive-value="0"
+                        active-text="开" inactive-text="关" @change="saveConfig">
+                    </el-switch>
+                </div>
+                <div class="diag-switch-tip">关闭后搜索、转存、目录树不会继续写入诊断日志；历史日志仍可查看或清理。</div>
+            </div>
+        </div>
+
+        <div class="diag-summary">
+            <div class="diag-summary-item">
+                <div class="diag-summary-label">当前筛选总数</div>
+                <div class="diag-summary-value">{{summary.total || 0}}</div>
+            </div>
+            <div class="diag-summary-item">
+                <div class="diag-summary-label">错误</div>
+                <div class="diag-summary-value error">{{summary.error || 0}}</div>
+            </div>
+            <div class="diag-summary-item">
+                <div class="diag-summary-label">警告</div>
+                <div class="diag-summary-value warn">{{summary.warn || 0}}</div>
+            </div>
+            <div class="diag-summary-item">
+                <div class="diag-summary-label">历史日志总量</div>
+                <div class="diag-summary-value">{{diagnostic.log_count || 0}}</div>
+            </div>
+            <div class="diag-summary-item">
+                <div class="diag-summary-label">日志表大小</div>
+                <div class="diag-summary-value">{{diagnostic.table_size_human || '0 B'}}</div>
+            </div>
+        </div>
+
+        <el-alert class="diag-alert" type="info" show-icon :closable="false"
+            title="日志只保存脱敏链接预览和链接哈希，不展示完整原链接。">
+        </el-alert>
+
+        <div class="diag-filter-panel">
+            <div class="diag-filter-grid">
+                <el-select v-model="form.module" clearable placeholder="模块">
+                    <el-option label="搜索" value="search"></el-option>
+                    <el-option label="转存" value="transfer"></el-option>
+                    <el-option label="目录树" value="pan_tree"></el-option>
+                </el-select>
+                <el-select v-model="form.status" clearable placeholder="状态">
+                    <el-option label="成功" value="success"></el-option>
+                    <el-option label="提示" value="info"></el-option>
+                    <el-option label="警告" value="warn"></el-option>
+                    <el-option label="错误" value="error"></el-option>
+                </el-select>
+                <el-input v-model="form.keyword" clearable placeholder="关键词 / 线路 / 消息 / 链接预览"
+                    @keyup.enter.native="search"></el-input>
+                <el-input v-model="form.action" clearable placeholder="动作 action" @keyup.enter.native="search"></el-input>
+                <el-input v-model="form.line_name" clearable placeholder="线路名称" @keyup.enter.native="search"></el-input>
+                <el-select v-model="form.is_type" clearable placeholder="网盘">
+                    <el-option label="夸克" value="0"></el-option>
+                    <el-option label="阿里" value="1"></el-option>
+                    <el-option label="百度" value="2"></el-option>
+                    <el-option label="UC" value="3"></el-option>
+                    <el-option label="迅雷" value="4"></el-option>
+                </el-select>
+                <el-input-number v-model="form.min_duration" :min="0" :max="600000" controls-position="right"
+                    placeholder="最低耗时"></el-input-number>
+                <el-date-picker v-model="timeRange" type="datetimerange" range-separator="至" start-placeholder="开始时间"
+                    end-placeholder="结束时间" value-format="yyyy-MM-dd HH:mm:ss">
+                </el-date-picker>
+            </div>
+            <div class="diag-filter-actions">
+                <el-button type="primary" @click="search">查询</el-button>
+                <el-button @click="resetSearch">重置</el-button>
+                <el-button type="warning" plain @click="cleanOld">清理7天前</el-button>
+                <el-button type="danger" plain @click="cleanAll">清空全部</el-button>
+            </div>
+        </div>
+
+        <div class="diag-table-card">
+            <div class="diag-table-head">
+                <div class="diag-table-title">日志列表</div>
+                <div class="diag-muted">建议排查完成后关闭记录开关，并按需清理旧日志。</div>
+            </div>
+            <el-table class="diag-table" :data="dataList.data" v-loading="loading" stripe>
+                <el-table-column prop="id" label="ID" width="72" align="center"></el-table-column>
+                <el-table-column label="模块" width="86" align="center">
+                    <template slot-scope="scope">
+                        <el-tag size="mini" v-if="scope.row.module === 'search'">搜索</el-tag>
+                        <el-tag size="mini" type="warning" v-else-if="scope.row.module === 'transfer'">转存</el-tag>
+                        <el-tag size="mini" type="success" v-else-if="scope.row.module === 'pan_tree'">目录树</el-tag>
+                        <el-tag size="mini" type="info" v-else>{{scope.row.module}}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="状态" width="86" align="center">
+                    <template slot-scope="scope">
+                        <el-tag size="mini" type="success" v-if="scope.row.status === 'success'">成功</el-tag>
+                        <el-tag size="mini" type="info" v-else-if="scope.row.status === 'info'">提示</el-tag>
+                        <el-tag size="mini" type="warning" v-else-if="scope.row.status === 'warn'">警告</el-tag>
+                        <el-tag size="mini" type="danger" v-else-if="scope.row.status === 'error'">错误</el-tag>
+                        <el-tag size="mini" v-else>{{scope.row.status}}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="action" label="动作" width="145" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="message" label="摘要" min-width="220" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="keyword" label="关键词" width="130" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="is_type_text" label="网盘" width="72" align="center"></el-table-column>
+                <el-table-column prop="line_name" label="线路" width="140" show-overflow-tooltip></el-table-column>
+                <el-table-column label="链接预览" min-width="210" show-overflow-tooltip>
+                    <template slot-scope="scope">
+                        <span class="diag-url">{{scope.row.url_preview}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="duration_ms" label="耗时" width="86" align="center">
+                    <template slot-scope="scope">{{scope.row.duration_ms}}ms</template>
+                </el-table-column>
+                <el-table-column prop="create_time_text" label="时间" width="166" align="center"></el-table-column>
+                <el-table-column label="操作" width="78" align="center" fixed="right">
+                    <template slot-scope="scope">
+                        <el-button type="text" @click="showContext(scope.row)">详情</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <div class="page">
+                <el-pagination @size-change="handleSizeChange" :page-sizes="[10, 20, 50, 100, 200]"
+                    :page-size="form.per_page" layout="total, sizes, prev, pager, next, jumper" background
+                    @current-change="changeCurrentPage" :current-page="dataList.current_page"
+                    :page-count="dataList.last_page" :total="dataList.total">
+                </el-pagination>
+            </div>
+        </div>
+    </div>
+
+    <el-dialog title="诊断详情" :visible.sync="dialogVisible" width="720px" append-to-body>
+        <pre class="diag-context">{{currentContext}}</pre>
+    </el-dialog>
+
+    {include file="common/footer"/}
+    <script>
+        (function () {
+            if (document.getElementById('diagnostic-style')) {
+                return;
+            }
+            var link = document.createElement('link');
+            link.id = 'diagnostic-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/diagnostic.css?v=2026051501';
+            document.head.appendChild(link);
+        })();
+
+        var app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    loading: false,
+                    dialogVisible: false,
+                    currentContext: '',
+                    timeRange: [],
+                    diagnostic: {
+                        enabled: 0,
+                        log_count: 0,
+                        table_size_human: '0 B'
+                    },
+                    summary: {
+                        total: 0,
+                        error: 0,
+                        warn: 0
+                    },
+                    dataList: {
+                        data: [],
+                        current_page: 1,
+                        last_page: 1,
+                        total: 0
+                    },
+                    form: {
+                        page: 1,
+                        per_page: 20,
+                        module: '',
+                        status: '',
+                        keyword: '',
+                        action: '',
+                        line_name: '',
+                        is_type: '',
+                        min_duration: 0,
+                        start_time: '',
+                        end_time: ''
+                    }
+                }
+            },
+            created() {
+                this.getConfig();
+                this.getList();
+            },
+            methods: {
+                handleSizeChange(perPage) {
+                    this.form.per_page = perPage;
+                    this.form.page = 1;
+                    this.getList();
+                },
+                changeCurrentPage(page) {
+                    this.form.page = page;
+                    this.getList();
+                },
+                search() {
+                    this.form.page = 1;
+                    this.applyTimeRange();
+                    this.getList();
+                },
+                resetSearch() {
+                    this.form.module = '';
+                    this.form.status = '';
+                    this.form.keyword = '';
+                    this.form.action = '';
+                    this.form.line_name = '';
+                    this.form.is_type = '';
+                    this.form.min_duration = 0;
+                    this.form.start_time = '';
+                    this.form.end_time = '';
+                    this.timeRange = [];
+                    this.search();
+                },
+                applyTimeRange() {
+                    if (this.timeRange && this.timeRange.length === 2) {
+                        this.form.start_time = this.timeRange[0];
+                        this.form.end_time = this.timeRange[1];
+                    } else {
+                        this.form.start_time = '';
+                        this.form.end_time = '';
+                    }
+                },
+                getConfig() {
+                    var that = this;
+                    axios.post('/admin/diagnostic_log/getConfig', Object.assign({}, PostBase))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.diagnostic = Object.assign({}, that.diagnostic, response.data.data || {});
+                            }
+                        });
+                },
+                saveConfig(value) {
+                    var that = this;
+                    axios.post('/admin/diagnostic_log/saveConfig', Object.assign({}, PostBase, {
+                        enabled: value
+                    })).then(function (response) {
+                        if (response.data.code == CODE_SUCCESS) {
+                            that.$message.success(response.data.message);
+                            that.getConfig();
+                        } else {
+                            that.$message.error(response.data.message);
+                            that.getConfig();
+                        }
+                    }).catch(function () {
+                        that.$message.error('服务器内部错误');
+                        that.getConfig();
+                    });
+                },
+                getList() {
+                    var that = this;
+                    that.loading = true;
+                    that.applyTimeRange();
+                    axios.post('/admin/diagnostic_log/getList', Object.assign({}, PostBase, that.form))
+                        .then(function (response) {
+                            that.loading = false;
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.dataList = response.data.data;
+                                that.summary = response.data.data.summary || {total: 0, error: 0, warn: 0};
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.loading = false;
+                            that.$message.error('服务器内部错误');
+                            debugLog.log(error);
+                        });
+                },
+                showContext(row) {
+                    var data = {};
+                    try {
+                        data = row.context ? JSON.parse(row.context) : {};
+                    } catch (e) {
+                        data = row.context || {};
+                    }
+                    this.currentContext = JSON.stringify(Object.assign({}, row, {
+                        context: data
+                    }), null, 2);
+                    this.dialogVisible = true;
+                },
+                cleanOld() {
+                    this.cleanLogs(7, '即将清理7天前诊断日志，是否确认?');
+                },
+                cleanAll() {
+                    this.cleanLogs(0, '即将清空全部诊断日志，是否确认?');
+                },
+                cleanLogs(days, message) {
+                    var that = this;
+                    this.$confirm(message, '清理诊断日志', {
+                        confirmButtonText: '清理',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function () {
+                        axios.post('/admin/diagnostic_log/clean', Object.assign({}, PostBase, {
+                            days: days
+                        })).then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.$message.success(response.data.message);
+                                that.getList();
+                                that.getConfig();
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        }).catch(function () {
+                            that.$message.error('服务器内部错误');
+                        });
+                    }).catch(function () {});
+                }
+            }
+        })
+    </script>
+
+</html>
+

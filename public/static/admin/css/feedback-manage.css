@@ -1,0 +1,12 @@
+.feedback-manage-page .feedback-actions {
+    margin-bottom: 20px;
+}
+
+.feedback-manage-page .feedback-selected {
+    margin-left: 10px;
+    color: #666;
+}
+
+.feedback-manage-page .feedback-muted {
+    color: #999;
+}

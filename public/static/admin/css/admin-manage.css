@@ -1,0 +1,18 @@
+.admin-manage-page .admin-toolbar {
+    float: right;
+}
+
+.admin-manage-page .admin-filter {
+    width: 120px;
+}
+
+@media (max-width: 768px) {
+    .admin-manage-page .admin-toolbar {
+        float: none;
+        margin-top: 8px;
+    }
+
+    .admin-manage-page .admin-filter {
+        width: 100%;
+    }
+}

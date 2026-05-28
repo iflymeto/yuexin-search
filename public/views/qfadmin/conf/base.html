@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{$node.node_title}</title>
+    {include file="common/header"/}
+    <div class="config-page">
+        <!-- 配置导出/导入操作区 -->
+        <div class="config-io-panel">
+            <div class="config-io-card">
+                <div class="config-io-icon">
+                    <i class="el-icon-download"></i>
+                </div>
+                <div class="config-io-main">
+                    <div class="config-io-title">导出配置</div>
+                    <div class="config-io-desc">将当前所有配置导出为 JSON 文件</div>
+                </div>
+                <el-button type="primary" size="small" icon="el-icon-download" @click="exportConfig">导出配置</el-button>
+            </div>
+            <div class="config-io-card">
+                <div class="config-io-icon success">
+                    <i class="el-icon-upload"></i>
+                </div>
+                <div class="config-io-main">
+                    <div class="config-io-title">导入配置</div>
+                    <div class="config-io-desc">从 JSON 文件导入并覆盖当前配置</div>
+                </div>
+                <el-upload action="#" :auto-upload="false" :show-file-list="false" :on-change="handleFileChange" accept=".json">
+                    <el-button type="success" size="small" icon="el-icon-upload2">选择文件</el-button>
+                </el-upload>
+            </div>
+        </div>
+
+        <div class="config-health-panel" :class="configHealth.status" v-if="configHealth.checked">
+            <div class="config-health-main">
+                <i :class="configHealth.status === 'ok' ? 'el-icon-circle-check' : 'el-icon-warning-outline'"></i>
+                <span>{{configHealth.message}}</span>
+            </div>
+            <div class="config-health-actions" v-if="configHealth.missing.length">
+                <span class="config-health-item" v-for="item in configHealth.missing" :key="item.key">{{item.title}} / {{item.key}}</span>
+            </div>
+        </div>
+
+        <div class="config-filter-panel" v-if="hasGroupedSections(activeName)">
+            <div class="config-filter-control">
+                <i class="el-icon-search"></i>
+                <input class="config-filter-input" v-model="configFilter" placeholder="搜索配置名称、键名或说明">
+                <button type="button" class="config-filter-clear" v-if="configFilter" @click="clearConfigFilter">清除</button>
+            </div>
+            <span class="config-filter-count">{{getFilterStats().visible}} / {{getFilterStats().total}}</span>
+        </div>
+
+        <el-tabs class="config-tabs" v-model="activeName">
+            <el-tab-pane :label="item.name" :name="item.val" v-for="(item, index) in tabname" :key="index" v-if="item.show">
+                <div v-if="hasGroupedSections(item.val)" class="config-tab-body">
+                    <div class="config-section" v-for="section in getActiveSections(item.val)" :key="section.key" v-if="getVisibleSectionItems(section).length">
+                        <div class="config-section-head">
+                            <div>
+                                <div class="config-section-title">{{section.title}}</div>
+                                <div class="config-section-desc">{{section.desc}}</div>
+                            </div>
+                            <el-tag size="small" :type="section.tagType || 'info'">{{section.tag}}</el-tag>
+                        </div>
+                        <div class="config-section-body">
+                            <el-form label-position="top">
+                                <div class="config-field-grid" :class="{'one-column': section.wide}">
+                                    <div class="config-field-card" v-for="items in getVisibleSectionItems(section)" :key="items.conf_key" :data-conf-key="items.conf_key">
+                                        <div class="config-field-label">
+                                            <span class="config-field-title">{{items.conf_title || items.conf_key}}</span>
+                                            <span class="config-field-key">{{items.conf_key}}</span>
+                                        </div>
+                                        <div v-if="isActionTextControl(items)" class="config-inline-control config-control-root">
+                                            <input class="config-native-input config-short-editor" v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'proxy_host'" @click="testProxy">测试代理</button>
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'other_pan_check_api' && isPanCheckMode()" @click="testPanCheck(items.conf_value)">测试连接</button>
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'redis_host'" @click="testRedisCache">测试 Redis</button>
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'memcached_host'" @click="testMemcachedCache">测试 Memcached</button>
+                                        </div>
+                                        <input v-else-if="isShortTextControl(items)" class="config-native-input config-short-editor config-control-root"
+                                            v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                        <textarea v-else-if="isTextControl(items)" class="config-native-textarea config-primary-editor"
+                                            :class="getEditorClass(items)" :rows="getEditorRows(items)"
+                                            v-model="items.conf_value" :placeholder="getInputPlaceholder(items)"></textarea>
+                                        <label v-else-if="getControlType(items) === 'switch'" class="config-native-switch">
+                                            <input type="checkbox" v-model="items.conf_value" true-value="1" false-value="0">
+                                            <span>{{items.conf_value == '1' ? '开启' : '关闭'}}</span>
+                                        </label>
+                                        <input v-else-if="getControlType(items) === 'number'" class="config-native-input config-native-number"
+                                            type="number" min="0" v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                        <div v-else-if="getControlType(items) === 'secret'" class="config-secret-control config-control-root" :class="{'long-secret': isLongSecret(items)}">
+                                            <textarea v-if="secretVisible[items.conf_key] && isLongSecret(items)" class="config-native-textarea secret-editor" rows="4"
+                                                v-model="items.conf_value" :placeholder="getInputPlaceholder(items)"></textarea>
+                                            <input v-else class="config-native-input" :type="secretVisible[items.conf_key] ? 'text' : 'password'"
+                                                v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                            <button type="button" class="config-native-btn subtle" @click="toggleSecret(items.conf_key)">
+                                                {{secretVisible[items.conf_key] ? '隐藏' : '显示'}}
+                                            </button>
+                                        </div>
+                                        <textarea v-else-if="items.conf_spec==1" class="config-native-textarea config-primary-editor"
+                                            :class="getEditorClass(items)" :rows="getEditorRows(items)"
+                                            v-model="items.conf_value" :placeholder="getInputPlaceholder(items)"></textarea>
+                                        <div v-else-if="items.conf_spec==2" class="config-native-options config-control-root">
+                                            <label v-for="(val, key) in items.conf_content" :key="key">
+                                                <input type="radio" v-model="items.conf_value" :value="val.value">
+                                                <span>{{val.name}}</span>
+                                            </label>
+                                        </div>
+                                        <div v-else-if="items.conf_spec==3" class="config-native-options config-control-root">
+                                            <label v-for="(val, key) in items.conf_content" :key="key">
+                                                <input type="checkbox" v-model="items.conf_value" :value="val.value">
+                                                <span>{{val.name}}</span>
+                                            </label>
+                                        </div>
+                                        <div v-else-if="items.conf_spec==4" class="config-image-picker config-control-root">
+                                            <textarea class="config-native-textarea config-primary-editor compact image-path" rows="2"
+                                                v-model="items.conf_value" :placeholder="getInputPlaceholder(items) || '图片地址或上传后的路径'"></textarea>
+                                            <img v-if="items.conf_value" class="config-image-preview"
+                                                :src="items.conf_value" @error="onImageError" alt="预览图片">
+                                            <button type="button" class="config-native-btn" @click="selectConfigImage(items)">选择图片</button>
+                                            <button type="button" class="config-native-btn plain" v-if="items.conf_value" @click="items.conf_value = ''">清除</button>
+                                        </div>
+                                        <Single v-else-if="items.conf_spec==5" v-model="items.conf_value" multiple="true" :selected_num="items.conf_value.length"></Single>
+                                        <Ueditor v-else-if="items.conf_spec==6" v-model="items.conf_value"></Ueditor>
+                                        <div v-else-if="items.conf_spec==7" class="config-color-control config-control-root">
+                                            <input class="config-native-color" type="color"
+                                                :value="normalizeColor(items.conf_value, items.conf_key)"
+                                                @input="items.conf_value = $event.target.value">
+                                            <input class="config-native-input" v-model="items.conf_value" :placeholder="getInputPlaceholder(items) || '例如：#ffffff'">
+                                        </div>
+                                        <div v-else-if="items.conf_spec==8" class="config-control-root">
+                                            <div class="config-native-options">
+                                                <label>
+                                                    <input type="radio" v-model="items.input_mode" value="upload" @change="onInputModeChange(items)">
+                                                    <span>上传图片</span>
+                                                </label>
+                                                <label>
+                                                    <input type="radio" v-model="items.input_mode" value="url" @change="onInputModeChange(items)">
+                                                    <span>填写直链</span>
+                                                </label>
+                                            </div>
+                                            <div v-if="items.input_mode === 'upload'" class="config-mode-body">
+                                                <div class="config-image-picker">
+                                                    <textarea class="config-native-textarea config-primary-editor compact image-path" rows="2"
+                                                        v-model="items.conf_value" placeholder="图片路径，选择图片后自动填入"></textarea>
+                                                    <img v-if="items.conf_value" class="config-image-preview"
+                                                        :src="items.conf_value" @error="onImageError" alt="预览图片">
+                                                    <button type="button" class="config-native-btn" @click="selectConfigImage(items)">选择图片</button>
+                                                    <button type="button" class="config-native-btn plain" v-if="items.conf_value" @click="items.conf_value = ''">清除</button>
+                                                </div>
+                                            </div>
+                                            <div v-else-if="items.input_mode === 'url'" class="config-mode-body">
+                                                <textarea class="config-native-textarea config-primary-editor compact image-path" rows="2"
+                                                    v-model="items.conf_value" placeholder="请输入图片直链地址，如：https://example.com/image.jpg"></textarea>
+                                                <img v-if="items.conf_value && isValidUrl(items.conf_value)" class="config-image-preview"
+                                                    :src="items.conf_value" @error="onImageError" alt="预览图片">
+                                            </div>
+                                        </div>
+                                        <div v-else class="config-inline-control config-control-root">
+                                            <input class="config-native-input" v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'proxy_host'" @click="testProxy">测试代理</button>
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'other_pan_check_api' && isPanCheckMode()" @click="testPanCheck(items.conf_value)">测试连接</button>
+                                        </div>
+                                        <span class="config-help">{{items.conf_desc}}<span v-if="items.conf_spec==5">　最多上传10张</span></span>
+                                    </div>
+                                </div>
+                            </el-form>
+                        </div>
+                    </div>
+                    <div class="config-empty-filter" v-if="configFilter && getFilterStats().visible === 0">
+                        未找到匹配的配置项
+                    </div>
+                    <div class="config-submit-bar">
+                        <div class="config-submit-left">
+                            <span class="config-muted">保存后会自动刷新配置缓存。</span>
+                        </div>
+                        <div class="config-submit-right">
+                            <el-button type="info" plain v-if="item.val === '1'" @click="diagnosisProxyConfig">诊断代理配置</el-button>
+                            <el-button type="primary" :loading="savingConfig[item.val]" @click="onSubmit(item.val)">保存{{item.name}}</el-button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="config-tab-body base_form">
+                    <el-form ref="form" label-width="180px">
+                        <block v-for="(items, indexs) in form" :key="indexs">
+                            <el-form-item :label="items.conf_title?items.conf_title:items.conf_key" v-if="items.conf_type==item.val && shouldShowGenericConfig(items, item.val)">
+                                <block v-if="items.conf_spec==1">
+                                    <el-input type="textarea" :rows="4" v-model="items.conf_value"></el-input>
+                                </block>
+                                <block v-else-if="items.conf_spec==2">
+                                    <el-radio v-model="items.conf_value" v-for="(val, key) in items.conf_content" :key="key" :label="val.value">{{val.name}}</el-radio>
+                                </block>
+                                <block v-else-if="items.conf_spec==3">
+                                    <el-checkbox-group v-model="items.conf_value">
+                                        <el-checkbox v-for="(val, key) in items.conf_content" :key="key" :label="val.value">{{val.name}}</el-checkbox>
+                                    </el-checkbox-group>
+                                </block>
+                                <block v-else-if="items.conf_spec==4">
+                                    <div class="config-image-picker">
+                                        <img v-if="items.conf_value" class="config-image-preview"
+                                            :src="items.conf_value" @error="onImageError" alt="预览图片">
+                                        <el-button size="small" icon="el-icon-picture-outline" @click="selectConfigImage(items)">选择图片</el-button>
+                                        <el-button size="small" plain v-if="items.conf_value" @click="items.conf_value = ''">清除</el-button>
+                                    </div>
+                                </block>
+                                <block v-else-if="items.conf_spec==5">
+                                    <Single v-model="items.conf_value" multiple="true" :selected_num="items.conf_value.length"></Single>
+                                </block>
+                                <block v-else-if="items.conf_spec==6">
+                                    <Ueditor v-model="items.conf_value"></Ueditor>
+                                </block>
+                                <block v-else-if="items.conf_spec==7">
+                                    <div class="config-color-control">
+                                        <el-color-picker v-model="items.conf_value"></el-color-picker>
+                                        <el-input v-model="items.conf_value" :placeholder="getInputPlaceholder(items) || '例如：#ffffff'"></el-input>
+                                    </div>
+                                </block>
+                                <block v-else-if="items.conf_spec==8">
+                                    <!-- 图片上传和直链混合模式 -->
+                                    <div class="config-mode-head">
+                                        <el-radio-group v-model="items.input_mode" @change="onInputModeChange(items)">
+                                            <el-radio label="upload">上传图片</el-radio>
+                                            <el-radio label="url">填写直链</el-radio>
+                                        </el-radio-group>
+                                    </div>
+                                    <div v-if="items.input_mode === 'upload'">
+                                        <div class="config-image-picker">
+                                            <img v-if="items.conf_value" class="config-image-preview"
+                                                :src="items.conf_value" @error="onImageError" alt="预览图片">
+                                            <el-button size="small" icon="el-icon-picture-outline" @click="selectConfigImage(items)">选择图片</el-button>
+                                            <el-button size="small" plain v-if="items.conf_value" @click="items.conf_value = ''">清除</el-button>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="items.input_mode === 'url'">
+                                        <el-input v-model="items.conf_value" placeholder="请输入图片直链地址，如：https://example.com/image.jpg"></el-input>
+                                        <div v-if="items.conf_value && isValidUrl(items.conf_value)" class="config-preview-wrap">
+                                            <img :src="items.conf_value" class="config-image-preview legacy-preview" @error="onImageError" alt="预览图片">
+                                        </div>
+                                    </div>
+                                </block>
+                                <block v-else>
+                                    <!-- 特殊处理：中转服务器地址添加测试按钮 -->
+                                    <el-input v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
+                                        <el-button slot="append" v-if="items.conf_key === 'proxy_host'" @click="testProxy" :loading="testingProxy" icon="el-icon-check">测试代理</el-button>
+                                        <el-button slot="append" v-if="items.conf_key === 'other_pan_check_api' && isPanCheckMode()" @click="testPanCheck(items.conf_value)" icon="el-icon-check">测试连接</el-button>
+                                    </el-input>
+                                </block>
+                                <span class="f_tips">{{items.conf_desc}}<span v-if="items.conf_spec==5">　最多上传10张</span></span>
+                            </el-form-item>
+                        </block>
+                        <el-form-item>
+                            <el-button type="primary" :loading="savingConfig[item.val]" @click="onSubmit(item.val)">保存配置</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+        
+    </div>
+    {include file="common/footer"/}
+    <!-- 添加图片上传组件引用 -->
+    <Uploads ref="upload"></Uploads>
+    <script>
+        (function () {
+            if (document.getElementById('config-base-style')) {
+                return;
+            }
+            var link = document.createElement('link');
+            link.id = 'config-base-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/config-base.css?v=2026051510';
+            document.head.appendChild(link);
+        })();
+
+        var app = new Vue({
+            el: '#app',
+            data() {
+                this.getData();
+                return {
+                    form: [],
+                    activeName: "0",
+                    tabname: [
+                        {
+                            name: '基础设置',
+                            val: '0',
+                            show: false,
+                        },
+                        {
+                            name: 'SEO设置',
+                            val: '9',
+                            show: false,
+                        },
+                        {
+                            name: '前端模版',
+                            val: '3',
+                            show: false,
+                        },
+                        {
+                            name: '搜索设置',
+                            val: '1',
+                            show: false,
+                        },
+                        {
+                            name: '微信设置',
+                            val: '8',
+                            show: false,
+                        },
+                        {
+                            name: '交易设置',
+                            val: '10',
+                            show: false,
+                        },
+                        {
+                            name: '上传配置',
+                            val: '2',
+                            show: false,
+                        },
+                        {
+                            name: '其他设置',
+                            val: '4',
+                            show: false,
+                        },
+                        {
+                            name: '密码验证',
+                            val: '11',
+                            show: false,
+                        },
+                    ],
+                    testingProxy: false,
+                    secretVisible: {},
+                    savingConfig: {},
+                    configFilter: '',
+                    configHealth: {
+                        checked: false,
+                        status: 'ok',
+                        message: '配置控件检查通过',
+                        missing: []
+                    },
+                    searchSections: [
+                        {
+                            key: 'mode',
+                            title: '全网搜模式',
+                            desc: '控制全网搜是否开启、获取资源时走转存分享还是第三方直链，以及是否排除重复结果。',
+                            tag: '常用',
+                            tagType: 'success',
+                            keys: ['is_quan', 'is_quan_type', 'web_search_dedup', 'is_quan_zc', 'search_type']
+                        },
+                        {
+                            key: 'filter',
+                            title: '搜索过滤与提示',
+                            desc: '设置关键词屏蔽、未搜索到结果时的提示文案，以及搜索提示图。',
+                            tag: '展示',
+                            keys: ['ban_keywords', 'search_tips', 'search_bg', 'api_key'],
+                            wide: true
+                        },
+                        {
+                            key: 'check',
+                            title: '网盘有效性检测',
+                            desc: '用于百度、UC、迅雷等非夸克网盘的有效性检测；PanCheck 模式需要填写检测 API 地址。',
+                            tag: '检测',
+                            tagType: 'warning',
+                            keys: ['other_pan_check_enable', 'other_pan_check_mode', 'other_pan_check_api']
+                        },
+                        {
+                            key: 'proxy',
+                            title: '网络与代理',
+                            desc: '仅对夸克、百度、UC、迅雷等网盘 API 域名生效。代理配置修改后请先保存，再运行诊断。',
+                            tag: '诊断',
+                            tagType: 'info',
+                            keys: ['proxy_enable', 'proxy_type', 'proxy_host', 'proxy_port', 'proxy_user', 'proxy_pass']
+                        },
+                        {
+                            key: 'fake',
+                            title: '伪装模式',
+                            desc: '用于演示或规避直接展示真实资源链接。开启后按网盘类型替换前台展示链接。',
+                            tag: '按需',
+                            keys: ['fake_mode_enable', 'fake_quark_url', 'fake_baidu_url']
+                        }
+                    ],
+                    otherSections: [
+                        {
+                            key: 'quark',
+                            title: '夸克网盘',
+                            desc: '配置夸克 Cookie、默认转存目录、临时资源目录和广告文件过滤。',
+                            tag: '目录树支持',
+                            tagType: 'success',
+                            keys: ['quark_cookie', 'quark_file', 'quark_file_time', 'quark_ad_filter_enable', 'quark_banned'],
+                            wide: true
+                        },
+                        {
+                            key: 'baidu',
+                            title: '百度网盘',
+                            desc: '配置百度 Cookie 以及默认/临时转存目录。目录树预览已支持百度。',
+                            tag: '目录树支持',
+                            tagType: 'success',
+                            keys: ['baidu_cookie', 'baidu_file', 'baidu_file_time'],
+                            wide: true
+                        },
+                        {
+                            key: 'uc',
+                            title: 'UC 网盘',
+                            desc: '配置 UC Cookie 以及默认/临时转存目录。目录树预览已支持 UC。',
+                            tag: '目录树支持',
+                            tagType: 'success',
+                            keys: ['uc_cookie', 'uc_file', 'uc_file_time'],
+                            wide: true
+                        },
+                        {
+                            key: 'ali',
+                            title: '阿里云盘',
+                            desc: '当前主要保留转存目录配置；Authorization 标注为当前版本暂不用，暂不在常规配置中展示。',
+                            tag: '保留',
+                            tagType: 'info',
+                            keys: ['ali_file', 'ali_file_time']
+                        },
+                        {
+                            key: 'xunlei',
+                            title: '迅雷网盘',
+                            desc: '保留 Cookie 和转存目录配置；迅雷目录树方案复杂，当前暂不支持目录预览。',
+                            tag: '目录树暂不支持',
+                            tagType: 'warning',
+                            keys: ['xunlei_cookie', 'xunlei_file', 'xunlei_file_time'],
+                            wide: true
+                        },
+                        {
+                            key: 'cache',
+                            title: '缓存与性能',
+                            desc: '选择系统缓存驱动。Redis/Memcached 配置会根据当前缓存驱动自动显示。',
+                            tag: '性能',
+                            tagType: 'info',
+                            keys: ['cache_driver', 'redis_host', 'redis_port', 'redis_password', 'memcached_host', 'memcached_port', 'memcached_username', 'memcached_password']
+                        }
+                    ],
+                    frontendSections: [
+                        {
+                            key: 'theme',
+                            title: '前端主题',
+                            desc: '选择前台首页、搜索页和详情页的模板。主题文件缺失时会自动回退默认主题。',
+                            tag: '主题',
+                            tagType: 'success',
+                            keys: ['frontend_theme']
+                        },
+                        {
+                            key: 'announce',
+                            title: '公告弹窗',
+                            desc: '控制首页公告弹窗的开启、标题、内容和显示频率。',
+                            tag: '公告',
+                            tagType: 'warning',
+                            keys: ['announce_status', 'announce_title', 'announce_content', 'announce_type', 'announce_interval_days'],
+                            wide: true
+                        },
+                        {
+                            key: 'entry',
+                            title: '首页访问与功能',
+                            desc: '控制 PC 端访问方式、需求提交入口、群二维码和顶部外链。',
+                            tag: '入口',
+                            tagType: 'success',
+                            keys: ['pc_type', 'app_demand', 'qcode', 'app_links'],
+                            wide: true
+                        },
+                        {
+                            key: 'ranking',
+                            title: '排行榜与最新列表',
+                            desc: '配置排行榜展示模式、数量限制和最新列表入口。',
+                            tag: '列表',
+                            keys: ['ranking_type', 'ranking_num', 'ranking_m_num', 'home_new', 'home_new_img']
+                        },
+                        {
+                            key: 'visual',
+                            title: '首页视觉',
+                            desc: '配置首页背景、主题色、文字色和搜索框等元素背景。',
+                            tag: '视觉',
+                            tagType: 'info',
+                            keys: ['home_bg', 'home_background', 'home_color', 'home_theme', 'other_background']
+                        },
+                        {
+                            key: 'custom_css',
+                            title: '自定义样式',
+                            desc: '高级样式覆盖，直接填写 CSS。保存前建议先备份。',
+                            tag: '高级',
+                            tagType: 'danger',
+                            keys: ['home_css'],
+                            wide: true
+                        }
+                    ],
+                    baseSections: [
+                        {
+                            key: 'site',
+                            title: '站点信息',
+                            desc: '配置网站名称、宣传语和网站名称显示方式。',
+                            tag: '基础',
+                            tagType: 'success',
+                            keys: ['app_name', 'app_name_hide', 'app_subname']
+                        },
+                        {
+                            key: 'brand',
+                            title: 'Logo 与图标',
+                            desc: '配置前台 Logo 与浏览器图标，建议使用清晰的方形图片。',
+                            tag: '品牌',
+                            tagType: 'info',
+                            keys: ['logo', 'app_icon']
+                        },
+                        {
+                            key: 'footer',
+                            title: '页脚声明',
+                            desc: '配置底部说明与版权信息，可填写 HTML。',
+                            tag: '页脚',
+                            keys: ['footer_dec', 'footer_copyright'],
+                            wide: true
+                        }
+                    ],
+                    passwordSections: [
+                        {
+                            key: 'password_main',
+                            title: '密码验证',
+                            desc: '控制用户获取资源时是否需要输入访问密码。',
+                            tag: '安全',
+                            tagType: 'warning',
+                            keys: ['resource_password_enable', 'resource_password', 'resource_password_expire']
+                        },
+                        {
+                            key: 'password_text',
+                            title: '提示文案',
+                            desc: '配置密码弹窗里的提示信息和密码错误时的反馈文案。',
+                            tag: '文案',
+                            keys: ['resource_password_hint', 'resource_password_error'],
+                            wide: true
+                        }
+                    ],
+                    seoSections: [
+                        {
+                            key: 'seo_base',
+                            title: '搜索引擎信息',
+                            desc: '配置页面标题、关键词和描述，用于基础 SEO 展示。',
+                            tag: 'SEO',
+                            tagType: 'success',
+                            keys: ['app_title', 'app_keywords', 'app_description'],
+                            wide: true
+                        },
+                        {
+                            key: 'seo_statistics',
+                            title: '统计代码',
+                            desc: '填写第三方统计代码，例如 51LA、百度统计等。保存前建议确认脚本来源可信。',
+                            tag: '代码',
+                            tagType: 'warning',
+                            keys: ['seo_statistics'],
+                            wide: true
+                        }
+                    ],
+                    uploadSections: [
+                        {
+                            key: 'upload_image',
+                            title: '图片上传',
+                            desc: '配置允许上传的图片类型和图片大小限制。',
+                            tag: '图片',
+                            tagType: 'success',
+                            keys: ['upload_image_type', 'upload_max_image']
+                        },
+                        {
+                            key: 'upload_file',
+                            title: '文件上传',
+                            desc: '配置允许上传的文件类型和文件大小限制。',
+                            tag: '文件',
+                            keys: ['upload_file_type', 'upload_max_file']
+                        }
+                    ],
+                }
+            },
+            watch: {
+                activeName() {
+                    this.scheduleConfigHealthCheck();
+                },
+                configFilter() {
+                    this.scheduleConfigHealthCheck();
+                }
+            },
+            methods: {
+                hasGroupedSections(tabVal) {
+                    return tabVal === '1' || tabVal === '4' || tabVal === '3' || tabVal === '0' || tabVal === '11' || tabVal === '9' || tabVal === '2';
+                },
+                getActiveSections(tabVal) {
+                    if (tabVal === '0') {
+                        return this.baseSections;
+                    }
+                    if (tabVal === '1') {
+                        return this.searchSections;
+                    }
+                    if (tabVal === '4') {
+                        return this.otherSections;
+                    }
+                    if (tabVal === '3') {
+                        return this.frontendSections;
+                    }
+                    if (tabVal === '11') {
+                        return this.passwordSections;
+                    }
+                    if (tabVal === '9') {
+                        return this.seoSections;
+                    }
+                    if (tabVal === '2') {
+                        return this.uploadSections;
+                    }
+                    return [];
+                },
+                getManagedKeys(tabVal) {
+                    let keys = [];
+                    const groups = this.hasGroupedSections(tabVal) ? [this.getActiveSections(tabVal)] : [this.searchSections, this.otherSections];
+                    for (let sections of groups) {
+                        for (let section of sections) {
+                            keys = keys.concat(section.keys);
+                        }
+                    }
+                    return keys;
+                },
+                getSectionItems(section) {
+                    return this.form.filter(item => section.keys.includes(item.conf_key) && this.shouldShowConfig(item));
+                },
+                getVisibleSectionItems(section) {
+                    return this.getSectionItems(section).filter(item => this.matchesConfigFilter(item, section));
+                },
+                normalizeSearchText(value) {
+                    return String(value || '').toLowerCase().replace(/\s+/g, '');
+                },
+                matchesConfigFilter(item, section) {
+                    const keyword = this.normalizeSearchText(this.configFilter);
+                    if (!keyword) {
+                        return true;
+                    }
+                    const text = [
+                        item.conf_title,
+                        item.conf_key,
+                        item.conf_desc,
+                        section ? section.title : '',
+                        section ? section.desc : ''
+                    ].join(' ');
+                    return this.normalizeSearchText(text).indexOf(keyword) !== -1;
+                },
+                getFilterStats() {
+                    let total = 0;
+                    let visible = 0;
+                    const sections = this.getActiveSections(this.activeName);
+                    for (let section of sections) {
+                        const items = this.getSectionItems(section);
+                        total += items.length;
+                        visible += items.filter(item => this.matchesConfigFilter(item, section)).length;
+                    }
+                    return {
+                        total: total,
+                        visible: visible
+                    };
+                },
+                clearConfigFilter() {
+                    this.configFilter = '';
+                },
+                getCurrentCacheDriver() {
+                    const cacheDriverItem = this.form.find(item => item.conf_key === 'cache_driver');
+                    if (!cacheDriverItem || !cacheDriverItem.conf_value) {
+                        return 'file';
+                    }
+                    const driver = String(cacheDriverItem.conf_value).toLowerCase();
+                    if (driver === 'redis' || driver === 'memcached' || driver === 'file') {
+                        return driver;
+                    }
+                    return 'file';
+                },
+                shouldShowConfig(item) {
+                    const redisKeys = ['redis_host', 'redis_port', 'redis_password'];
+                    const memcachedKeys = ['memcached_host', 'memcached_port', 'memcached_username', 'memcached_password'];
+                    const driver = this.getCurrentCacheDriver();
+                    if (item.conf_key === 'other_pan_check_api') {
+                        return this.isPanCheckMode();
+                    }
+                    if (item.conf_key === 'announce_interval_days') {
+                        return this.getConfValue('announce_type') === '3';
+                    }
+                    if (item.conf_key === 'home_new_img') {
+                        return this.getConfValue('home_new') === '0';
+                    }
+                    if (['Authorization', 'mp4_online', 'diagnostic_log_enable'].includes(item.conf_key)) {
+                        return false;
+                    }
+                    if (['fake_mode_enable', 'fake_quark_url', 'fake_baidu_url'].includes(item.conf_key)) {
+                        return true;
+                    }
+                    if (item.conf_key.indexOf('relay_') === 0) {
+                        return false;
+                    }
+                    if (redisKeys.includes(item.conf_key)) {
+                        return driver === 'redis';
+                    }
+                    if (memcachedKeys.includes(item.conf_key)) {
+                        return driver === 'memcached';
+                    }
+                    return true;
+                },
+                shouldShowGenericConfig(item, tabVal) {
+                    const managedKeys = this.getManagedKeys();
+                    if (!this.hasGroupedSections(tabVal) && managedKeys.includes(item.conf_key)) {
+                        return false;
+                    }
+                    return this.shouldShowConfig(item);
+                },
+                getControlType(item) {
+                    const switchKeys = [
+                        'is_quan', 'web_search_dedup', 'is_quan_zc', 'other_pan_check_enable',
+                        'proxy_enable', 'fake_mode_enable', 'quark_ad_filter_enable',
+                        'announce_status', 'app_demand', 'home_new', 'app_name_hide', 'resource_password_enable'
+                    ];
+                    const numberKeys = [
+                        'proxy_port', 'redis_port', 'memcached_port', 'announce_interval_days',
+                        'ranking_num', 'ranking_m_num', 'resource_password_expire',
+                        'upload_max_image', 'upload_max_file'
+                    ];
+                    const secretKeys = [
+                        'proxy_pass', 'proxy_user', 'api_key',
+                        'quark_cookie', 'baidu_cookie', 'uc_cookie', 'xunlei_cookie',
+                        'redis_password', 'memcached_username', 'memcached_password', 'resource_password'
+                    ];
+                    if (switchKeys.includes(item.conf_key)) {
+                        return 'switch';
+                    }
+                    if (numberKeys.includes(item.conf_key)) {
+                        return 'number';
+                    }
+                    if (secretKeys.includes(item.conf_key)) {
+                        return 'secret';
+                    }
+                    return 'default';
+                },
+                isLongSecret(item) {
+                    if (!item) {
+                        return false;
+                    }
+                    return ['api_key', 'quark_cookie', 'baidu_cookie', 'uc_cookie', 'xunlei_cookie'].includes(item.conf_key);
+                },
+                isTextControl(item) {
+                    if (!item) {
+                        return false;
+                    }
+                    const controlType = this.getControlType(item);
+                    if (controlType === 'switch' || controlType === 'number' || controlType === 'secret') {
+                        return false;
+                    }
+                    const spec = parseInt(item.conf_spec, 10);
+                    return spec === 0 || spec === 1;
+                },
+                isShortTextControl(item) {
+                    if (!this.isTextControl(item)) {
+                        return false;
+                    }
+                    const shortTextKeys = [
+                        'app_name', 'app_subname', 'app_title', 'app_keywords',
+                        'announce_title', 'upload_file_type', 'upload_image_type',
+                        'quark_file', 'quark_file_time', 'baidu_file', 'baidu_file_time',
+                        'uc_file', 'uc_file_time', 'ali_file', 'ali_file_time',
+                        'xunlei_file', 'xunlei_file_time',
+                        'redis_host', 'memcached_host', 'fake_quark_url', 'fake_baidu_url'
+                    ];
+                    return shortTextKeys.includes(item.conf_key);
+                },
+                isActionTextControl(item) {
+                    if (!this.isTextControl(item)) {
+                        return false;
+                    }
+                    return ['proxy_host', 'other_pan_check_api', 'redis_host', 'memcached_host'].includes(item.conf_key);
+                },
+                getEditorRows(item) {
+                    if (!item) {
+                        return 3;
+                    }
+                    const compactKeys = [
+                        'app_name', 'app_subname', 'app_title', 'app_keywords',
+                        'announce_title', 'upload_file_type', 'upload_image_type',
+                        'quark_file', 'quark_file_time', 'baidu_file', 'baidu_file_time',
+                        'uc_file', 'uc_file_time', 'ali_file', 'ali_file_time',
+                        'xunlei_file', 'xunlei_file_time', 'redis_host', 'memcached_host',
+                        'proxy_host', 'fake_quark_url', 'fake_baidu_url'
+                    ];
+                    const tallKeys = [
+                        'announce_content', 'footer_dec', 'footer_copyright',
+                        'home_css', 'seo_statistics', 'quark_banned',
+                        'app_description', 'app_links', 'ban_keywords'
+                    ];
+                    if (compactKeys.includes(item.conf_key)) {
+                        return 2;
+                    }
+                    if (tallKeys.includes(item.conf_key)) {
+                        return 5;
+                    }
+                    return parseInt(item.conf_spec, 10) === 1 ? 4 : 3;
+                },
+                getEditorClass(item) {
+                    if (!item) {
+                        return '';
+                    }
+                    const classes = [];
+                    if (this.getEditorRows(item) <= 2) {
+                        classes.push('compact');
+                    }
+                    if (['home_css', 'seo_statistics', 'app_links', 'footer_copyright'].includes(item.conf_key)) {
+                        classes.push('code');
+                    }
+                    if (['announce_content', 'footer_dec', 'footer_copyright', 'home_css', 'seo_statistics'].includes(item.conf_key)) {
+                        classes.push('wide-editor');
+                    }
+                    return classes.join(' ');
+                },
+                toggleSecret(key) {
+                    this.$set(this.secretVisible, key, !this.secretVisible[key]);
+                },
+                getConfValue(key) {
+                    const conf = this.form.find(item => item.conf_key === key);
+                    return conf ? conf.conf_value : '';
+                },
+                isPanCheckMode() {
+                    return this.getConfValue('other_pan_check_mode') === 'pancheck';
+                },
+                normalizeColor(value, key) {
+                    if (value && /^#[0-9a-fA-F]{6}$/.test(value)) {
+                        return value;
+                    }
+                    const defaults = {
+                        home_background: '#fafafa',
+                        home_color: '#000000',
+                        home_theme: '#1e80ff',
+                        other_background: '#ffffff'
+                    };
+                    return defaults[key] || '#ffffff';
+                },
+                getInputPlaceholder(item) {
+                    if (item.conf_key === 'proxy_host') {
+                        return '127.0.0.1 或 proxy.example.com';
+                    }
+                    if (item.conf_key === 'other_pan_check_api') {
+                        return '例如：http://your-domain.com/api/v1/links/check';
+                    }
+                    if (item.conf_key === 'fake_quark_url') {
+                        return '伪装模式开启后，夸克资源展示为此链接';
+                    }
+                    if (item.conf_key === 'fake_baidu_url') {
+                        return '伪装模式开启后，百度资源展示为此链接';
+                    }
+                    if (item.conf_key === 'ban_keywords') {
+                        return '多个关键词用逗号分隔，例如：庆余年,凡人修仙传';
+                    }
+                    if (item.conf_key === 'app_links') {
+                        return '一行一个外链，例如：<a href=\"https://example.com\" target=\"_blank\">更多资源</a>';
+                    }
+                    if (item.conf_key === 'home_css') {
+                        return '直接填写 CSS 样式，例如：.container { max-width: 720px; }';
+                    }
+                    if (item.conf_key === 'ranking_num') {
+                        return '排行榜数量，清除缓存后可立即刷新';
+                    }
+                    if (item.conf_key === 'ranking_m_num') {
+                        return '移动端最多显示数量';
+                    }
+                    if (item.conf_key === 'app_name') {
+                        return '前台显示的网站名称';
+                    }
+                    if (item.conf_key === 'app_subname') {
+                        return '首页副标题或宣传语';
+                    }
+                    if (item.conf_key === 'resource_password_expire') {
+                        return '本地记忆天数，建议 1-30';
+                    }
+                    if (item.conf_key === 'resource_password') {
+                        return '用户获取资源时需要输入的密码';
+                    }
+                    if (item.conf_key === 'app_title') {
+                        return '页面标题，建议包含站点名称和核心关键词';
+                    }
+                    if (item.conf_key === 'app_keywords') {
+                        return '多个关键词用英文逗号分隔';
+                    }
+                    if (item.conf_key === 'app_description') {
+                        return '网站描述，建议简洁说明站点内容';
+                    }
+                    if (item.conf_key === 'seo_statistics') {
+                        return '直接填写第三方统计代码，例如第三方统计平台提供的代码片段';
+                    }
+                    if (item.conf_key === 'upload_image_type') {
+                        return '允许上传的图片后缀，例如：jpg,png,gif,webp';
+                    }
+                    if (item.conf_key === 'upload_file_type') {
+                        return '允许上传的文件后缀，例如：zip,rar,pdf,docx';
+                    }
+                    if (item.conf_key === 'upload_max_image') {
+                        return '图片大小限制，单位沿用系统原配置';
+                    }
+                    if (item.conf_key === 'upload_max_file') {
+                        return '文件大小限制，单位沿用系统原配置';
+                    }
+                    if (item.conf_key.indexOf('_file_time') !== -1) {
+                        return '临时资源目录，例如：temp';
+                    }
+                    if (item.conf_key.indexOf('_file') !== -1) {
+                        return '默认转存目录，例如：我的资源';
+                    }
+                    if (item.conf_key.indexOf('_cookie') !== -1) {
+                        return '请填写对应网盘 Cookie，默认隐藏显示';
+                    }
+                    return '';
+                },
+                escapeHtml(value) {
+                    return String(value === undefined || value === null ? '' : value)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                },
+                formatDiagnosisValue(value) {
+                    if (value === undefined || value === null || value === '') {
+                        return '<span class="diagnosis-empty">(空值)</span>';
+                    }
+                    return '<code>' + this.escapeHtml(JSON.stringify(value)) + '</code>';
+                },
+                scheduleConfigHealthCheck() {
+                    var that = this;
+                    this.$nextTick(function () {
+                        setTimeout(function () {
+                            that.checkConfigControls();
+                        }, 120);
+                    });
+                },
+                shouldCheckConfigItem(item) {
+                    if (!item) {
+                        return false;
+                    }
+                    const spec = parseInt(item.conf_spec, 10);
+                    if (spec === 6) {
+                        return false;
+                    }
+                    return true;
+                },
+                checkConfigControls(isRetry) {
+                    const sections = this.getActiveSections(this.activeName);
+                    const expectedItems = [];
+                    for (let section of sections) {
+                        expectedItems.push.apply(expectedItems, this.getVisibleSectionItems(section).filter(item => this.shouldCheckConfigItem(item)));
+                    }
+                    const missing = [];
+                    for (let item of expectedItems) {
+                        const selector = '[data-conf-key="' + String(item.conf_key).replace(/"/g, '\\"') + '"]';
+                        const card = this.$el.querySelector(selector);
+                        if (!card) {
+                            missing.push({
+                                key: item.conf_key,
+                                title: item.conf_title || item.conf_key
+                            });
+                            continue;
+                        }
+                        const control = card.querySelector('.config-control-root, textarea, input, select, button, .slectimg, .edui-editor, iframe');
+                        if (!control) {
+                            missing.push({
+                                key: item.conf_key,
+                                title: item.conf_title || item.conf_key
+                            });
+                        }
+                    }
+                    if (missing.length && !isRetry) {
+                        var that = this;
+                        setTimeout(function () {
+                            that.checkConfigControls(true);
+                        }, 420);
+                        return;
+                    }
+                    this.configHealth.checked = true;
+                    this.configHealth.missing = missing;
+                    if (missing.length) {
+                        this.configHealth.status = 'warn';
+                        this.configHealth.message = '发现 ' + missing.length + ' 个配置项没有检测到编辑控件';
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log('配置控件缺失', missing);
+                        } else {
+                            console.warn('配置控件缺失', missing);
+                        }
+                    } else {
+                        this.configHealth.status = 'ok';
+                        this.configHealth.message = '当前配置分组控件检查通过';
+                    }
+                },
+                getData() {
+                    var that = this;
+                    axios.post('/admin/conf/getBaseConfig', Object.assign({}, PostBase))
+                        .then(function (res) {
+                            if (res.data.code == 200) {
+                                for (let item of res.data.data) {
+                                    // 处理图片上传和直链混合模式
+                                    if (item.conf_spec == 8) {
+                                        // 判断当前值是上传的图片还是直链
+                                        if (item.conf_value && that.isValidUrl(item.conf_value)) {
+                                            item.input_mode = 'url';
+                                        } else {
+                                            item.input_mode = 'upload';
+                                        }
+                                    }
+                                    if (item.conf_spec == 2) {
+                                        for (let i = 0; i < item.conf_content.length; i++) {
+                                            let d = item.conf_content[i].split("=>");
+                                            item.conf_content[i] = {
+                                                name: d[0].toString(),
+                                                value: d[1].toString()
+                                            }
+                                        }
+                                    }else if(item.conf_spec==3){
+                                        for (let i = 0; i < item.conf_content.length; i++) {
+                                            let d = item.conf_content[i].split("=>");
+                                            item.conf_content[i] = {
+                                                name: d[0].toString(),
+                                                value: d[1].toString()
+                                            }
+                                        }
+                                        if(item.conf_value){
+                                            item.conf_value = item.conf_value.split(",");
+                                        }else{
+                                            item.conf_value = []
+                                        }
+                                    }else if (item.conf_spec == 5) {
+                                        if(item.conf_value){
+                                            item.conf_value = item.conf_value.split(",");
+                                            for (let i = 0; i < item.conf_value.length; i++) {
+                                                if (!item.conf_value[i]) {
+                                                    item.conf_value.splice(i, 1);
+                                                }
+                                            }
+                                        } else {
+                                            item.conf_value = []
+                                        }
+                                    }
+                                    for (let i = 0; i < that.tabname.length; i++) {
+                                        if(that.tabname[i].val == item.conf_type){
+                                            that.tabname[i].show = true
+                                        }
+                                    }
+                                }
+                                that.form = res.data.data;
+                                that.scheduleConfigHealthCheck();
+                            } else {
+                                that.$message.error(res.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.$message.error('服务器内部错误');
+                            if (typeof debugLog !== 'undefined') {
+                                debugLog.log(error);
+                            } else {
+                                console.warn(error);
+                            }
+                        });
+                },
+                onSubmit(index) {
+                    var that = this;
+                    if (that.savingConfig[index]) {
+                        return;
+                    }
+                    var postData = {};
+                    var managedKeys = that.getManagedKeys(index);
+                    for (var i = 0; i < that.form.length; i++) {
+                        if(that.hasGroupedSections(index) && managedKeys.includes(that.form[i].conf_key)){
+                            postData[that.form[i].conf_key] = that.form[i].conf_value;
+                        } else if(!that.hasGroupedSections(index) && that.form[i].conf_type == index){
+                            postData[that.form[i].conf_key] = that.form[i].conf_value;
+                        }
+                    }
+                    that.$set(that.savingConfig, index, true);
+                    axios.post('/admin/conf/updateBaseConfig', Object.assign({}, PostBase, postData))
+                        .then(function (res) {
+                            if (res.data.code == 200) {
+                                that.$message({
+                                    message: (res.data.message || '配置修改成功') + '，配置缓存已刷新',
+                                    type: 'success'
+                                });
+                                that.scheduleConfigHealthCheck();
+                            } else {
+                                that.$message.error(res.data.message);
+                            }
+                            that.$set(that.savingConfig, index, false);
+                        })
+                        .catch(function (error) {
+                            that.$message.error('服务器内部错误');
+                            if (typeof debugLog !== 'undefined') {
+                                debugLog.log(error);
+                            } else {
+                                console.warn(error);
+                            }
+                            that.$set(that.savingConfig, index, false);
+                        });
+                },
+                // 处理输入模式切换
+                onInputModeChange(item) {
+                    // 切换模式时清空当前值
+                    item.conf_value = '';
+                },
+                selectConfigImage(item) {
+                    if (!this.$refs.upload || !this.$refs.upload.show) {
+                        this.$message.error('图片上传组件未加载');
+                        return;
+                    }
+                    this.$refs.upload.show((files) => {
+                        if (files && files.length > 0) {
+                            item.conf_value = files[0].url;
+                        }
+                    }, {}, false);
+                },
+                // 验证URL是否有效
+                isValidUrl(string) {
+                    try {
+                        const url = new URL(string);
+                        return url.protocol === 'http:' || url.protocol === 'https:';
+                    } catch (_) {
+                        return false;
+                    }
+                },
+                // 图片加载错误处理
+                onImageError(event) {
+                    this.$message.warning('图片加载失败，请检查链接是否正确');
+                },
+                
+                // ========================================
+                // 配置导出/导入功能
+                // ========================================
+                
+                // 导出配置
+                exportConfig() {
+                    var that = this;
+                    that.$confirm('确定要导出当前所有配置吗？', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'info'
+                    }).then(() => {
+                        // 直接打开下载链接
+                        window.location.href = '/admin/conf/exportConfig?' + new URLSearchParams(Object.assign({}, PostBase)).toString();
+                        
+                        that.$message({
+                            message: '配置导出成功，请查看下载文件',
+                            type: 'success'
+                        });
+                    }).catch(() => {
+                        // 用户取消
+                    });
+                },
+                
+                // 处理文件选择
+                handleFileChange(file, fileList) {
+                    var that = this;
+                    
+                    // 验证文件类型
+                    if (!file.name.endsWith('.json')) {
+                        that.$message.error('请选择JSON格式的配置文件');
+                        return;
+                    }
+                    
+                    // 读取文件内容
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const jsonContent = e.target.result;
+                            
+                            // 验证JSON格式
+                            const jsonData = JSON.parse(jsonContent);
+                            
+                            // 显示导入预览
+                            that.showImportPreview(jsonData, jsonContent);
+                        } catch (error) {
+                            that.$message.error('配置文件格式错误：' + error.message);
+                        }
+                    };
+                    reader.readAsText(file.raw);
+                },
+                
+                // 显示导入预览并确认
+                showImportPreview(jsonData, jsonContent) {
+                    var that = this;
+                    
+                    const exportTime = jsonData.export_time || '未知';
+                    const siteName = jsonData.site_name || '未知';
+                    const configCount = jsonData.config_count || 0;
+                    
+                    const html = `
+                        <div class="config-import-preview">
+                            <p><strong>导出时间：</strong>${exportTime}</p>
+                            <p><strong>站点名称：</strong>${siteName}</p>
+                            <p><strong>配置数量：</strong>${configCount} 条</p>
+                            <p class="config-import-warning">
+                                <i class="el-icon-warning"></i> 
+                                注意：导入将覆盖当前系统的对应配置项！
+                            </p>
+                        </div>
+                    `;
+                    
+                    that.$confirm(html, '确认导入配置', {
+                        confirmButtonText: '确定导入',
+                        cancelButtonText: '取消',
+                        type: 'warning',
+                        dangerouslyUseHTMLString: true
+                    }).then(() => {
+                        that.doImportConfig(jsonContent);
+                    }).catch(() => {
+                        that.$message.info('已取消导入');
+                    });
+                },
+                
+                // 执行导入
+                doImportConfig(jsonContent) {
+                    var that = this;
+                    
+                    // 显示加载提示
+                    const loading = that.$loading({
+                        lock: true,
+                        text: '正在导入配置，请稍候...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+                    
+                    axios.post('/admin/conf/importConfig', Object.assign({}, PostBase, {
+                        json_content: jsonContent
+                    }))
+                    .then(function (res) {
+                        loading.close();
+                        
+                        if (res.data.code == 200) {
+                            // 显示导入结果
+                            const data = res.data.data;
+                            let message = res.data.message;
+                            
+                            if (data.errors && data.errors.length > 0) {
+                                message += '<br><br><strong>错误详情：</strong><br>';
+                                message += data.errors.join('<br>');
+                            }
+                            
+                            that.$alert(message, '导入完成', {
+                                confirmButtonText: '确定',
+                                type: 'success',
+                                dangerouslyUseHTMLString: true,
+                                callback: () => {
+                                    // 重新加载配置数据
+                                    that.getData();
+                                }
+                            });
+                        } else {
+                            that.$message.error(res.data.message);
+                        }
+                    })
+                    .catch(function (error) {
+                        loading.close();
+                        that.$message.error('导入失败：服务器内部错误');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                testProxy() {
+                    var that = this;
+
+                    let host = '';
+                    let port = '';
+                    let type = 'http';
+                    let user = '';
+                    let pass = '';
+
+                    for (let item of that.form) {
+                        if (item.conf_key === 'proxy_host') {
+                            host = item.conf_value;
+                        }
+                        if (item.conf_key === 'proxy_port') {
+                            port = item.conf_value;
+                        }
+                        if (item.conf_key === 'proxy_type') {
+                            type = item.conf_value || 'http';
+                        }
+                        if (item.conf_key === 'proxy_user') {
+                            user = item.conf_value;
+                        }
+                        if (item.conf_key === 'proxy_pass') {
+                            pass = item.conf_value;
+                        }
+                    }
+
+                    if (!host || !port) {
+                        that.$message.error('请先填写代理地址和端口');
+                        return;
+                    }
+
+                    const loading = that.$loading({
+                        lock: true,
+                        text: '正在测试代理连接，请稍候...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+
+                    axios.post('/admin/conf/testProxy', Object.assign({}, PostBase, {
+                        host: host,
+                        port: port,
+                        type: type,
+                        user: user,
+                        pass: pass
+                    }))
+                    .then(function (res) {
+                        loading.close();
+
+                        if (res.data.code == 200) {
+                            const data = res.data.data;
+                            let message = '连接成功！<br><br>';
+                            message += '延迟: <strong>' + data.latency + 'ms</strong><br>';
+                            message += '状态: <strong class="config-test-status-ok">正常</strong>';
+                            message += '<br>HTTP: <strong>' + data.http_code + '</strong>';
+
+                            that.$alert(message, '测试结果', {
+                                confirmButtonText: '确定',
+                                type: 'success',
+                                dangerouslyUseHTMLString: true
+                            });
+                        } else {
+                            that.$alert(res.data.message, '测试失败', {
+                                confirmButtonText: '确定',
+                                type: 'error'
+                            });
+                        }
+                    })
+                    .catch(function (error) {
+                        loading.close();
+                        that.$message.error('连接失败：' + error.message);
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                testPanCheck(url) {
+                    if (!url) {
+                        this.$message.warning('请输入API地址');
+                        return;
+                    }
+                    var that = this;
+                    let mode = this.getConfValue('other_pan_check_mode') || 'local';
+                    const loading = this.$loading({
+                        lock: true,
+                        text: '正在测试连接...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+                    axios.post('/admin/conf/testPanCheck', Object.assign({}, PostBase, {
+                        url: url,
+                        mode: mode
+                    }))
+                    .then(function (res) {
+                        loading.close();
+                        if (res.data.code == 200) {
+                            that.$message.success('连接成功：' + res.data.message);
+                        } else {
+                            that.$message.error('连接失败：' + res.data.message);
+                        }
+                    })
+                    .catch(function (error) {
+                        loading.close();
+                        that.$message.error('请求异常：' + error.message);
+                    });
+                },
+                getConfigValue(key, fallback) {
+                    const item = this.form.find(conf => conf.conf_key === key);
+                    if (!item || item.conf_value === undefined || item.conf_value === null || item.conf_value === '') {
+                        return fallback || '';
+                    }
+                    return item.conf_value;
+                },
+                testRedisCache() {
+                    var that = this;
+                    const payload = {
+                        host: this.getConfigValue('redis_host', '127.0.0.1'),
+                        port: this.getConfigValue('redis_port', '6379'),
+                        password: this.getConfigValue('redis_password', '')
+                    };
+                    const loading = this.$loading({
+                        lock: true,
+                        text: '正在测试 Redis 连接...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+                    axios.post('/admin/conf/testRedisCache', Object.assign({}, PostBase, payload))
+                        .then(function (res) {
+                            loading.close();
+                            if (res.data.code == 200) {
+                                const data = res.data.data || {};
+                                let message = 'Redis 连接成功<br><br>';
+                                message += '地址：<strong>' + data.host + '</strong><br>';
+                                message += '延迟：<strong>' + data.latency + 'ms</strong><br>';
+                                message += '版本：<strong>' + (data.version || '未知') + '</strong><br>';
+                                message += '内存：<strong>' + (data.used_memory_human || '未知') + '</strong><br>';
+                                message += 'Key 数：<strong>' + (data.total_keys || 0) + '</strong>';
+                                that.$alert(message, 'Redis 测试结果', {
+                                    confirmButtonText: '确定',
+                                    type: 'success',
+                                    dangerouslyUseHTMLString: true
+                                });
+                            } else {
+                                that.$alert(res.data.message, 'Redis 测试失败', {
+                                    confirmButtonText: '确定',
+                                    type: 'error'
+                                });
+                            }
+                        })
+                        .catch(function (error) {
+                            loading.close();
+                            that.$message.error('Redis 测试异常：' + error.message);
+                        });
+                },
+                testMemcachedCache() {
+                    var that = this;
+                    const payload = {
+                        host: this.getConfigValue('memcached_host', '127.0.0.1'),
+                        port: this.getConfigValue('memcached_port', '11211'),
+                        username: this.getConfigValue('memcached_username', ''),
+                        password: this.getConfigValue('memcached_password', '')
+                    };
+                    const loading = this.$loading({
+                        lock: true,
+                        text: '正在测试 Memcached 连接...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+                    axios.post('/admin/conf/testMemcachedCache', Object.assign({}, PostBase, payload))
+                        .then(function (res) {
+                            loading.close();
+                            if (res.data.code == 200) {
+                                const data = res.data.data || {};
+                                let message = 'Memcached 连接成功<br><br>';
+                                message += '地址：<strong>' + data.host + '</strong><br>';
+                                message += '延迟：<strong>' + data.latency + 'ms</strong><br>';
+                                message += '版本：<strong>' + (data.version || '未知') + '</strong><br>';
+                                message += '内存：<strong>' + (data.used_memory_human || '未知') + '</strong>';
+                                that.$alert(message, 'Memcached 测试结果', {
+                                    confirmButtonText: '确定',
+                                    type: 'success',
+                                    dangerouslyUseHTMLString: true
+                                });
+                            } else {
+                                that.$alert(res.data.message, 'Memcached 测试失败', {
+                                    confirmButtonText: '确定',
+                                    type: 'error'
+                                });
+                            }
+                        })
+                        .catch(function (error) {
+                            loading.close();
+                            that.$message.error('Memcached 测试异常：' + error.message);
+                        });
+                },
+                diagnosisProxyConfig() {
+                    var that = this;
+
+                    const loading = that.$loading({
+                        lock: true,
+                        text: '正在诊断配置，请稍候...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+                    
+                    axios.post('/admin/conf/testProxyConfig', PostBase)
+                    .then(function (res) {
+                        loading.close();
+
+                        if (res.data.code == 200) {
+                            const data = res.data.data;
+                            const logic = data.logic_test;
+
+                            let message = '<div class="diagnosis-report">';
+                            message += '<div class="diagnosis-result ' + (logic.will_enable ? 'success' : 'warning') + '">';
+                            message += '<div class="diagnosis-result-title">诊断结果</div>';
+                            message += '<div class="diagnosis-result-text">' + that.escapeHtml(logic.diagnosis) + '</div>';
+                            message += '</div>';
+
+                            message += '<div class="diagnosis-section">';
+                            message += '<div class="diagnosis-section-title">数据库配置</div>';
+                            if (data.database && data.database.length > 0) {
+                                message += '<table class="diagnosis-table">';
+                                message += '<thead><tr><th>配置键</th><th>配置值</th></tr></thead><tbody>';
+                                data.database.forEach(item => {
+                                    const isEmpty = !item.conf_value;
+                                    message += '<tr class="' + (isEmpty ? 'is-empty' : 'is-filled') + '">';
+                                    message += '<td><code>' + that.escapeHtml(item.conf_key) + '</code></td>';
+                                    message += '<td>' + that.formatDiagnosisValue(item.conf_value) + '</td>';
+                                    message += '</tr>';
+                                });
+                                message += '</tbody></table>';
+                            } else {
+                                message += '<div class="diagnosis-empty-box">数据库中没有找到代理配置</div>';
+                            }
+                            message += '</div>';
+
+                            const configValues = data.config_values || {};
+                            message += '<div class="diagnosis-section">';
+                            message += '<div class="diagnosis-section-title">Config 读取结果</div>';
+                            message += '<table class="diagnosis-table">';
+                            message += '<thead><tr><th>配置键</th><th>读取值</th></tr></thead><tbody>';
+                            ['proxy_enable', 'proxy_host', 'proxy_port', 'proxy_type'].forEach(function (key) {
+                                message += '<tr>';
+                                message += '<td><code>' + key + '</code></td>';
+                                message += '<td>' + that.formatDiagnosisValue(configValues[key]) + '</td>';
+                                message += '</tr>';
+                            });
+                            message += '</tbody></table>';
+                            message += '</div>';
+
+                            if (!logic.will_enable) {
+                                message += '<div class="diagnosis-section">';
+                                message += '<div class="diagnosis-section-title">解决建议</div>';
+                                message += '<ol class="diagnosis-steps">';
+                                message += '<li>代理开关选择"开启"</li>';
+                                message += '<li>填写代理地址</li>';
+                                message += '<li>填写代理端口</li>';
+                                message += '<li>点击保存</li>';
+                                message += '<li>重新运行诊断</li>';
+                                message += '</ol>';
+                                message += '</div>';
+                            }
+
+                            message += '</div>';
+
+                            that.$alert(message, '配置诊断报告', {
+                                confirmButtonText: '确定',
+                                type: logic.will_enable ? 'success' : 'warning',
+                                dangerouslyUseHTMLString: true,
+                                customClass: 'diagnosis-dialog'
+                            });
+                        } else {
+                            that.$alert(res.data.message, '诊断失败', {
+                                confirmButtonText: '确定',
+                                type: 'error'
+                            });
+                        }
+                    })
+                    .catch(function (error) {
+                        loading.close();
+                        that.$message.error('诊断失败：' + error.message);
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                }
+            }
+        })
+    </script>
+
+
+</html>
+
+

@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{$node.node_title|default='主题管理'}</title>
+    {include file="common/header"/}
+    <link rel="stylesheet" href="/static/admin/css/theme-manage.css?v=2026052207">
+    <div class="theme-manage-page">
+        <div class="theme-hero">
+            <div class="theme-title-card">
+                <div class="theme-title">前端主题管理</div>
+                <div class="theme-desc">
+                    管理前台首页、搜索页和详情页使用的主题。系统会自动扫描 <code>public/views/index</code> 下包含必要模板的主题目录。
+                </div>
+            </div>
+            <div class="theme-note-card">
+                <div class="theme-note-title">主题规则</div>
+                <ul class="theme-note-list">
+                    <li>主题目录需要包含 <code>index.html</code>、<code>list.html</code>、<code>detail.html</code>。</li>
+                    <li><code>theme.json</code> 用于展示名称、版本、作者、说明和预览图。</li>
+                    <li>主题缺失时前台会自动回退默认主题。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="theme-toolbar">
+            <div class="theme-current">当前主题：<strong>{{ currentTheme || '-' }}</strong></div>
+            <div class="theme-toolbar-actions">
+                <el-button size="small" type="primary" plain icon="el-icon-plus" @click="openCreateDialog">创建主题</el-button>
+                <el-button size="small" plain icon="el-icon-upload2" @click="openImportDialog">导入主题</el-button>
+                <el-button size="small" plain icon="el-icon-refresh" @click="loadThemes">刷新主题</el-button>
+            </div>
+        </div>
+
+        <div class="theme-grid" v-loading="loading">
+            <div class="theme-card" v-for="theme in themes" :key="theme.key" :class="{active: theme.active, invalid: !theme.is_valid}">
+                <div class="theme-preview" :class="{'has-image': theme.screenshot_url}">
+                    <img v-if="theme.screenshot_url" :src="theme.screenshot_url" :alt="(theme.name || theme.key) + '预览图'">
+                </div>
+                <div class="theme-card-body">
+                    <div class="theme-card-head">
+                        <div>
+                            <div class="theme-name">{{ theme.name || theme.key }}</div>
+                            <div class="theme-key">{{ theme.key }}</div>
+                        </div>
+                        <el-tag size="small" type="success" v-if="theme.active">已启用</el-tag>
+                        <el-tag size="small" type="danger" v-else-if="!theme.is_valid">不可用</el-tag>
+                        <el-tag size="small" type="info" v-else-if="theme.is_default">受保护</el-tag>
+                    </div>
+                    <div class="theme-description">{{ theme.description || '暂无主题说明' }}</div>
+                    <div class="theme-warning" v-if="!theme.is_valid">
+                        缺少模板：{{ (theme.missing_templates || []).join('、') || '未知' }}
+                    </div>
+                    <div class="theme-health" v-if="theme.health_items && theme.health_items.length">
+                        <el-tooltip v-for="item in theme.health_items" :key="item.label" :content="item.message" placement="top">
+                            <span class="theme-health-item" :class="'is-' + item.status">
+                                <i></i>{{ item.label }}
+                            </span>
+                        </el-tooltip>
+                    </div>
+                    <div class="theme-meta">
+                        <span v-if="theme.version">版本 {{ theme.version }}</span>
+                        <span v-if="theme.author">作者 {{ theme.author }}</span>
+                        <span>{{ theme.path }}</span>
+                    </div>
+                    <div class="theme-actions">
+                        <el-dropdown size="small" trigger="click" :disabled="!theme.is_valid" @command="previewThemeCommand(theme, $event)">
+                            <el-button size="small" plain :disabled="!theme.is_valid">
+                                预览<i class="el-icon-arrow-down el-icon--right"></i>
+                            </el-button>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item v-for="item in previewItems(theme)" :key="item.key" :command="item.key" :disabled="!item.enabled">
+                                    {{ item.label }}
+                                </el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                        <el-button size="small" type="primary" :disabled="theme.active || !theme.is_valid" :loading="savingTheme === theme.key" @click="enableTheme(theme)">
+                            {{ theme.active ? '当前主题' : '启用' }}
+                        </el-button>
+                        <el-dropdown size="small" trigger="click" @command="themeMoreCommand(theme, $event)">
+                            <el-button size="small" plain>
+                                更多<i class="el-icon-arrow-down el-icon--right"></i>
+                            </el-button>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item v-if="theme.can_edit" command="edit">编辑信息</el-dropdown-item>
+                                <el-dropdown-item command="export" :disabled="!theme.is_valid">导出主题</el-dropdown-item>
+                                <el-dropdown-item command="delete" :disabled="!theme.can_delete || theme.active" divided>删除主题</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <el-dialog title="基于默认主题创建" :visible.sync="createDialogVisible" width="460px" :modal-append-to-body="false" append-to-body :close-on-click-modal="false">
+            <el-form :model="createForm" label-width="92px" size="small">
+                <el-form-item label="主题标识">
+                    <el-input v-model.trim="createForm.theme" placeholder="如 mobile-clean"></el-input>
+                    <div class="theme-form-tip">只能包含字母、数字、下划线和短横线，创建后作为目录名。</div>
+                </el-form-item>
+                <el-form-item label="主题名称">
+                    <el-input v-model.trim="createForm.name" placeholder="如 移动清爽主题"></el-input>
+                </el-form-item>
+                <el-form-item label="作者">
+                    <el-input v-model.trim="createForm.author" placeholder="可选"></el-input>
+                </el-form-item>
+                <el-form-item label="说明">
+                    <el-input type="textarea" :rows="3" v-model.trim="createForm.description" placeholder="可选"></el-input>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button size="small" @click="createDialogVisible = false">取消</el-button>
+                <el-button size="small" type="primary" :loading="creatingTheme" @click="createTheme">创建</el-button>
+            </span>
+        </el-dialog>
+
+        <el-dialog title="导入主题 zip" :visible.sync="importDialogVisible" width="500px" :modal-append-to-body="false" append-to-body :close-on-click-modal="false">
+            <el-form :model="importForm" label-width="92px" size="small">
+                <el-form-item label="主题标识">
+                    <el-input v-model.trim="importForm.theme" placeholder="如 imported-clean"></el-input>
+                    <div class="theme-form-tip">只允许导入为新主题，不会覆盖已有主题。</div>
+                </el-form-item>
+                <el-form-item label="主题名称">
+                    <el-input v-model.trim="importForm.name" placeholder="可选，不填则使用主题包内名称"></el-input>
+                </el-form-item>
+                <el-form-item label="主题包">
+                    <el-upload
+                        ref="themeImportUpload"
+                        action="/admin/system/importTheme"
+                        name="file"
+                        accept=".zip"
+                        :data="importUploadData"
+                        :auto-upload="false"
+                        :limit="1"
+                        :on-success="handleImportSuccess"
+                        :on-error="handleImportError"
+                        :before-upload="beforeImportUpload">
+                        <el-button size="small" icon="el-icon-folder-opened">选择 zip 文件</el-button>
+                    </el-upload>
+                    <div class="theme-form-tip">最大 20MB；会检查路径、文件类型、模板完整性。</div>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button size="small" @click="importDialogVisible = false">取消</el-button>
+                <el-button size="small" type="primary" :loading="importingTheme" @click="submitImportTheme">导入</el-button>
+            </span>
+        </el-dialog>
+
+        <el-dialog title="编辑主题信息" :visible.sync="editDialogVisible" width="900px" custom-class="theme-edit-dialog" :modal-append-to-body="false" append-to-body :close-on-click-modal="false" @close="resetEditLoading">
+            <el-form :model="editForm" label-width="92px" size="small">
+                <el-tabs v-model="activeEditTab" class="theme-edit-tabs">
+                    <el-tab-pane label="基础信息" name="basic">
+                        <div class="theme-setting-panel">
+                            <div class="theme-setting-grid is-two">
+                                <el-form-item label="主题标识">
+                                    <el-input v-model="editForm.theme" disabled></el-input>
+                                    <div class="theme-form-tip">主题标识对应目录名，创建后不建议修改。</div>
+                                </el-form-item>
+                                <el-form-item label="主题名称">
+                                    <el-input v-model.trim="editForm.name" placeholder="请输入主题名称"></el-input>
+                                </el-form-item>
+                                <el-form-item label="版本">
+                                    <el-input v-model.trim="editForm.version" placeholder="如 1.0.0"></el-input>
+                                </el-form-item>
+                                <el-form-item label="作者">
+                                    <el-input v-model.trim="editForm.author" placeholder="可选"></el-input>
+                                </el-form-item>
+                            </div>
+                            <el-form-item label="预览图">
+                                <el-input v-model.trim="editForm.screenshot" placeholder="如 screenshot.png，可选"></el-input>
+                                <div class="theme-form-tip">可填写主题目录下的图片文件名，或 http/https 图片地址。</div>
+                            </el-form-item>
+                            <el-form-item label="说明">
+                                <el-input type="textarea" :rows="3" v-model.trim="editForm.description" placeholder="可选"></el-input>
+                            </el-form-item>
+                            <div class="theme-setting-grid is-two">
+                                <el-form-item label="下载链接">
+                                    <el-input v-model.trim="editForm.settings.download_url" placeholder="下载APP或外链地址，可选"></el-input>
+                                    <div class="theme-form-tip">mofa 主题会用于“下载APP”卡片。</div>
+                                </el-form-item>
+                                <el-form-item label="短公告">
+                                    <el-input v-model.trim="editForm.settings.notice_text" placeholder="如：点击继续观看 雨霖铃 - 第1集"></el-input>
+                                    <div class="theme-form-tip">mofa 主题会显示为首页浅色提示条。</div>
+                                </el-form-item>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+
+                    <el-tab-pane label="首页轮播" name="banners">
+                        <div class="theme-setting-head">
+                            <div>
+                                <div class="theme-setting-title">横版轮播</div>
+                                <div class="theme-setting-desc">填写标题、搜索关键词和图片地址，首页会按顺序展示。</div>
+                            </div>
+                            <el-button size="small" type="primary" plain icon="el-icon-plus" @click="addBanner">添加轮播</el-button>
+                        </div>
+                        <div class="theme-empty-setting" v-if="!editForm.settings.banners.length">暂无轮播，点击右上角添加。</div>
+                        <div class="theme-setting-list">
+                            <div class="theme-setting-item" v-for="(banner, index) in editForm.settings.banners" :key="'banner-' + index">
+                                <div class="theme-setting-item-head">
+                                    <span>轮播 {{ index + 1 }}</span>
+                                    <div class="theme-setting-actions">
+                                        <el-button size="mini" icon="el-icon-arrow-up" :disabled="index === 0" @click="moveSettingItem(editForm.settings.banners, index, -1)"></el-button>
+                                        <el-button size="mini" icon="el-icon-arrow-down" :disabled="index === editForm.settings.banners.length - 1" @click="moveSettingItem(editForm.settings.banners, index, 1)"></el-button>
+                                        <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="removeSettingItem(editForm.settings.banners, index)"></el-button>
+                                    </div>
+                                </div>
+                                <div class="theme-setting-row with-preview">
+                                    <div class="theme-setting-preview is-banner" :class="{'has-image': banner.image}">
+                                        <img v-if="banner.image" :src="banner.image" alt="">
+                                        <span v-else>Banner</span>
+                                        <a v-if="banner.image" class="theme-preview-open" :href="banner.image" target="_blank">查看</a>
+                                    </div>
+                                    <div class="theme-setting-fields">
+                                        <div class="theme-setting-grid is-two">
+                                            <el-form-item label="标题">
+                                                <el-input v-model.trim="banner.title" placeholder="如 剑来"></el-input>
+                                            </el-form-item>
+                                            <el-form-item label="关键词">
+                                                <el-input v-model.trim="banner.keyword" placeholder="点击后搜索的关键词"></el-input>
+                                            </el-form-item>
+                                        </div>
+                                        <el-form-item label="副标题">
+                                            <el-input v-model.trim="banner.subtitle" placeholder="如 少年仗剑，一路向前"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="图片地址">
+                                            <el-input v-model.trim="banner.image" placeholder="/views/index/mofa/common/static/mac/vajra-bg.jpg"></el-input>
+                                        </el-form-item>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+
+                    <el-tab-pane label="功能卡片" name="cards">
+                        <div class="theme-setting-head">
+                            <div>
+                                <div class="theme-setting-title">首页功能卡片</div>
+                                <div class="theme-setting-desc">前台固定读取三个卡片位，可调整标题、动作、链接和图片。</div>
+                            </div>
+                        </div>
+                        <div class="theme-empty-setting" v-if="!editForm.settings.cards.length">暂无卡片，可先恢复默认配置后再编辑。</div>
+                        <div class="theme-setting-list">
+                            <div class="theme-setting-item" v-for="(card, index) in editForm.settings.cards" :key="'card-' + index">
+                                <div class="theme-setting-item-head">
+                                    <span>{{ cardSlotLabel(index) }}</span>
+                                    <el-tag size="mini" type="info">固定槽位</el-tag>
+                                </div>
+                                <div class="theme-setting-row with-preview">
+                                    <div class="theme-setting-preview is-square" :class="{'has-image': card.image}">
+                                        <img v-if="card.image" :src="card.image" alt="">
+                                        <span v-else>Card</span>
+                                        <a v-if="card.image" class="theme-preview-open" :href="card.image" target="_blank">查看</a>
+                                    </div>
+                                    <div class="theme-setting-fields">
+                                        <div class="theme-setting-grid is-two">
+                                            <el-form-item label="标题">
+                                                <el-input v-model.trim="card.title" placeholder="如 下载APP"></el-input>
+                                            </el-form-item>
+                                            <el-form-item label="动作">
+                                                <el-select v-model="card.action" placeholder="请选择动作">
+                                                    <el-option label="切换主题" value="theme"></el-option>
+                                                    <el-option label="历史搜索" value="history"></el-option>
+                                                    <el-option label="收藏" value="favorites"></el-option>
+                                                    <el-option label="搜索" value="search"></el-option>
+                                                    <el-option label="打开链接" value="url"></el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </div>
+                                        <el-form-item label="副标题">
+                                            <el-input v-model.trim="card.subtitle" placeholder="如 追剧不迷路"></el-input>
+                                        </el-form-item>
+                                        <div class="theme-setting-grid is-two">
+                                            <el-form-item label="链接">
+                                                <el-input v-model.trim="card.url" placeholder="动作为打开链接时使用"></el-input>
+                                            </el-form-item>
+                                            <el-form-item label="图片地址">
+                                                <el-input v-model.trim="card.image" placeholder="可选"></el-input>
+                                            </el-form-item>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+
+                    <el-tab-pane label="底部导航" name="tabs">
+                        <div class="theme-setting-head">
+                            <div>
+                                <div class="theme-setting-title">移动端底部导航</div>
+                                <div class="theme-setting-desc">类型和目标决定点击后切换面板、搜索、跳转路径或打开链接。</div>
+                            </div>
+                            <el-button size="small" type="primary" plain icon="el-icon-plus" @click="addTab">添加导航</el-button>
+                        </div>
+                        <div class="theme-empty-setting" v-if="!editForm.settings.bottom_tabs.length">暂无底部导航，点击右上角添加。</div>
+                        <div class="theme-setting-list">
+                            <div class="theme-setting-item" v-for="(tab, index) in editForm.settings.bottom_tabs" :key="'tab-' + index">
+                                <div class="theme-setting-item-head">
+                                    <span>导航 {{ index + 1 }}</span>
+                                    <div class="theme-setting-actions">
+                                        <el-button size="mini" icon="el-icon-arrow-up" :disabled="index === 0" @click="moveSettingItem(editForm.settings.bottom_tabs, index, -1)"></el-button>
+                                        <el-button size="mini" icon="el-icon-arrow-down" :disabled="index === editForm.settings.bottom_tabs.length - 1" @click="moveSettingItem(editForm.settings.bottom_tabs, index, 1)"></el-button>
+                                        <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="removeSettingItem(editForm.settings.bottom_tabs, index)"></el-button>
+                                    </div>
+                                </div>
+                                <div class="theme-setting-grid is-three">
+                                    <el-form-item label="标题">
+                                        <el-input v-model.trim="tab.title" placeholder="如 首页"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="类型">
+                                        <el-select v-model="tab.type" placeholder="请选择类型">
+                                            <el-option label="面板" value="panel"></el-option>
+                                            <el-option label="搜索" value="search"></el-option>
+                                            <el-option label="路径" value="path"></el-option>
+                                            <el-option label="链接" value="url"></el-option>
+                                            <el-option label="动作" value="action"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="目标">
+                                        <el-input v-model.trim="tab.target" :placeholder="tabTargetPlaceholder(tab.type)"></el-input>
+                                        <div class="theme-form-tip">{{ tabTypeTip(tab.type) }}</div>
+                                    </el-form-item>
+                                </div>
+                                <div class="theme-setting-grid is-two">
+                                    <el-form-item label="默认图标">
+                                        <el-input v-model.trim="tab.icon" placeholder="/views/index/mofa/common/static/mac/home-1.svg"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="选中图标">
+                                        <el-input v-model.trim="tab.active_icon" placeholder="/views/index/mofa/common/static/mac/home-2.svg"></el-input>
+                                    </el-form-item>
+                                </div>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+
+                    <el-tab-pane label="发现页" name="links">
+                        <div class="theme-setting-head">
+                            <div>
+                                <div class="theme-setting-title">友链入口</div>
+                                <div class="theme-setting-desc">发现页会展示这些入口，远程网址点击前会二次确认。</div>
+                            </div>
+                            <el-button size="small" type="primary" plain icon="el-icon-plus" @click="addFriendLink">添加友链</el-button>
+                        </div>
+                        <div class="theme-empty-setting" v-if="!editForm.settings.friend_links.length">暂无友链，点击右上角添加。</div>
+                        <div class="theme-setting-list">
+                            <div class="theme-setting-item" v-for="(link, index) in editForm.settings.friend_links" :key="'link-' + index">
+                                <div class="theme-setting-item-head">
+                                    <span>友链 {{ index + 1 }}</span>
+                                    <div class="theme-setting-actions">
+                                        <el-button size="mini" icon="el-icon-arrow-up" :disabled="index === 0" @click="moveSettingItem(editForm.settings.friend_links, index, -1)"></el-button>
+                                        <el-button size="mini" icon="el-icon-arrow-down" :disabled="index === editForm.settings.friend_links.length - 1" @click="moveSettingItem(editForm.settings.friend_links, index, 1)"></el-button>
+                                        <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="removeSettingItem(editForm.settings.friend_links, index)"></el-button>
+                                    </div>
+                                </div>
+                                <div class="theme-setting-grid is-two">
+                                    <el-form-item label="标题">
+                                        <el-input v-model.trim="link.title" placeholder="如 悦心搜索"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="网址">
+                                        <el-input v-model.trim="link.url" placeholder="https://example.com"></el-input>
+                                    </el-form-item>
+                                </div>
+                                <div class="theme-setting-grid is-two">
+                                    <el-form-item label="图标">
+                                        <el-input v-model.trim="link.icon" placeholder="可选，图片或图标地址"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="说明">
+                                        <el-input v-model.trim="link.description" placeholder="如 发现和分享优质资源"></el-input>
+                                    </el-form-item>
+                                </div>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+                </el-tabs>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button size="small" plain @click="restoreDefaultSettings">恢复默认配置</el-button>
+                <el-button size="small" @click="editDialogVisible = false">取消</el-button>
+                <el-button size="small" type="primary" :loading="editingTheme" @click="saveThemeMeta">保存</el-button>
+            </span>
+        </el-dialog>
+    </div>
+    {include file="common/footer"/}
+    <script>
+        new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    loading: false,
+                    savingTheme: '',
+                    deletingTheme: '',
+                    editingTheme: false,
+                    creatingTheme: false,
+                    importingTheme: false,
+                    createDialogVisible: false,
+                    importDialogVisible: false,
+                    editDialogVisible: false,
+                    activeEditTab: 'basic',
+                    currentTheme: '',
+                    themes: [],
+                    createForm: {
+                        theme: '',
+                        name: '',
+                        author: '',
+                        description: ''
+                    },
+                    importForm: {
+                        theme: '',
+                        name: ''
+                    },
+                    editForm: {
+                        theme: '',
+                        name: '',
+                        version: '',
+                        author: '',
+                        description: '',
+                        screenshot: '',
+                        settings: {
+                            download_url: '',
+                            notice_text: '',
+                            banners: [],
+                            cards: [],
+                            bottom_tabs: [],
+                            friend_links: []
+                        }
+                    }
+                };
+            },
+            created: function () {
+                this.loadThemes();
+            },
+            computed: {
+                importUploadData: function () {
+                    return Object.assign({}, PostBase, this.importForm);
+                }
+            },
+            methods: {
+                loadThemes: function () {
+                    var that = this;
+                    that.loading = true;
+                    axios.post('/admin/system/themeList', Object.assign({}, PostBase)).then(function (res) {
+                        if (res.data.code == 200) {
+                            that.currentTheme = res.data.data.current || '';
+                            that.themes = res.data.data.themes || [];
+                        } else {
+                            that.$message.error(res.data.message || '主题列表获取失败');
+                        }
+                        that.loading = false;
+                    }).catch(function (error) {
+                        that.loading = false;
+                        that.$message.error('服务器内部错误');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                enableTheme: function (theme) {
+                    if (!theme || theme.active || !theme.is_valid || this.savingTheme) {
+                        return;
+                    }
+                    var that = this;
+                    that.savingTheme = theme.key;
+                    axios.post('/admin/system/enableTheme', Object.assign({}, PostBase, {
+                        theme: theme.key
+                    })).then(function (res) {
+                        if (res.data.code == 200) {
+                            that.$message.success('主题已启用');
+                            that.loadThemes();
+                        } else {
+                            that.$message.error(res.data.message || '主题启用失败');
+                        }
+                        that.savingTheme = '';
+                    }).catch(function (error) {
+                        that.savingTheme = '';
+                        that.$message.error('服务器内部错误');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                previewItems: function (theme) {
+                    var urls = theme && theme.preview_urls ? theme.preview_urls : {};
+                    return [
+                        Object.assign({ key: 'home', label: '首页', enabled: 1 }, urls.home || {}),
+                        Object.assign({ key: 'search', label: '搜索页', enabled: 1 }, urls.search || {}),
+                        Object.assign({ key: 'detail', label: '详情页', enabled: 0 }, urls.detail || {})
+                    ];
+                },
+                previewThemeCommand: function (theme, key) {
+                    if (!theme || !theme.is_valid) {
+                        return;
+                    }
+                    var items = this.previewItems(theme);
+                    var item = null;
+                    for (var i = 0; i < items.length; i++) {
+                        if (items[i].key === key) {
+                            item = items[i];
+                            break;
+                        }
+                    }
+                    if (!item || !item.enabled || !item.path) {
+                        this.$message.warning('暂无可用预览地址');
+                        return;
+                    }
+                    var separator = item.path.indexOf('?') >= 0 ? '&' : '?';
+                    window.open(item.path + separator + '__preview_theme=' + encodeURIComponent(theme.key), '_blank');
+                },
+                openCreateDialog: function () {
+                    this.createForm = {
+                        theme: '',
+                        name: '',
+                        author: '',
+                        description: ''
+                    };
+                    this.createDialogVisible = true;
+                },
+                openImportDialog: function () {
+                    this.importForm = {
+                        theme: '',
+                        name: ''
+                    };
+                    this.importDialogVisible = true;
+                    this.$nextTick(function () {
+                        if (this.$refs.themeImportUpload) {
+                            this.$refs.themeImportUpload.clearFiles();
+                        }
+                    });
+                },
+                openEditDialog: function (theme) {
+                    if (!theme || !theme.can_edit || theme.is_default) {
+                        this.$message.warning('默认主题受系统保护，不能编辑');
+                        return;
+                    }
+                    this.editingTheme = false;
+                    this.activeEditTab = 'basic';
+                    var settings = Object.assign({
+                        download_url: '',
+                        notice_text: '',
+                        banners: [],
+                        cards: [],
+                        bottom_tabs: [],
+                        friend_links: []
+                    }, theme.settings || {});
+                    this.editForm = {
+                        theme: theme.key || '',
+                        name: theme.name || '',
+                        version: theme.version || '',
+                        author: theme.author || '',
+                        description: theme.description || '',
+                        screenshot: theme.screenshot || '',
+                        settings: {
+                            download_url: settings.download_url || '',
+                            notice_text: settings.notice_text || '',
+                            banners: this.normalizeBannerList(settings.banners || []),
+                            cards: this.normalizeCardList(settings.cards && settings.cards.length ? settings.cards : this.defaultCards()),
+                            bottom_tabs: this.normalizeTabList(settings.bottom_tabs && settings.bottom_tabs.length ? settings.bottom_tabs : this.defaultTabs()),
+                            friend_links: this.normalizeFriendLinkList(settings.friend_links && settings.friend_links.length ? settings.friend_links : this.defaultFriendLinks())
+                        }
+                    };
+                    this.editDialogVisible = true;
+                },
+                resetEditLoading: function () {
+                    this.editingTheme = false;
+                },
+                cloneSettingItems: function (items) {
+                    if (!Array.isArray(items)) {
+                        return [];
+                    }
+                    return items.map(function (item) {
+                        return Object.assign({}, item || {});
+                    });
+                },
+                normalizeBannerList: function (items) {
+                    return this.cloneSettingItems(items).map(function (item) {
+                        return {
+                            title: (item.title || '').trim(),
+                            subtitle: (item.subtitle || '').trim(),
+                            keyword: (item.keyword || '').trim(),
+                            image: (item.image || '').trim()
+                        };
+                    }).filter(function (item) {
+                        return item.title || item.image;
+                    });
+                },
+                normalizeCardList: function (items) {
+                    var defaults = this.defaultCards();
+                    return defaults.map(function (fallback, index) {
+                        var item = Array.isArray(items) && items[index] ? Object.assign({}, items[index]) : {};
+                        var action = item.action || fallback.action || 'url';
+                        var key = fallback.key || item.key || ('card' + (index + 1));
+                        var url = item.url || fallback.url || '';
+                        return {
+                            key: key,
+                            title: (item.title || fallback.title || '').trim(),
+                            subtitle: (item.subtitle || fallback.subtitle || '').trim(),
+                            action: String(action || 'url').trim(),
+                            url: String(url || '').trim(),
+                            image: (item.image || fallback.image || '').trim()
+                        };
+                    }, this);
+                },
+                cardSlotLabel: function (index) {
+                    var labels = ['主题切换卡片', '历史搜索卡片', '下载入口卡片'];
+                    return labels[index] || ('卡片 ' + (index + 1));
+                },
+                tabTargetPlaceholder: function (type) {
+                    var map = {
+                        panel: 'home、discover、mine',
+                        search: '如 剑来',
+                        path: '如 /index/index',
+                        url: '如 https://example.com',
+                        action: 'theme、history'
+                    };
+                    return map[type || 'panel'] || '请输入目标';
+                },
+                tabTypeTip: function (type) {
+                    var map = {
+                        panel: '切换内置页面，只支持 home、discover、mine。',
+                        search: '点击后直接搜索目标关键词。',
+                        path: '点击后跳转站内路径。',
+                        url: '点击后打开外部链接，会弹出离站确认。',
+                        action: '执行内置动作，只支持 theme、history。'
+                    };
+                    return map[type || 'panel'] || '请选择可用类型并填写目标。';
+                },
+                normalizeTabList: function (items) {
+                    return this.cloneSettingItems(items).slice(0, 8).map(function (item) {
+                        return {
+                            title: (item.title || '').trim(),
+                            type: (item.type || 'panel').trim(),
+                            target: (item.target || '').trim(),
+                            icon: (item.icon || '').trim(),
+                            active_icon: (item.active_icon || '').trim()
+                        };
+                    }).filter(function (item) {
+                        return item.title && item.target;
+                    });
+                },
+                normalizeFriendLinkList: function (items) {
+                    return this.cloneSettingItems(items).slice(0, 30).map(function (item) {
+                        return {
+                            title: (item.title || '').trim(),
+                            url: (item.url || '').trim(),
+                            icon: (item.icon || '').trim(),
+                            description: (item.description || '').trim()
+                        };
+                    }).filter(function (item) {
+                        return item.title && item.url;
+                    });
+                },
+                moveSettingItem: function (items, index, step) {
+                    if (!Array.isArray(items)) {
+                        return;
+                    }
+                    var targetIndex = index + step;
+                    if (targetIndex < 0 || targetIndex >= items.length) {
+                        return;
+                    }
+                    var current = items.splice(index, 1)[0];
+                    items.splice(targetIndex, 0, current);
+                },
+                removeSettingItem: function (items, index) {
+                    if (Array.isArray(items)) {
+                        items.splice(index, 1);
+                    }
+                },
+                addBanner: function () {
+                    this.editForm.settings.banners.push({
+                        title: '',
+                        subtitle: '',
+                        keyword: '',
+                        image: ''
+                    });
+                },
+                addTab: function () {
+                    this.editForm.settings.bottom_tabs.push({
+                        title: '',
+                        type: 'panel',
+                        target: '',
+                        icon: '',
+                        active_icon: ''
+                    });
+                },
+                addFriendLink: function () {
+                    this.editForm.settings.friend_links.push({
+                        title: '',
+                        url: '',
+                        icon: '',
+                        description: ''
+                    });
+                },
+                isHttpUrl: function (value) {
+                    return /^https?:\/\//i.test(String(value || '').trim());
+                },
+                failEditValidation: function (tabName, message) {
+                    this.activeEditTab = tabName;
+                    this.$message.error(message);
+                    return false;
+                },
+                validateThemeSettings: function () {
+                    var settings = this.editForm.settings || {};
+                    var banners = Array.isArray(settings.banners) ? settings.banners : [];
+                    var cards = Array.isArray(settings.cards) ? settings.cards : [];
+                    var tabs = Array.isArray(settings.bottom_tabs) ? settings.bottom_tabs : [];
+                    var links = Array.isArray(settings.friend_links) ? settings.friend_links : [];
+                    var validPanelTargets = ['home', 'discover', 'mine'];
+                    var validActionTargets = ['theme', 'history'];
+                    var validTabTypes = ['panel', 'search', 'path', 'url', 'action'];
+
+                    for (var i = 0; i < banners.length; i++) {
+                        var banner = banners[i] || {};
+                        if (!String(banner.image || '').trim()) {
+                            return this.failEditValidation('banners', '轮播 ' + (i + 1) + ' 需要填写图片地址');
+                        }
+                        if (!String(banner.title || '').trim() && !String(banner.keyword || '').trim()) {
+                            return this.failEditValidation('banners', '轮播 ' + (i + 1) + ' 需要填写标题或搜索关键词');
+                        }
+                    }
+
+                    for (var c = 0; c < cards.length; c++) {
+                        var card = cards[c] || {};
+                        if (!String(card.title || '').trim()) {
+                            return this.failEditValidation('cards', this.cardSlotLabel(c) + ' 需要填写标题');
+                        }
+                        if (!String(card.subtitle || '').trim()) {
+                            return this.failEditValidation('cards', this.cardSlotLabel(c) + ' 需要填写副标题');
+                        }
+                        if ((card.action || '') === 'url' && !String(card.url || '').trim() && c !== 2) {
+                            return this.failEditValidation('cards', this.cardSlotLabel(c) + ' 动作为打开链接时需要填写链接');
+                        }
+                    }
+
+                    for (var t = 0; t < tabs.length; t++) {
+                        var tab = tabs[t] || {};
+                        var type = String(tab.type || 'panel').trim();
+                        var target = String(tab.target || '').trim();
+                        if (!String(tab.title || '').trim()) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 需要填写标题');
+                        }
+                        if (validTabTypes.indexOf(type) < 0) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 的类型无效');
+                        }
+                        if (!target) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 需要填写目标');
+                        }
+                        if (type === 'panel' && validPanelTargets.indexOf(target) < 0) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 类型为面板时，目标只能是 home、discover、mine');
+                        }
+                        if (type === 'action' && validActionTargets.indexOf(target) < 0) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 类型为动作时，目标只能是 theme 或 history');
+                        }
+                        if (type === 'url' && !this.isHttpUrl(target)) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 类型为链接时，目标需要以 http:// 或 https:// 开头');
+                        }
+                        if ((tab.icon || tab.active_icon) && (!String(tab.icon || '').trim() || !String(tab.active_icon || '').trim())) {
+                            return this.failEditValidation('tabs', '导航 ' + (t + 1) + ' 如果配置图标，默认图标和选中图标都建议填写');
+                        }
+                    }
+
+                    for (var l = 0; l < links.length; l++) {
+                        var link = links[l] || {};
+                        if (!String(link.title || '').trim()) {
+                            return this.failEditValidation('links', '友链 ' + (l + 1) + ' 需要填写标题');
+                        }
+                        if (!String(link.url || '').trim()) {
+                            return this.failEditValidation('links', '友链 ' + (l + 1) + ' 需要填写网址');
+                        }
+                        if (!this.isHttpUrl(link.url)) {
+                            return this.failEditValidation('links', '友链 ' + (l + 1) + ' 网址需要以 http:// 或 https:// 开头');
+                        }
+                    }
+
+                    return true;
+                },
+                defaultCards: function () {
+                    return [
+                        { key: 'theme', title: '白天模式', subtitle: '点击切换主题', action: 'theme', url: '', image: '' },
+                        { key: 'history', title: '历史搜索', subtitle: '查看搜索记录', action: 'history', url: '', image: '/views/index/mofa/common/static/mac/historypt.svg' },
+                        { key: 'download', title: '下载APP', subtitle: '追剧不迷路', action: 'url', url: '', image: '/views/index/mofa/common/static/mac/logo1.PNG' }
+                    ];
+                },
+                defaultTabs: function () {
+                    return [
+                        { title: '首页', type: 'panel', target: 'home', icon: '/views/index/mofa/common/static/mac/home-1.svg', active_icon: '/views/index/mofa/common/static/mac/home-2.svg' },
+                        { title: '发现', type: 'panel', target: 'discover', icon: '/views/index/mofa/common/static/mac/fx-1.svg', active_icon: '/views/index/mofa/common/static/mac/fx-2.svg' },
+                        { title: '我的', type: 'panel', target: 'mine', icon: '/views/index/mofa/common/static/mac/user-1.svg', active_icon: '/views/index/mofa/common/static/mac/user-2.svg' }
+                    ];
+                },
+                defaultFriendLinks: function () {
+                    return [
+                        { title: '悦心搜索', url: 'https://pan.033030.xyz', icon: '', description: '发现和分享优质资源' }
+                    ];
+                },
+                restoreDefaultSettings: function () {
+                    this.editForm.settings.download_url = '';
+                    this.editForm.settings.notice_text = '点击继续观看 雨霖铃 - 第1集';
+                    this.editForm.settings.banners = this.normalizeBannerList([
+                        { title: '剑来', subtitle: '少年仗剑，一路向前', keyword: '剑来', image: '/views/index/mofa/common/static/mac/vajra-bg.jpg' }
+                    ]);
+                    this.editForm.settings.cards = this.normalizeCardList(this.defaultCards());
+                    this.editForm.settings.bottom_tabs = this.normalizeTabList(this.defaultTabs());
+                    this.editForm.settings.friend_links = this.normalizeFriendLinkList(this.defaultFriendLinks());
+                    this.$message.success('已恢复为默认配置，保存后生效');
+                },
+                createTheme: function () {
+                    var that = this;
+                    var theme = (that.createForm.theme || '').trim();
+                    var name = (that.createForm.name || '').trim();
+                    if (!/^[a-zA-Z0-9_-]+$/.test(theme)) {
+                        that.$message.error('主题标识只能包含字母、数字、下划线和短横线');
+                        return;
+                    }
+                    if (!name) {
+                        that.$message.error('请填写主题名称');
+                        return;
+                    }
+                    that.creatingTheme = true;
+                    axios.post('/admin/system/createTheme', Object.assign({}, PostBase, that.createForm)).then(function (res) {
+                        if (res.data.code == 200) {
+                            that.$message.success('主题创建成功');
+                            that.createDialogVisible = false;
+                            that.loadThemes();
+                        } else {
+                            that.$message.error(res.data.message || '主题创建失败');
+                        }
+                        that.creatingTheme = false;
+                    }).catch(function (error) {
+                        that.creatingTheme = false;
+                        that.$message.error('服务器内部错误');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                beforeImportUpload: function (file) {
+                    var theme = (this.importForm.theme || '').trim();
+                    if (!/^[a-zA-Z0-9_-]+$/.test(theme)) {
+                        this.$message.error('主题标识只能包含字母、数字、下划线和短横线');
+                        return false;
+                    }
+                    if (!/\.zip$/i.test(file.name)) {
+                        this.$message.error('只支持 zip 主题包');
+                        return false;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                        this.$message.error('主题包不能超过 20MB');
+                        return false;
+                    }
+                    this.importingTheme = true;
+                    return true;
+                },
+                submitImportTheme: function () {
+                    var theme = (this.importForm.theme || '').trim();
+                    if (!/^[a-zA-Z0-9_-]+$/.test(theme)) {
+                        this.$message.error('主题标识只能包含字母、数字、下划线和短横线');
+                        return;
+                    }
+                    if (!this.$refs.themeImportUpload) {
+                        this.$message.error('上传组件未初始化');
+                        return;
+                    }
+                    this.$refs.themeImportUpload.submit();
+                },
+                handleImportSuccess: function (res) {
+                    this.importingTheme = false;
+                    if (res && res.code == 200) {
+                        this.$message.success('主题导入成功');
+                        this.importDialogVisible = false;
+                        if (this.$refs.themeImportUpload) {
+                            this.$refs.themeImportUpload.clearFiles();
+                        }
+                        this.loadThemes();
+                    } else {
+                        this.$message.error((res && res.message) || '主题导入失败');
+                    }
+                },
+                handleImportError: function (error) {
+                    this.importingTheme = false;
+                    this.$message.error('主题导入失败');
+                    if (typeof debugLog !== 'undefined') {
+                        debugLog.log(error);
+                    } else {
+                        console.warn(error);
+                    }
+                },
+                saveThemeMeta: function () {
+                    var that = this;
+                    var theme = (that.editForm.theme || '').trim();
+                    var name = (that.editForm.name || '').trim();
+                    if (!theme) {
+                        that.$message.error('主题标识不能为空');
+                        return;
+                    }
+                    if (!name) {
+                        that.$message.error('请填写主题名称');
+                        return;
+                    }
+                    if (!that.validateThemeSettings()) {
+                        return;
+                    }
+                    that.editingTheme = true;
+                    var payload = Object.assign({}, that.editForm);
+                    payload.settings = Object.assign({}, that.editForm.settings || {});
+                    payload.settings.download_url = (payload.settings.download_url || '').trim();
+                    payload.settings.notice_text = (payload.settings.notice_text || '').trim();
+                    payload.settings.banners = that.normalizeBannerList(that.editForm.settings.banners);
+                    payload.settings.cards = that.normalizeCardList(that.editForm.settings.cards);
+                    payload.settings.bottom_tabs = that.normalizeTabList(that.editForm.settings.bottom_tabs);
+                    payload.settings.friend_links = that.normalizeFriendLinkList(that.editForm.settings.friend_links);
+                    axios.post('/admin/system/updateThemeMeta', Object.assign({}, PostBase, payload)).then(function (res) {
+                        if (res.data.code == 200) {
+                            that.$message.success('主题信息已保存');
+                            that.editDialogVisible = false;
+                            that.loadThemes();
+                        } else {
+                            that.$message.error(res.data.message || '主题信息保存失败');
+                        }
+                        that.editingTheme = false;
+                    }).catch(function (error) {
+                        that.editingTheme = false;
+                        that.$message.error('服务器内部错误');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                exportTheme: function (theme) {
+                    if (!theme || !theme.is_valid) {
+                        return;
+                    }
+                    var params = Object.assign({}, PostBase, {
+                        theme: theme.key
+                    });
+                    window.location.href = '/admin/system/exportTheme?' + new URLSearchParams(params).toString();
+                },
+                themeMoreCommand: function (theme, command) {
+                    if (!theme || !command) {
+                        return;
+                    }
+                    if (command === 'edit') {
+                        this.openEditDialog(theme);
+                        return;
+                    }
+                    if (command === 'export') {
+                        this.exportTheme(theme);
+                        return;
+                    }
+                    if (command === 'delete') {
+                        this.deleteTheme(theme);
+                    }
+                },
+                deleteTheme: function (theme) {
+                    if (!theme || !theme.can_delete || theme.active || this.deletingTheme) {
+                        return;
+                    }
+                    var that = this;
+                    that.$confirm('确认删除主题「' + (theme.name || theme.key) + '」？删除后目录文件会被移除。', '删除主题', {
+                        confirmButtonText: '删除',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function () {
+                        that.deletingTheme = theme.key;
+                        axios.post('/admin/system/deleteTheme', Object.assign({}, PostBase, {
+                            theme: theme.key
+                        })).then(function (res) {
+                            if (res.data.code == 200) {
+                                that.$message.success('主题已删除');
+                                that.loadThemes();
+                            } else {
+                                that.$message.error(res.data.message || '主题删除失败');
+                            }
+                            that.deletingTheme = '';
+                        }).catch(function (error) {
+                            that.deletingTheme = '';
+                            that.$message.error('服务器内部错误');
+                            if (typeof debugLog !== 'undefined') {
+                                debugLog.log(error);
+                            } else {
+                                console.warn(error);
+                            }
+                        });
+                    }).catch(function () {});
+                }
+            }
+        });
+    </script>
+</html>

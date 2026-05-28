@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{$node.node_title}</title>
+    {include file="common/header"/}
+
+    <div class="feedback-manage-page">
+    <!-- 批量操作按钮 -->
+    <div class="feedback-actions">
+        <el-button type="danger" :disabled="selectedIds.length === 0" @click="batchDelete">批量删除</el-button>
+        <span class="feedback-selected">已选择 {{ selectedIds.length }} 项</span>
+    </div>
+
+    <el-table :data="dataList.data" v-loading="loading" @selection-change="handleSelectionChange">
+        <!-- 全选复选框列 -->
+        <el-table-column type="selection" width="55" align="center">
+        </el-table-column>
+        <el-table-column prop="id" label="ID" align="center" width="100">
+        </el-table-column>
+        <el-table-column prop="content" label="用户想要的资源描述">
+        </el-table-column>
+        <el-table-column prop="email" label="联系邮箱" align="center" width="200">
+            <template slot-scope="scope">
+                <span v-if="scope.row.email">{{ scope.row.email }}</span>
+                <span v-else class="feedback-muted">未填写</span>
+            </template>
+        </el-table-column>
+        <el-table-column prop="ip" label="用户IP" align="center" width="150">
+            <template slot-scope="scope">
+                <span v-if="scope.row.ip">{{ scope.row.ip }}</span>
+                <span v-else class="feedback-muted">未记录</span>
+            </template>
+        </el-table-column>
+        <el-table-column prop="create_time" label="提交时间" align="center" width="200">
+        </el-table-column>
+        <!-- 操作列 -->
+        <el-table-column label="操作" align="center" width="120">
+            <template slot-scope="scope">
+                <el-button type="danger" size="mini" @click="deleteItem(scope.row.id)">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+
+    <div class="page">
+        <el-pagination @size-change="handleSizeChange" :page-sizes="[10, 20, 50, 100,200,500]" :page-size="10"
+            layout="total, sizes, prev, pager, next, jumper" background @current-change="changeCurrentPage"
+            :current-page="dataList.current_page" :page-count="dataList.last_page" :total="dataList.total">
+        </el-pagination>
+    </div>
+
+    </div>
+    {include file="common/footer"/}
+    <script>
+        (function () {
+            if (document.getElementById('feedback-manage-style')) return;
+            var link = document.createElement('link');
+            link.id = 'feedback-manage-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/feedback-manage.css?v=2026051501';
+            document.head.appendChild(link);
+        })();
+
+        var app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    loading: true,
+                    dataList: [],
+                    selectedIds: [], // 存储选中的ID数组
+                    form: {
+                        page: 1,
+                        per_page: 10,
+                        order: 'id desc'
+                    },
+                }
+            },
+            created() {
+                this.getList();
+            },
+            methods: {
+                logError(error) {
+                    if (typeof debugLog !== 'undefined') {
+                        debugLog.log(error);
+                    } else {
+                        console.warn(error);
+                    }
+                },
+                handleSizeChange(per_page) {
+                    this.form.per_page = per_page;
+                    this.getList();
+                },
+                changeCurrentPage(page) {
+                    this.form.page = page;
+                    this.getList();
+                },
+                getList() {
+                    var that = this;
+                    that.loading = true;
+                    axios.post('/admin/feedback/getList', Object.assign({}, PostBase, that.form))
+                        .then(function (response) {
+                            that.loading = false;
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.dataList = response.data.data;
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.loading = false;
+                            that.$message.error('服务器内部错误');
+                            that.logError(error);
+                        });
+                },
+                // 处理表格选择变化
+                handleSelectionChange(selection) {
+                    this.selectedIds = selection.map(item => item.id);
+                },
+                // 单个删除
+                deleteItem(id) {
+                    this.$confirm('确定要删除这条反馈记录吗？', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.performDelete([id]);
+                    }).catch(() => {
+                        // 用户取消删除
+                    });
+                },
+                // 批量删除
+                batchDelete() {
+                    if (this.selectedIds.length === 0) {
+                        this.$message.warning('请先选择要删除的记录');
+                        return;
+                    }
+                    this.$confirm(`确定要删除选中的 ${this.selectedIds.length} 条反馈记录吗？`, '批量删除', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.performDelete(this.selectedIds);
+                    }).catch(() => {
+                        // 用户取消删除
+                    });
+                },
+                // 执行删除操作
+                performDelete(ids) {
+                    var that = this;
+                    that.loading = true;
+                    axios.post('/admin/feedback/delete', Object.assign({}, PostBase, { ids: ids }))
+                        .then(function (response) {
+                            that.loading = false;
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.$message.success('删除成功');
+                                that.selectedIds = []; // 清空选中状态
+                                that.getList(); // 重新加载列表
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.loading = false;
+                            that.$message.error('删除失败，服务器内部错误');
+                            that.logError(error);
+                        });
+                },
+            }
+        })
+    </script>
+
+
+</html>

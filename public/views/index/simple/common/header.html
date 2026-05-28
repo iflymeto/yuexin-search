@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {notempty name="config.app_icon"}
+    <link rel="icon" href="{$config.app_icon}" />
+    {/notempty}
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width,user-scalable=no,maximum-scale=1.0">
+    <title>{$seo_title}</title>
+    <meta name="keywords" content="{$seo_keywords}" />
+    <meta name="description" content="{$seo_description}" />
+    <meta name="referrer" content="no-referrer">
+    <!-- ElementPlus CSS - npmmirror镜像（阿里云CDN，更稳定） -->
+    <link rel="stylesheet" href="https://registry.npmmirror.com/element-plus/2.3.14/files/dist/index.css">
+    
+    <link rel="stylesheet" href="__STATIC__/simple/common/static/css/index.min.css">
+    <link rel="stylesheet" href="__STATIC__/simple/common/static/css/app.css?v=2026052201">
+    <link rel="stylesheet" href="__STATIC__/simple/common/static/css/m.css?v=2026051512">
+    
+    <!-- 统一调试日志管理器（根据.env的APP_DEBUG控制所有console输出） -->
+    <script src="/static/debug-logger.js"></script>
+    
+    {$config.seo_statistics|raw}
+    
+    <style>
+        :root {
+            --theme-color: {$config.home_color|default='#3e3e3e'};
+            --theme-theme: {$config.home_theme|default='#133ab3'};
+            --theme-background: {$config.home_background|default='#fafafa'};
+            --theme-other_background: {$config.other_background|default='#ffffff'};
+        }
+        
+        /* 自定义CSS样式 */
+        {$config.home_css|raw}
+        
+        /* 进度条样式 */
+        .progress-container {
+            margin: 12px 0 8px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .progress-text {
+            font-size: 13px;
+            color: #495057;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            animation: progress-animation 2s infinite;
+        }
+        
+        @keyframes progress-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .progress-info {
+            font-size: 11px;
+            color: #6c757d;
+            text-align: center;
+        }
+        
+        /* 移动端进度条优化 */
+        @media screen and (max-width: 768px) {
+            .progress-container {
+                margin: 3vw 0 2vw;
+                padding: 2.5vw 3vw;
+                border-radius: 2vw;
+            }
+            
+            .progress-text {
+                font-size: 3.2vw;
+                margin-bottom: 2vw;
+            }
+            
+            .progress-bar {
+                height: 1.5vw;
+                border-radius: 1vw;
+                margin-bottom: 1.5vw;
+            }
+            
+            .progress-fill {
+                border-radius: 1vw;
+            }
+            
+            .progress-info {
+                font-size: 3vw;
+            }
+        }
+    </style>

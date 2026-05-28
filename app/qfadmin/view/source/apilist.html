@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>接口配置</title>
+    {include file="common/header"/}
+    <div class="api-list-page">
+    <div class="api-toolbar">
+        <div class="api-toolbar-group api-toolbar-primary">
+            <el-button icon="el-icon-plus" size="small" @click="clickAdd" type="primary">添加线路</el-button>
+        </div>
+        <div class="api-toolbar-group">
+            <el-dropdown trigger="click" @command="openFrontendTest">
+                <el-button icon="el-icon-paperclip" size="small" plain>前台测试<i class="el-icon-arrow-down el-icon--right"></i></el-button>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="0">夸克测试前台数据</el-dropdown-item>
+                    <el-dropdown-item command="2">百度测试前台数据</el-dropdown-item>
+                    <el-dropdown-item command="3">UC测试前台数据</el-dropdown-item>
+                    <el-dropdown-item command="4">迅雷测试前台数据</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+        </div>
+        <div class="api-toolbar-group">
+            <el-button icon="el-icon-download" size="small" @click="exportJson()" plain>导出JSON</el-button>
+            <el-button icon="el-icon-upload2" size="small" @click="showImportDialog()" plain>导入JSON</el-button>
+            <el-dropdown trigger="click" @command="handleBatchCommand">
+                <el-button icon="el-icon-operation" size="small" :disabled="multipleSelection.length === 0" plain>批量操作<i class="el-icon-arrow-down el-icon--right"></i></el-button>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="enable">批量启用</el-dropdown-item>
+                    <el-dropdown-item command="disable">批量禁用</el-dropdown-item>
+                    <el-dropdown-item command="latency" :disabled="latencyTesting">批量测延迟</el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>批量删除</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+            <el-dropdown trigger="click" @command="handleMaintenanceCommand">
+                <el-button icon="el-icon-setting" size="small" plain>维护工具<i class="el-icon-arrow-down el-icon--right"></i></el-button>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="check">检测结构</el-dropdown-item>
+                    <el-dropdown-item command="repair">一键修复结构</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+        </div>
+    </div>
+    <el-table :data="dataList" v-loading="loading" @selection-change="handleSelectionChange" class="api-config-table">
+        <el-table-column type="selection" width="55"></el-table-column>
+        <el-table-column label="状态" width="78" align="center">
+            <template slot-scope="scope">
+                <el-tooltip :content="getLatencyText(scope.row)" placement="top" :open-delay="300">
+                    <span class="api-latency-pill" :class="'is-' + getLatencyStatusClass(scope.row)">
+                        <i class="api-latency-dot"></i>
+                        <span>{{ getLatencyShortText(scope.row) }}</span>
+                    </span>
+                </el-tooltip>
+            </template>
+        </el-table-column>
+        <el-table-column label="网盘" width="104" prop="name">
+            <template slot-scope="scope">
+                <div class="api-pan-tags">
+                    <el-tag v-for="type in getVisiblePanTypeList(scope.row)" :key="type.value" size="mini" effect="plain">{{ type.label }}</el-tag>
+                    <el-tag v-if="getHiddenPanTypeCount(scope.row) > 0" size="mini" effect="plain">+{{ getHiddenPanTypeCount(scope.row) }}</el-tag>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="线路名称" prop="name" min-width="210">
+            <template slot-scope="scope">
+                <div class="api-line-main">
+                    <span class="api-line-name">{{ scope.row.name }}</span>
+                </div>
+                <div class="api-line-summary" v-if="getLineSummary(scope.row)">{{ getLineSummary(scope.row) }}</div>
+            </template>
+        </el-table-column>
+        <el-table-column label="地址" prop="url" min-width="150">
+            <template slot-scope="scope">
+                <div class="api-url-cell">
+                    <el-tooltip :content="scope.row.url || '-'" placement="top" :open-delay="300">
+                        <span class="api-url-ellipsis">{{ getShortUrl(scope.row.url) }}</span>
+                    </el-tooltip>
+                    <el-button type="text" icon="el-icon-document-copy" class="api-url-copy" @click.stop="copyText(scope.row.url || '')"></el-button>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="类型" width="74" prop="name">
+            <template slot-scope="scope">
+                <el-tag size="mini" :type="getLineTypeTag(scope.row)">{{ getLineTypeText(scope.row) }}</el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="启用" width="68" align="center">
+            <template slot-scope="scope">
+                <el-switch v-model="scope.row.status==1?true:false" @change="clickStatus(scope.row)">
+                </el-switch>
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="112">
+            <template slot-scope="scope">
+                <el-link type="primary" @click="clickEdit(scope.row)"
+                    :underline="false">编辑</el-link>
+                <el-dropdown trigger="click" @command="handleRowCommand">
+                    <el-link type="info" :underline="false" class="api-row-more">更多<i class="el-icon-arrow-down el-icon--right"></i></el-link>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item :command="{ action: 'latency', row: scope.row }">测延迟</el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'copy', row: scope.row }">复制地址</el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'delete', row: scope.row }" divided>删除</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+            </template>
+        </el-table-column>
+    </el-table>
+
+
+    <!-- 添加框 -->
+    <el-dialog title="添加线路" :visible.sync="dialogFormAdd" width="750px" :modal-append-to-body='false' append-to-body
+        :close-on-click-modal='false'>
+        <el-form :model="formAdd" :rules="rules" ref="formAdd">
+            <div class="api-form-section-title">基础信息</div>
+
+            <el-form-item prop="pantype" label="网盘类型" :label-width="formLabelWidth" v-if="formAdd.type !== 'tg' && formAdd.type !== 'pansou'">
+                <el-radio-group v-model="formAdd.pantype" @change="onAddPanTypeChange">
+                    <el-radio :label="0">夸克网盘</el-radio>
+                    <el-radio :label="2">百度网盘</el-radio>
+                    <el-radio :label="3">UC网盘</el-radio>
+                    <el-radio :label="4">迅雷云盘</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item prop="pan_types" label="支持网盘" :label-width="formLabelWidth" v-if="formAdd.type === 'tg' || formAdd.type === 'pansou'">
+                <el-checkbox-group v-model="formAdd.pan_types">
+                    <el-checkbox :label="0">夸克网盘</el-checkbox>
+                    <el-checkbox :label="2">百度网盘</el-checkbox>
+                    <el-checkbox :label="3">UC网盘</el-checkbox>
+                    <el-checkbox :label="4">迅雷云盘</el-checkbox>
+                </el-checkbox-group>
+                <span class="api-help-offset" v-if="formAdd.type === 'tg'">同一个TG群组可复用于多个网盘搜索，系统会按当前搜索网盘提取对应链接</span>
+                <span class="api-help-offset" v-else>同一个PanSou接口可复用于多个网盘搜索，系统会按当前搜索网盘传入 cloud_types</span>
+            </el-form-item>
+
+            <el-form-item prop="name" label="线路名称" :label-width="formLabelWidth" v-if="formAdd.type !== 'tg'">
+                <el-input size="medium" autocomplete="off" v-model="formAdd.name"></el-input>
+            </el-form-item>
+            <el-form-item label="线路名称" :label-width="formLabelWidth" v-if="formAdd.type === 'tg'">
+                <el-input size="medium" autocomplete="off" v-model="formAdd.name" placeholder="留空将自动使用频道号作为线路名称"></el-input>
+                <span class="api-help-offset">TG群组类型可留空，系统将自动使用群组号作为线路名称</span>
+            </el-form-item>
+
+            <el-form-item prop="count" label="总数限制" :label-width="formLabelWidth">
+                <el-input-number v-model="formAdd.count" :min="0" :max="999" size="medium" class="api-number-input"
+                    controls-position="right"></el-input-number>
+                <span class="api-help">建议最大设置为5，即该接口最多只获取5条数据</span>
+            </el-form-item>
+            <el-form-item prop="tg_scan_limit" label="扫描群组" :label-width="formLabelWidth" v-if="formAdd.type === 'tg'">
+                <el-input-number v-model="formAdd.tg_scan_limit" :min="1" :max="50" size="medium" class="api-number-input"
+                    controls-position="right"></el-input-number>
+                <span class="api-help">每次搜索最多请求多少个TG群组。结果数可以大，扫描群组数建议保持 3-10，避免前台等待过久</span>
+            </el-form-item>
+
+            <el-form-item prop="type" label="类型" :label-width="formLabelWidth">
+                <el-radio-group v-model="formAdd.type" @change="onAddTypeChange">
+                    <el-radio label="api">API接口</el-radio>
+                    <el-radio label="pansou">PanSou接口</el-radio>
+                    <el-radio label="tg">TG群组</el-radio>
+                    <el-radio label="html">网页爬虫</el-radio>
+                </el-radio-group>
+                <p class="api-danger" v-if="formAdd.type=='html'">不推荐！网页爬虫：配置复杂，请自行看描述；功能依赖目标站结构，若无法解析请调整规则</p>
+                <p class="api-danger" v-else-if="formAdd.type=='tg'">国内服务器无法使用；比如：https://t.me/s/NewQuark 就填写NewQuark即可
+                </p>
+                <p class="api-warning" v-else-if="formAdd.type=='pansou'">支持基础地址或 /api/search 地址，可通过健康检查拉取插件和频道</p>
+            </el-form-item>
+
+            <el-form-item prop="url" label="TG群组" :label-width="formLabelWidth" v-if="formAdd.type === 'tg'">
+                <el-input size="medium" autocomplete="off" v-model="formAdd.url" type="textarea" :rows="6" placeholder="支持一行一个或用英文逗号分隔，如：NewQuark&#10;BaiduCloudDisk, yunpanuc"></el-input>
+                <span class="api-help-offset">这些群组会存入同一个TG线路，后台列表只显示一条线路</span>
+            </el-form-item>
+            <el-form-item prop="url" label="目标网址" :label-width="formLabelWidth" v-else-if="formAdd.type === 'html'">
+                <el-input size="medium" autocomplete="off" v-model="formAdd.url"></el-input>
+                <span class="api-help">比如：https://www.baidu.com/s?wd={keyword}，{keyword}是固定词请勿修改</span>
+            </el-form-item>
+            <el-form-item prop="url" label="接口地址" :label-width="formLabelWidth" v-else>
+                <el-input size="medium" autocomplete="off" v-model="formAdd.url"></el-input>
+            </el-form-item>
+
+            <block v-if="formAdd.type === 'pansou'">
+                <div class="api-form-section-title">连接配置</div>
+                <el-form-item label="认证令牌" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.pansou_token" show-password placeholder="PanSou启用认证时填写，自动附加 Bearer"></el-input>
+                </el-form-item>
+                <el-form-item label="图片加速" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.pansou_image_proxy" placeholder="如：https://proxyd.picpi.top/，留空则直接使用原图"></el-input>
+                    <span class="api-help-offset">用于 TG 封面直链加速，前台会拼接为：加速域名/原图地址</span>
+                </el-form-item>
+                <el-form-item label="健康检查" :label-width="formLabelWidth">
+                    <el-button size="small" icon="el-icon-connection" @click="checkPanSouHealth(formAdd)" :loading="pansouHealthLoading">检查并拉取配置</el-button>
+                    <span class="api-help" v-if="formAdd.pansou_health_text">{{ formAdd.pansou_health_text }}</span>
+                </el-form-item>
+                <el-form-item label="配置模式" :label-width="formLabelWidth">
+                    <el-radio-group v-model="formAdd.pansou_config_mode">
+                        <el-radio label="default">默认配置</el-radio>
+                        <el-radio label="manual">手动配置</el-radio>
+                    </el-radio-group>
+                    <span class="api-help-offset">默认配置不传 plugins/channels，由 PanSou 使用全部插件和频道；手动配置才按勾选范围过滤</span>
+                </el-form-item>
+                <el-form-item label="插件" :label-width="formLabelWidth" v-if="formAdd.pansou_config_mode === 'manual' && formAdd.pansou_plugins && formAdd.pansou_plugins.length">
+                    <div class="api-list-manage-tools">
+                        <el-input size="mini" clearable v-model="formAdd.pansou_plugin_filter" placeholder="筛选插件" class="api-list-filter-input"></el-input>
+                        <el-button-group>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formAdd, 'plugins', true)">选中显示</el-button>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formAdd, 'plugins', false)">取消显示</el-button>
+                            <el-button size="mini" @click="invertFilteredPanSouOptions(formAdd, 'plugins')">反选显示</el-button>
+                        </el-button-group>
+                        <span class="api-count-chip">已选 {{ getSelectedPanSouCount(formAdd, 'plugins') }} / {{ formAdd.pansou_plugins.length }}</span>
+                        <span class="api-count-chip">显示 {{ getFilteredPanSouOptions(formAdd, 'plugins').length }}</span>
+                    </div>
+                    <el-checkbox-group v-model="formAdd.pansou_selected_plugins" class="api-option-scroll">
+                        <el-checkbox v-for="item in getFilteredPanSouOptions(formAdd, 'plugins')" :key="item.id" :label="item.id">{{ item.name }}</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+                <el-form-item label="频道" :label-width="formLabelWidth" v-if="formAdd.pansou_config_mode === 'manual' && formAdd.pansou_channels && formAdd.pansou_channels.length">
+                    <div class="api-list-manage-tools">
+                        <el-input size="mini" clearable v-model="formAdd.pansou_channel_filter" placeholder="筛选频道" class="api-list-filter-input"></el-input>
+                        <el-button-group>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formAdd, 'channels', true)">选中显示</el-button>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formAdd, 'channels', false)">取消显示</el-button>
+                            <el-button size="mini" @click="invertFilteredPanSouOptions(formAdd, 'channels')">反选显示</el-button>
+                        </el-button-group>
+                        <span class="api-count-chip">已选 {{ getSelectedPanSouCount(formAdd, 'channels') }} / {{ formAdd.pansou_channels.length }}</span>
+                        <span class="api-count-chip">显示 {{ getFilteredPanSouOptions(formAdd, 'channels').length }}</span>
+                    </div>
+                    <el-checkbox-group v-model="formAdd.pansou_selected_channels" class="api-option-scroll">
+                        <el-checkbox v-for="item in getFilteredPanSouOptions(formAdd, 'channels')" :key="item.id" :label="item.id">{{ item.name }}</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+            </block>
+
+            <block v-if="formAdd.type === 'api' || formAdd.type === 'pansou'">
+                <el-collapse v-model="advancedAddCollapse" class="api-advanced-collapse">
+                    <el-collapse-item title="高级参数" name="advanced">
+                        <el-form-item prop="method" label="请求方式" :label-width="formLabelWidth">
+                            <el-radio-group v-model="formAdd.method">
+                                <el-radio label="GET">GET</el-radio>
+                                <el-radio label="POST">POST</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+
+                        <el-form-item prop="headers" label="请求头" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formAdd.headers" :rows="3" placeholder='{
+        "User-Agent": "..."
+    }' />
+                        </el-form-item>
+
+                        <el-form-item prop="fixed_params" label="接口参数" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formAdd.fixed_params" :rows="3"
+                                placeholder='{"search": "{keyword}"}'></el-input>
+                            <span class="api-help">将search改为实际的搜索字段即可，{keyword}请勿修改</span>
+                        </el-form-item>
+
+                        <el-form-item prop="field_map" label="字段映射" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formAdd.field_map" :rows="8"
+                                placeholder='{"title": "xxx", "url": "xxx", "image": "xxx", "images": ["xxx"]}'></el-input>
+                            <span class="api-help">结构参数名请勿修改，仅将中文修改为真实接口的字段名即可；数组字段一般是data或者data.list<br>
+                            image字段为可选项，用于显示资源图片；images字段为可选项，支持数组类型图片，会自动选择第一张图片</span>
+                        </el-form-item>
+                    </el-collapse-item>
+                </el-collapse>
+            </block>
+
+            <block v-if="formAdd.type === 'html'">
+
+                <el-form-item prop="html_item" label="内容标签" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.html_item"></el-input>
+                    <span class="api-help-block">
+                        请填写用于循环内容的 HTML 标签和 class，用于提取数据列表。格式：标签名+class名
+                        <br>
+                        示例：<br>
+                        div+item （选择所有 class="item" 的 div 标签）<br>
+                        article+post （选择所有 class="post" 的 article 标签）<br>
+                        li+result-item hot（选择所有 class 同时包含 "result-item" 和 "hot" 的 li 标签）
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_title" label="标题标签" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.html_title"></el-input>
+                    <span class="api-help-block">
+                        标题标签是循环项中用于提取标题文字的元素；格式：标签名+class名。<br>
+                        例如：<br>
+                        h3+title 表示选择 `&lt;h3 class="title"&gt;` 标签作为标题内容<br>
+                        a+link 表示 `&lt;a class="link"&gt;` 标签中的文本作为标题<br>
+                        div+content-title 表示 `&lt;div class="content-title"&gt;` 标签作为标题
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_type" label="详情页" :label-width="formLabelWidth">
+                    <el-radio-group v-model="formAdd.html_type">
+                        <el-radio :label="0">不需要</el-radio>
+                        <el-radio :label="1">需要</el-radio>
+                    </el-radio-group>
+                    <p class="api-help">如果网盘链接不在列表页中，而是需要进入详情页后才能获取，请选择“需要”</p>
+                </el-form-item>
+
+                <el-form-item prop="html_url" label="详情页标签" :label-width="formLabelWidth" v-if="formAdd.html_type==1">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.html_url"></el-input>
+                    <span class="api-help-block">
+                        详情页标签是循环项中用于提取详情页网址的元素；格式：a+class名。只能a标签<br>
+                        例如：<br>
+                        a+post_url 表示获取元素 `&lt;a class="post_url" href="https://.."&gt;` 上的href的值
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_url2" label="网盘链接" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formAdd.html_url2"></el-input>
+                    <span class="api-help-block">
+                        网盘链接标签是循环项中用于提取网盘链接的元素；格式：标签名+class名。<br>
+                        将提取该元素第一个出现的网盘链接
+                    </span>
+                </el-form-item>
+
+            </block>
+
+            <el-form-item prop="weight" label="排序" :label-width="formLabelWidth">
+                <el-input-number v-model="formAdd.weight" :min="0" :max="999" size="medium" class="api-number-input"
+                    controls-position="right" />
+            </el-form-item>
+
+            <el-form-item prop="status" label="是否启用" :label-width="formLabelWidth">
+                <el-switch v-model="formAdd.status" size="medium" />
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer api-dialog-footer">
+            <el-button @click="testAddLine()">解析测试（不含有效性校验）</el-button>
+            <el-button type="primary" @click="postAdd()">确认添加</el-button>
+        </div>
+    </el-dialog>
+    <!-- 修改框 -->
+    <el-dialog title="修改线路" :visible.sync="dialogFormEdit" width="750px" :modal-append-to-body='false' append-to-body
+        :close-on-click-modal='false'>
+        <el-form :model="formEdit" :rules="rules" ref="formEdit">
+            <div class="api-form-section-title">基础信息</div>
+            <el-form-item prop="pantype" label="网盘类型" :label-width="formLabelWidth" v-if="formEdit.type !== 'tg' && formEdit.type !== 'pansou'">
+                <el-radio-group v-model="formEdit.pantype" @change="onEditPanTypeChange">
+                    <el-radio :label="0">夸克网盘</el-radio>
+                    <el-radio :label="2">百度网盘</el-radio>
+                    <el-radio :label="3">UC网盘</el-radio>
+                    <el-radio :label="4">迅雷云盘</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item prop="pan_types" label="支持网盘" :label-width="formLabelWidth" v-if="formEdit.type === 'tg' || formEdit.type === 'pansou'">
+                <el-checkbox-group v-model="formEdit.pan_types">
+                    <el-checkbox :label="0">夸克网盘</el-checkbox>
+                    <el-checkbox :label="2">百度网盘</el-checkbox>
+                    <el-checkbox :label="3">UC网盘</el-checkbox>
+                    <el-checkbox :label="4">迅雷云盘</el-checkbox>
+                </el-checkbox-group>
+                <span class="api-help-offset" v-if="formEdit.type === 'tg'">同一个TG群组可复用于多个网盘搜索</span>
+                <span class="api-help-offset" v-else>同一个PanSou接口可复用于多个网盘搜索，系统会按当前搜索网盘传入 cloud_types</span>
+            </el-form-item>
+            <el-form-item prop="name" label="线路名称" :label-width="formLabelWidth">
+                <el-input size="medium" autocomplete="off" v-model="formEdit.name"></el-input>
+            </el-form-item>
+
+            <el-form-item prop="count" label="总数限制" :label-width="formLabelWidth">
+                <el-input-number v-model="formEdit.count" :min="0" :max="999" size="medium" class="api-number-input"
+                    controls-position="right"></el-input-number>
+                <span class="api-help">建议最大设置为5，即该接口最多只获取5条数据</span>
+            </el-form-item>
+            <el-form-item prop="tg_scan_limit" label="扫描群组" :label-width="formLabelWidth" v-if="formEdit.type === 'tg'">
+                <el-input-number v-model="formEdit.tg_scan_limit" :min="1" :max="50" size="medium" class="api-number-input"
+                    controls-position="right"></el-input-number>
+                <span class="api-help">每次搜索最多请求多少个TG群组。结果数 99 不代表扫描 99 个群组</span>
+            </el-form-item>
+
+            <el-form-item prop="type" label="类型" :label-width="formLabelWidth">
+                <el-radio-group v-model="formEdit.type" @change="onEditTypeChange">
+                    <el-radio label="api">API接口</el-radio>
+                    <el-radio label="pansou">PanSou接口</el-radio>
+                    <el-radio label="tg">TG群组</el-radio>
+                    <el-radio label="html">网页爬虫</el-radio>
+                </el-radio-group>
+                <p class="api-danger" v-if="formEdit.type=='html'">不推荐！网页爬虫：配置复杂，请自行看描述；功能依赖目标站结构，若无法解析请调整规则</p>
+                <p class="api-danger" v-else-if="formEdit.type=='tg'">国内服务器无法使用；比如：https://t.me/s/NewQuark
+                    就填写NewQuark即可</p>
+                <p class="api-warning" v-else-if="formEdit.type=='pansou'">支持基础地址或 /api/search 地址，可通过健康检查拉取插件和频道</p>
+            </el-form-item>
+
+            <el-form-item prop="url" label="TG群组" :label-width="formLabelWidth" v-if="formEdit.type === 'tg'">
+                <el-input size="medium" autocomplete="off" v-model="formEdit.url" type="textarea" :rows="4" placeholder="新增群组：一行一个或英文逗号分隔"></el-input>
+                <span class="api-help-offset">填完后点击右下角“确认修改”，会合并到下方群组列表并保存；重复群组自动去重</span>
+            </el-form-item>
+            <el-form-item label="群组管理" :label-width="formLabelWidth" v-if="formEdit.type === 'tg'">
+                <div class="api-list-manage-tools">
+                    <el-input size="mini" clearable v-model="formEdit.tg_channel_filter" placeholder="筛选群组" class="api-list-filter-input"></el-input>
+                    <el-button-group>
+                        <el-button size="mini" @click="setFilteredTgChannels(true)">启用显示</el-button>
+                        <el-button size="mini" @click="setFilteredTgChannels(false)">禁用显示</el-button>
+                        <el-button size="mini" @click="invertFilteredTgChannels()">反选显示</el-button>
+                    </el-button-group>
+                    <span class="api-count-chip">启用 {{ getEnabledTgChannelCount(formEdit) }} / {{ formEdit.tg_channels.length || 0 }}</span>
+                    <span class="api-count-chip">显示 {{ getFilteredTgChannels(formEdit).length }}</span>
+                </div>
+                <el-table :data="getFilteredTgChannels(formEdit)" size="mini" border class="tg-channel-table" height="300">
+                    <el-table-column label="启用" width="90" align="center">
+                        <template slot-scope="scope">
+                            <el-checkbox v-model="scope.row.enabled"></el-checkbox>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="TG群组">
+                        <template slot-scope="scope">
+                            <el-input size="mini" v-model="scope.row.channel"></el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="90" align="center">
+                        <template slot-scope="scope">
+                            <el-link type="danger" :underline="false" @click="removeTgChannel(scope.$index)">删除</el-link>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-form-item>
+            <el-form-item prop="url" label="目标网址" :label-width="formLabelWidth" v-else-if="formEdit.type === 'html'">
+                <el-input size="medium" autocomplete="off" v-model="formEdit.url"></el-input>
+                <span class="api-help">比如：https://www.baidu.com/s?wd={keyword}，{keyword}是固定词请勿修改</span>
+            </el-form-item>
+            <el-form-item prop="url" label="接口地址" :label-width="formLabelWidth" v-else>
+                <el-input size="medium" autocomplete="off" v-model="formEdit.url"></el-input>
+            </el-form-item>
+
+            <block v-if="formEdit.type === 'pansou'">
+                <div class="api-form-section-title">连接配置</div>
+                <el-form-item label="认证令牌" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.pansou_token" show-password placeholder="PanSou启用认证时填写，自动附加 Bearer"></el-input>
+                </el-form-item>
+                <el-form-item label="图片加速" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.pansou_image_proxy" placeholder="如：https://proxyd.picpi.top/，留空则直接使用原图"></el-input>
+                    <span class="api-help-offset">用于 TG 封面直链加速，前台会拼接为：加速域名/原图地址</span>
+                </el-form-item>
+                <el-form-item label="健康检查" :label-width="formLabelWidth">
+                    <el-button size="small" icon="el-icon-connection" @click="checkPanSouHealth(formEdit)" :loading="pansouHealthLoading">检查并拉取配置</el-button>
+                    <span class="api-help" v-if="formEdit.pansou_health_text">{{ formEdit.pansou_health_text }}</span>
+                </el-form-item>
+                <el-form-item label="配置模式" :label-width="formLabelWidth">
+                    <el-radio-group v-model="formEdit.pansou_config_mode">
+                        <el-radio label="default">默认配置</el-radio>
+                        <el-radio label="manual">手动配置</el-radio>
+                    </el-radio-group>
+                    <span class="api-help-offset">默认配置不传 plugins/channels，由 PanSou 使用全部插件和频道；手动配置才按勾选范围过滤</span>
+                </el-form-item>
+                <el-form-item label="插件" :label-width="formLabelWidth" v-if="formEdit.pansou_config_mode === 'manual' && formEdit.pansou_plugins && formEdit.pansou_plugins.length">
+                    <div class="api-list-manage-tools">
+                        <el-input size="mini" clearable v-model="formEdit.pansou_plugin_filter" placeholder="筛选插件" class="api-list-filter-input"></el-input>
+                        <el-button-group>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formEdit, 'plugins', true)">选中显示</el-button>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formEdit, 'plugins', false)">取消显示</el-button>
+                            <el-button size="mini" @click="invertFilteredPanSouOptions(formEdit, 'plugins')">反选显示</el-button>
+                        </el-button-group>
+                        <span class="api-count-chip">已选 {{ getSelectedPanSouCount(formEdit, 'plugins') }} / {{ formEdit.pansou_plugins.length }}</span>
+                        <span class="api-count-chip">显示 {{ getFilteredPanSouOptions(formEdit, 'plugins').length }}</span>
+                    </div>
+                    <el-checkbox-group v-model="formEdit.pansou_selected_plugins" class="api-option-scroll">
+                        <el-checkbox v-for="item in getFilteredPanSouOptions(formEdit, 'plugins')" :key="item.id" :label="item.id">{{ item.name }}</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+                <el-form-item label="频道" :label-width="formLabelWidth" v-if="formEdit.pansou_config_mode === 'manual' && formEdit.pansou_channels && formEdit.pansou_channels.length">
+                    <div class="api-list-manage-tools">
+                        <el-input size="mini" clearable v-model="formEdit.pansou_channel_filter" placeholder="筛选频道" class="api-list-filter-input"></el-input>
+                        <el-button-group>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formEdit, 'channels', true)">选中显示</el-button>
+                            <el-button size="mini" @click="setFilteredPanSouOptions(formEdit, 'channels', false)">取消显示</el-button>
+                            <el-button size="mini" @click="invertFilteredPanSouOptions(formEdit, 'channels')">反选显示</el-button>
+                        </el-button-group>
+                        <span class="api-count-chip">已选 {{ getSelectedPanSouCount(formEdit, 'channels') }} / {{ formEdit.pansou_channels.length }}</span>
+                        <span class="api-count-chip">显示 {{ getFilteredPanSouOptions(formEdit, 'channels').length }}</span>
+                    </div>
+                    <el-checkbox-group v-model="formEdit.pansou_selected_channels" class="api-option-scroll">
+                        <el-checkbox v-for="item in getFilteredPanSouOptions(formEdit, 'channels')" :key="item.id" :label="item.id">{{ item.name }}</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+            </block>
+
+            <block v-if="formEdit.type === 'api' || formEdit.type === 'pansou'">
+                <el-collapse v-model="advancedEditCollapse" class="api-advanced-collapse">
+                    <el-collapse-item title="高级参数" name="advanced">
+                        <el-form-item prop="method" label="请求方式" :label-width="formLabelWidth">
+                            <el-radio-group v-model="formEdit.method">
+                                <el-radio label="GET">GET</el-radio>
+                                <el-radio label="POST">POST</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+
+                        <el-form-item prop="headers" label="请求头" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formEdit.headers" :rows="3" placeholder='{
+        "User-Agent": "..."
+    }' />
+                        </el-form-item>
+
+                        <el-form-item prop="fixed_params" label="接口参数" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formEdit.fixed_params" :rows="3"
+                                placeholder='{"search": "{keyword}"}'></el-input>
+                            <span class="api-help">将search改为实际的搜索字段即可，{keyword}请勿修改</span>
+                        </el-form-item>
+
+                        <el-form-item prop="field_map" label="字段映射" :label-width="formLabelWidth">
+                            <el-input type="textarea" v-model="formEdit.field_map" :rows="8"
+                                placeholder='{"title": "xxx", "url": "xxx", "image": "xxx", "images": ["xxx"]}'></el-input>
+                            <span class="api-help">结构参数名请勿修改，仅将中文修改为真实接口的字段名即可；数组字段一般是data或者data.list<br>
+                            image字段为可选项，用于显示资源图片；images字段为可选项，支持数组类型图片，会自动选择第一张图片</span>
+                        </el-form-item>
+                    </el-collapse-item>
+                </el-collapse>
+            </block>
+
+            <block v-if="formEdit.type === 'html'">
+
+                <el-form-item prop="html_item" label="内容标签" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.html_item"></el-input>
+                    <span class="api-help-block">
+                        请填写用于循环内容的 HTML 标签和 class，用于提取数据列表。格式：标签名+class名
+                        <br>
+                        示例：<br>
+                        div+item （选择所有 class="item" 的 div 标签）<br>
+                        article+post （选择所有 class="post" 的 article 标签）<br>
+                        li+result-item hot（选择所有 class 同时包含 "result-item" 和 "hot" 的 li 标签）
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_title" label="标题标签" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.html_title"></el-input>
+                    <span class="api-help-block">
+                        标题标签是循环项中用于提取标题文字的元素；格式：标签名+class名。<br>
+                        例如：<br>
+                        h3+title 表示选择 `&lt;h3 class="title"&gt;` 标签作为标题内容<br>
+                        a+link 表示 `&lt;a class="link"&gt;` 标签中的文本作为标题<br>
+                        div+content-title 表示 `&lt;div class="content-title"&gt;` 标签作为标题
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_type" label="详情页" :label-width="formLabelWidth">
+                    <el-radio-group v-model="formEdit.html_type">
+                        <el-radio :label="0">不需要</el-radio>
+                        <el-radio :label="1">需要</el-radio>
+                    </el-radio-group>
+                    <p class="api-help">如果网盘链接不在列表页中，而是需要进入详情页后才能获取，请选择“需要”</p>
+                </el-form-item>
+
+                <el-form-item prop="html_url" label="详情页标签" :label-width="formLabelWidth" v-if="formEdit.html_type==1">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.html_url"></el-input>
+                    <span class="api-help-block">
+                        详情页标签是循环项中用于提取详情页网址的元素；格式：a+class名。只能a标签<br>
+                        例如：<br>
+                        a+post_url 表示获取元素 `&lt;a class="post_url" href="https://.."&gt;` 上的href的值
+                    </span>
+                </el-form-item>
+
+                <el-form-item prop="html_url2" label="网盘链接" :label-width="formLabelWidth">
+                    <el-input size="medium" autocomplete="off" v-model="formEdit.html_url2"></el-input>
+                    <span class="api-help-block">
+                        网盘链接标签是循环项中用于提取网盘链接的元素；格式：标签名+class名。<br>
+                        将提取该元素第一个出现的网盘链接
+                    </span>
+                </el-form-item>
+
+            </block>
+
+            <el-form-item prop="weight" label="排序" :label-width="formLabelWidth">
+                <el-input-number v-model="formEdit.weight" :min="0" :max="999" size="medium" class="api-number-input"
+                    controls-position="right" />
+            </el-form-item>
+
+            <el-form-item prop="status" label="是否启用" :label-width="formLabelWidth">
+                <el-switch v-model="formEdit.status" size="medium" />
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer api-dialog-footer">
+            <el-button @click="testEditLine()">解析测试（不含有效性校验）</el-button>
+            <el-button type="primary" @click="postEdit()">确认修改</el-button>
+        </div>
+    </el-dialog>
+
+    <!-- 导入JSON对话框 -->
+    <el-dialog title="导入JSON配置" :visible.sync="dialogImportVisible" width="600px">
+        <el-form>
+            <el-form-item label="JSON数据">
+                <el-input
+                    type="textarea"
+                    :rows="10"
+                    placeholder="请粘贴JSON配置数据"
+                    v-model="importJsonData">
+                </el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-checkbox v-model="importOverwrite">覆盖已存在的配置</el-checkbox>
+                <div class="api-import-tip">
+                    提示：导入时会根据线路名称和网盘类型判断是否重复
+                </div>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogImportVisible = false">取 消</el-button>
+            <el-button type="primary" @click="importJson()">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    </div>
+    {include file="common/footer"/}
+    <script>
+        (function () {
+            if (document.getElementById('api-list-style')) return;
+            var link = document.createElement('link');
+            link.id = 'api-list-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/api-list.css?v=2026051501';
+            document.head.appendChild(link);
+        })();
+
+        var app = new Vue({
+            el: '#app',
+            data() {
+                this.getList();
+                return {
+                    formLabelWidth: '90px',
+                    dialogFormAdd: false,
+                    dialogFormEdit: false,
+                    loading: true,
+                    latencyTesting: false,
+                    pansouHealthLoading: false,
+                    advancedAddCollapse: [],
+                    advancedEditCollapse: [],
+                    dataList: [],
+                    selectList: [],
+                    multipleSelection: [],
+                    dialogImportVisible: false,
+                    importJsonData: '',
+                    importOverwrite: false,
+                    formAdd: {
+                    },
+                    formEdit: {
+                    },
+                    rules: {
+                    },
+                }
+            },
+            methods: {
+                getPanSouTypeKey(panType) {
+                    var map = {
+                        0: 'quark',
+                        2: 'baidu',
+                        3: 'uc',
+                        4: 'xunlei'
+                    };
+                    return map.hasOwnProperty(panType) ? map[panType] : 'quark';
+                },
+                applyPanSouTemplate(form) {
+                    if (!form || form.type !== 'pansou') {
+                        return form;
+                    }
+                    form.pan_types = this.normalizePanTypes(form.pan_types, form.pantype);
+                    form.pantype = form.pan_types[0];
+                    var panKey = this.getPanSouTypeKey(Number(form.pantype));
+                    var headers = this.parseJsonObject(form.headers);
+                    var token = String(form.pansou_token || '').trim();
+                    if (token) {
+                        headers.Authorization = /^Bearer\s+/i.test(token) ? token : ('Bearer ' + token);
+                    }
+                    headers['Content-Type'] = 'application/json';
+                    headers.Accept = 'application/json, text/plain, */*';
+                    var params = this.parseJsonObject(form.fixed_params);
+                    params.kw = '{keyword}';
+                    params.res = params.res || 'merge';
+                    params.cloud_types = [panKey];
+                    var imageProxy = String(form.pansou_image_proxy || '').trim();
+                    if (imageProxy) {
+                        params.image_proxy = imageProxy;
+                    } else {
+                        delete params.image_proxy;
+                    }
+                    var useManualPanSouConfig = form.pansou_config_mode === 'manual';
+                    if (!useManualPanSouConfig) {
+                        delete params.plugins;
+                        delete params.channels;
+                    } else if (Array.isArray(form.pansou_selected_plugins) && form.pansou_selected_plugins.length) {
+                        params.plugins = form.pansou_selected_plugins;
+                    } else {
+                        delete params.plugins;
+                    }
+                    if (useManualPanSouConfig && Array.isArray(form.pansou_selected_channels) && form.pansou_selected_channels.length) {
+                        params.channels = form.pansou_selected_channels;
+                    } else if (useManualPanSouConfig) {
+                        delete params.channels;
+                    }
+                    form.method = 'POST';
+                    form.headers = JSON.stringify(headers, null, 4);
+                    form.fixed_params = JSON.stringify(params, null, 4);
+                    form.field_map = `{
+    "list_path": "data.merged_by_type.` + panKey + `",
+    "fields": {
+        "title": "note",
+        "url": "url",
+        "images": "images"
+    }
+}`;
+                    return form;
+                },
+                parseJsonObject(value) {
+                    if (value && typeof value === 'object' && !Array.isArray(value)) {
+                        return Object.assign({}, value);
+                    }
+                    try {
+                        var parsed = JSON.parse(String(value || '').trim() || '{}');
+                        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+                    } catch (e) {
+                        return {};
+                    }
+                },
+                hydratePanSouForm(form) {
+                    if (!form || form.type !== 'pansou') {
+                        return form;
+                    }
+                    var headers = this.parseJsonObject(form.headers);
+                    var params = this.parseJsonObject(form.fixed_params);
+                    var token = String(headers.Authorization || '').replace(/^Bearer\s+/i, '').trim();
+                    this.$set(form, 'pansou_token', form.pansou_token || token);
+                    this.$set(form, 'pansou_plugins', form.pansou_plugins || []);
+                    this.$set(form, 'pansou_channels', form.pansou_channels || []);
+                    this.$set(form, 'pansou_selected_plugins', Array.isArray(params.plugins) ? params.plugins : []);
+                    this.$set(form, 'pansou_selected_channels', Array.isArray(params.channels) ? params.channels : []);
+                    this.$set(form, 'pansou_image_proxy', form.pansou_image_proxy || params.image_proxy || '');
+                    this.$set(form, 'pansou_config_mode', (Array.isArray(params.plugins) || Array.isArray(params.channels)) ? 'manual' : (form.pansou_config_mode || 'default'));
+                    this.$set(form, 'pansou_health_text', form.pansou_health_text || '');
+                    return form;
+                },
+                setAllPanSouOptions(form, type, checked) {
+                    if (!form) {
+                        return;
+                    }
+                    var sourceKey = type === 'plugins' ? 'pansou_plugins' : 'pansou_channels';
+                    var targetKey = type === 'plugins' ? 'pansou_selected_plugins' : 'pansou_selected_channels';
+                    var list = Array.isArray(form[sourceKey]) ? form[sourceKey] : [];
+                    this.$set(form, targetKey, checked ? list.map(function (item) {
+                        return item.id;
+                    }).filter(function (id) {
+                        return id !== undefined && id !== null && String(id) !== '';
+                    }) : []);
+                },
+                setFilteredPanSouOptions(form, type, checked) {
+                    if (!form) {
+                        return;
+                    }
+                    var targetKey = type === 'plugins' ? 'pansou_selected_plugins' : 'pansou_selected_channels';
+                    var selected = Array.isArray(form[targetKey]) ? form[targetKey].slice() : [];
+                    var selectedMap = {};
+                    selected.forEach(function (id) {
+                        selectedMap[String(id)] = id;
+                    });
+                    this.getFilteredPanSouOptions(form, type).forEach(function (item) {
+                        var id = item.id;
+                        if (id === undefined || id === null || String(id) === '') {
+                            return;
+                        }
+                        if (checked) {
+                            selectedMap[String(id)] = id;
+                        } else {
+                            delete selectedMap[String(id)];
+                        }
+                    });
+                    this.$set(form, targetKey, Object.keys(selectedMap).map(function (key) {
+                        return selectedMap[key];
+                    }));
+                },
+                invertFilteredPanSouOptions(form, type) {
+                    if (!form) {
+                        return;
+                    }
+                    var targetKey = type === 'plugins' ? 'pansou_selected_plugins' : 'pansou_selected_channels';
+                    var selected = Array.isArray(form[targetKey]) ? form[targetKey].slice() : [];
+                    var selectedMap = {};
+                    selected.forEach(function (id) {
+                        selectedMap[String(id)] = id;
+                    });
+                    this.getFilteredPanSouOptions(form, type).forEach(function (item) {
+                        var id = item.id;
+                        if (id === undefined || id === null || String(id) === '') {
+                            return;
+                        }
+                        if (selectedMap.hasOwnProperty(String(id))) {
+                            delete selectedMap[String(id)];
+                        } else {
+                            selectedMap[String(id)] = id;
+                        }
+                    });
+                    this.$set(form, targetKey, Object.keys(selectedMap).map(function (key) {
+                        return selectedMap[key];
+                    }));
+                },
+                getFilteredPanSouOptions(form, type) {
+                    if (!form) {
+                        return [];
+                    }
+                    var sourceKey = type === 'plugins' ? 'pansou_plugins' : 'pansou_channels';
+                    var filterKey = type === 'plugins' ? 'pansou_plugin_filter' : 'pansou_channel_filter';
+                    var list = Array.isArray(form[sourceKey]) ? form[sourceKey] : [];
+                    var keyword = String(form[filterKey] || '').trim().toLowerCase();
+                    if (!keyword) {
+                        return list;
+                    }
+                    return list.filter(function (item) {
+                        return String(item.id || '').toLowerCase().indexOf(keyword) !== -1
+                            || String(item.name || '').toLowerCase().indexOf(keyword) !== -1;
+                    });
+                },
+                getSelectedPanSouCount(form, type) {
+                    if (!form) {
+                        return 0;
+                    }
+                    var targetKey = type === 'plugins' ? 'pansou_selected_plugins' : 'pansou_selected_channels';
+                    return Array.isArray(form[targetKey]) ? form[targetKey].length : 0;
+                },
+                checkPanSouHealth(form) {
+                    var that = this;
+                    if (!form || !form.url) {
+                        that.$message.warning('请先填写 PanSou 地址');
+                        return;
+                    }
+                    that.applyPanSouTemplate(form);
+                    that.pansouHealthLoading = true;
+                    axios.post('/admin/api_list/panSouHealth', Object.assign({}, PostBase, {
+                        url: form.url,
+                        headers: form.headers,
+                        pansou_token: form.pansou_token || ''
+                    }))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                var data = response.data.data || {};
+                                that.$set(form, 'pansou_plugins', data.plugins || []);
+                                that.$set(form, 'pansou_channels', data.channels || []);
+                                if (form.pansou_config_mode === 'manual') {
+                                    that.setAllPanSouOptions(form, 'plugins', true);
+                                    that.setAllPanSouOptions(form, 'channels', true);
+                                }
+                                that.$set(form, 'pansou_health_text', '健康检查通过，延迟 ' + (data.delay_ms || 0) + 'ms，认证' + (data.auth_enabled ? '已启用' : '未启用'));
+                                that.$message.success('PanSou健康检查成功');
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function () {
+                            that.$message.error('服务器内部错误');
+                        })
+                        .finally(function () {
+                            that.pansouHealthLoading = false;
+                        });
+                },
+                normalizePanTypes(value, fallback) {
+                    var source = Array.isArray(value) ? value : String(value || '').split(',');
+                    var valid = [0, 2, 3, 4];
+                    var result = [];
+                    source.forEach(function (item) {
+                        var type = Number(item);
+                        if (valid.indexOf(type) !== -1 && result.indexOf(type) === -1) {
+                            result.push(type);
+                        }
+                    });
+                    if (!result.length) {
+                        var fallbackType = Number(typeof fallback === 'undefined' ? 0 : fallback);
+                        result.push(valid.indexOf(fallbackType) !== -1 ? fallbackType : 0);
+                    }
+                    return result.sort(function (a, b) { return a - b; });
+                },
+                normalizeTgChannels(value) {
+                    return String(value || '')
+                        .split(/[,\r\n]+/)
+                        .map(function (item) {
+                            return item
+                                .trim()
+                                .replace(/^https?:\/\/t\.me\/s\//i, '')
+                                .replace(/^https?:\/\/t\.me\//i, '')
+                                .replace(/^[@/]+|[/]+$/g, '')
+                                .trim();
+                        })
+                        .filter(function (item, index, arr) {
+                            return item && arr.indexOf(item) === index;
+                        });
+                },
+                normalizeTgChannelRows(value) {
+                    if (typeof value === 'string') {
+                        var trimmed = value.trim();
+                        if (trimmed.charAt(0) === '[' || trimmed.charAt(0) === '{') {
+                            try {
+                                var decoded = JSON.parse(trimmed);
+                                value = Array.isArray(decoded) ? decoded : [decoded];
+                            } catch (e) {
+                                value = trimmed;
+                            }
+                        }
+                    }
+                    var rows = [];
+                    var pushRow = function (channel, enabled) {
+                        channel = String(channel || '')
+                            .trim()
+                            .replace(/^https?:\/\/t\.me\/s\//i, '')
+                            .replace(/^https?:\/\/t\.me\//i, '')
+                            .replace(/^[@/]+|[/]+$/g, '')
+                            .trim();
+                        if (!channel) {
+                            return;
+                        }
+                        var exists = rows.some(function (item) {
+                            return item.channel === channel;
+                        });
+                        if (!exists) {
+                            rows.push({
+                                channel: channel,
+                                enabled: enabled === false || enabled === 0 ? false : true
+                            });
+                        }
+                    };
+                    if (Array.isArray(value)) {
+                        value.forEach(function (item) {
+                            if (item && typeof item === 'object') {
+                                pushRow(item.channel || item.url || item.name, item.enabled);
+                            } else {
+                                pushRow(item, true);
+                            }
+                        });
+                    } else {
+                        this.normalizeTgChannels(value).forEach(function (channel) {
+                            pushRow(channel, true);
+                        });
+                    }
+                    return rows;
+                },
+                prepareTgPayload(form) {
+                    var rows = this.normalizeTgChannelRows(form.tg_channels || []);
+                    var addedRows = this.normalizeTgChannelRows(form.url || '');
+                    var map = {};
+                    rows.concat(addedRows).forEach(function (item) {
+                        if (!item.channel || map[item.channel]) {
+                            return;
+                        }
+                        map[item.channel] = item;
+                    });
+                    form.tg_channels = Object.keys(map).map(function (key) {
+                        return map[key];
+                    });
+                    form.url = form.tg_channels.map(function (item) {
+                        return item.channel;
+                    }).join(',');
+                    return form;
+                },
+                getEnabledTgChannelCount(form) {
+                    if (!form || !Array.isArray(form.tg_channels)) {
+                        return 0;
+                    }
+                    return form.tg_channels.filter(function (item) {
+                        return item.enabled;
+                    }).length;
+                },
+                setAllTgChannels(enabled) {
+                    if (!Array.isArray(this.formEdit.tg_channels)) {
+                        this.$set(this.formEdit, 'tg_channels', []);
+                    }
+                    this.formEdit.tg_channels.forEach(function (item) {
+                        item.enabled = enabled;
+                    });
+                },
+                setFilteredTgChannels(enabled) {
+                    this.getFilteredTgChannels(this.formEdit).forEach(function (item) {
+                        item.enabled = enabled;
+                    });
+                },
+                invertFilteredTgChannels() {
+                    this.getFilteredTgChannels(this.formEdit).forEach(function (item) {
+                        item.enabled = !item.enabled;
+                    });
+                },
+                getFilteredTgChannels(form) {
+                    if (!form || !Array.isArray(form.tg_channels)) {
+                        return [];
+                    }
+                    var keyword = String(form.tg_channel_filter || '').trim().toLowerCase();
+                    if (!keyword) {
+                        return form.tg_channels;
+                    }
+                    return form.tg_channels.filter(function (item) {
+                        return String(item.channel || '').toLowerCase().indexOf(keyword) !== -1;
+                    });
+                },
+                removeTgChannel(index) {
+                    var row = this.getFilteredTgChannels(this.formEdit)[index];
+                    if (!row || !Array.isArray(this.formEdit.tg_channels)) {
+                        return;
+                    }
+                    var realIndex = this.formEdit.tg_channels.indexOf(row);
+                    if (realIndex >= 0) {
+                        this.formEdit.tg_channels.splice(realIndex, 1);
+                    }
+                },
+                getPanTypeText(row) {
+                    return this.getPanTypeList(row).map(function (item) {
+                        return item.label;
+                    }).join(' / ');
+                },
+                getVisiblePanTypeList(row) {
+                    return this.getPanTypeList(row).slice(0, 2);
+                },
+                getHiddenPanTypeCount(row) {
+                    var total = this.getPanTypeList(row).length;
+                    return total > 2 ? total - 2 : 0;
+                },
+                getPanTypeList(row) {
+                    var map = {
+                        0: '夸克',
+                        2: '百度',
+                        3: 'UC',
+                        4: '迅雷'
+                    };
+                    if (row && (row.type === 'tg' || row.type === 'pansou')) {
+                        return this.normalizePanTypes(row.pan_types, row.pantype).map(function (type) {
+                            return {
+                                value: type,
+                                label: map[type] || type
+                            };
+                        });
+                    }
+                    var type = Number(row && row.pantype);
+                    return [{
+                        value: type,
+                        label: map[type] || '夸克'
+                    }];
+                },
+                getLineTypeText(row) {
+                    if (!row || row.type === 'api') {
+                        return 'API';
+                    }
+                    if (row.type === 'html') {
+                        return '网页';
+                    }
+                    if (row.type === 'tg') {
+                        return 'TG群组';
+                    }
+                    if (row.type === 'pansou') {
+                        return 'PanSou';
+                    }
+                    return row.type;
+                },
+                getLineTypeTag(row) {
+                    if (!row || row.type === 'api') {
+                        return 'info';
+                    }
+                    if (row.type === 'html') {
+                        return 'warning';
+                    }
+                    if (row.type === 'tg') {
+                        return 'success';
+                    }
+                    if (row.type === 'pansou') {
+                        return '';
+                    }
+                    return 'info';
+                },
+                getLineSummary(row) {
+                    if (!row) {
+                        return '';
+                    }
+                    var suffix = '#' + Number(row.id || 0) + ' · 资源上限 ' + Number(row.count || 0) + ' · 权重 ' + Number(row.weight || 0);
+                    if (row.type === 'tg') {
+                        var channels = this.normalizeTgChannelRows(row.tg_channels || row.url);
+                        if (!channels.length) {
+                            return suffix;
+                        }
+                        var enabled = channels.filter(function (item) {
+                            return item.enabled;
+                        }).length;
+                        return '群组 ' + channels.length + ' 个，启用 ' + enabled + ' 个 · ' + suffix;
+                    }
+                    if (row.type === 'pansou') {
+                        return '支持 ' + this.getPanTypeText(row) + ' · ' + suffix;
+                    }
+                    return suffix;
+                },
+                getShortUrl(url) {
+                    url = String(url || '').trim();
+                    if (!url) {
+                        return '-';
+                    }
+                    if (/^TG群组\s+\d+\s+个$/u.test(url)) {
+                        return url;
+                    }
+                    try {
+                        var parsed = new URL(url);
+                        return parsed.host;
+                    } catch (e) {
+                        return url.length > 42 ? (url.slice(0, 18) + '...' + url.slice(-18)) : url;
+                    }
+                },
+                openFrontendTest(type) {
+                    var url = '/api/other/web_search?title=仙逆&is_show=1';
+                    if (String(type) !== '0') {
+                        url += '&is_type=' + encodeURIComponent(type);
+                    }
+                    window.open(url, '_blank');
+                },
+                handleBatchCommand(command) {
+                    if (command === 'enable') {
+                        this.batchSetStatus(1);
+                    } else if (command === 'disable') {
+                        this.batchSetStatus(0);
+                    } else if (command === 'latency') {
+                        this.batchTestLatency();
+                    } else if (command === 'delete') {
+                        this.batchDelete();
+                    }
+                },
+                handleMaintenanceCommand(command) {
+                    if (command === 'check') {
+                        this.checkSchema();
+                    } else if (command === 'repair') {
+                        this.repairSchema();
+                    }
+                },
+                handleRowCommand(command) {
+                    if (!command || !command.row) {
+                        return;
+                    }
+                    if (command.action === 'latency') {
+                        this.testLatency(command.row);
+                    } else if (command.action === 'copy') {
+                        this.copyText(command.row.url || '');
+                    } else if (command.action === 'delete') {
+                        this.clickDelete(command.row);
+                    }
+                },
+                copyText(text) {
+                    var that = this;
+                    text = String(text || '');
+                    if (!text) {
+                        that.$message.warning('没有可复制的地址');
+                        return;
+                    }
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(function () {
+                            that.$message.success('地址已复制');
+                        }).catch(function () {
+                            that.copyTextFallback(text);
+                        });
+                        return;
+                    }
+                    that.copyTextFallback(text);
+                },
+                copyTextFallback(text) {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        this.$message.success('地址已复制');
+                    } catch (e) {
+                        this.$message.error('复制失败');
+                    }
+                    document.body.removeChild(textarea);
+                },
+                onAddTypeChange() {
+                    if (this.formAdd.type === 'tg' || this.formAdd.type === 'pansou') {
+                        this.formAdd.pan_types = this.normalizePanTypes(this.formAdd.pan_types, this.formAdd.pantype);
+                    }
+                    this.applyPanSouTemplate(this.formAdd);
+                },
+                onAddPanTypeChange() {
+                    this.applyPanSouTemplate(this.formAdd);
+                },
+                onEditTypeChange() {
+                    if (this.formEdit.type === 'tg' || this.formEdit.type === 'pansou') {
+                        this.formEdit.pan_types = this.normalizePanTypes(this.formEdit.pan_types, this.formEdit.pantype);
+                    }
+                    this.applyPanSouTemplate(this.formEdit);
+                },
+                onEditPanTypeChange() {
+                    this.applyPanSouTemplate(this.formEdit);
+                },
+                testLine(formRef, formData) {
+                    var that = this;
+                    that.$refs[formRef].validate((valid) => {
+                        if (valid) {
+                            var postData = Object.assign({}, formData);
+                            if (postData.type === 'tg') {
+                                postData.pan_types = that.normalizePanTypes(postData.pan_types, postData.pantype);
+                                postData.pantype = postData.pan_types[0];
+                                that.prepareTgPayload(postData);
+                            }
+                            if (postData.type === 'pansou') {
+                                postData.pan_types = that.normalizePanTypes(postData.pan_types, postData.pantype);
+                                postData.pantype = postData.pan_types[0];
+                                that.hydratePanSouForm(postData);
+                                that.applyPanSouTemplate(postData);
+                            } else {
+                                that.applyPanSouTemplate(postData);
+                            }
+                            axios.post('/admin/api_list/test', Object.assign({}, PostBase, postData, {
+                                keyword: '仙逆'
+                            }))
+                                .then(function (response) {
+                                    if (response.data.code == CODE_SUCCESS) {
+                                        var total = response.data.data && response.data.data.total ? response.data.data.total : 0;
+                                        that.$message({
+                                            message: '测试成功，解析到 ' + total + ' 条数据',
+                                            type: 'success'
+                                        });
+                                    } else {
+                                        that.$message.error(response.data.message);
+                                    }
+                                })
+                                .catch(function () {
+                                    that.$message.error('服务器内部错误');
+                                });
+                        }
+                    });
+                },
+                testAddLine() {
+                    this.testLine('formAdd', this.formAdd);
+                },
+                testEditLine() {
+                    this.testLine('formEdit', this.formEdit);
+                },
+                getLatencyText(row) {
+                    if (!row || !row.latency_status) {
+                        return '未测试';
+                    }
+                    if (row.latency_status === 'ok') {
+                        return row.latency_ms + 'ms';
+                    }
+                    return row.latency_error_message ? ('异常：' + row.latency_error_message) : '异常';
+                },
+                getLatencyShortText(row) {
+                    if (!row || !row.latency_status) {
+                        return '未测';
+                    }
+                    if (row.latency_status === 'ok') {
+                        return Number(row.latency_ms || 0) + 'ms';
+                    }
+                    return '失败';
+                },
+                getLatencyStatusClass(row) {
+                    if (!row || !row.latency_status) {
+                        return 'pending';
+                    }
+                    if (row.latency_status !== 'ok') {
+                        return 'failed';
+                    }
+                    var delay = Number(row.latency_ms || 0);
+                    if (delay <= 1000) {
+                        return 'ok';
+                    }
+                    return 'slow';
+                },
+                getLatencyTagType(row) {
+                    if (!row || !row.latency_status) {
+                        return 'info';
+                    }
+                    if (row.latency_status !== 'ok') {
+                        return 'danger';
+                    }
+                    var delay = Number(row.latency_ms || 0);
+                    if (delay <= 300) {
+                        return 'success';
+                    }
+                    if (delay <= 1000) {
+                        return 'warning';
+                    }
+                    return 'danger';
+                },
+                applyLatencyResult(result) {
+                    if (!result || typeof result.id === 'undefined') {
+                        return;
+                    }
+                    var targetId = Number(result.id);
+                    var rowIndex = this.dataList.findIndex(function (item) {
+                        return Number(item.id) === targetId;
+                    });
+                    if (rowIndex < 0) {
+                        return;
+                    }
+                    var row = this.dataList[rowIndex];
+                    this.$set(row, 'latency_status', result.status || 'failed');
+                    this.$set(row, 'latency_ms', Number(result.delay_ms || 0));
+                    this.$set(row, 'latency_error_message', result.error_message || '');
+                    this.$set(row, 'latency_time', result.test_time || '');
+                    this.$set(this.dataList, rowIndex, row);
+                },
+                testLatency(row) {
+                    var that = this;
+                    if (!row || !row.id) {
+                        that.$message.error('线路ID无效');
+                        return;
+                    }
+                    axios.post('/admin/api_list/testLatency', Object.assign({}, PostBase, {
+                        id: row.id,
+                        keyword: '仙逆'
+                    }))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                var data = response.data.data || {};
+                                that.applyLatencyResult(data);
+                                if (data.status === 'ok') {
+                                    that.$message.success((row.name || '线路') + ' 延迟：' + data.delay_ms + 'ms');
+                                } else {
+                                    that.$message.error((row.name || '线路') + ' 测试失败：' + (data.error_message || '未知错误'));
+                                }
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function () {
+                            that.$message.error('服务器内部错误');
+                        });
+                },
+                batchTestLatency() {
+                    var that = this;
+                    if (that.multipleSelection.length === 0) {
+                        that.$message.warning('请选择要测试的项目');
+                        return;
+                    }
+                    if (that.latencyTesting) {
+                        return;
+                    }
+                    that.latencyTesting = true;
+                    var ids = that.multipleSelection.map(function (item) {
+                        return item.id;
+                    });
+                    axios.post('/admin/api_list/batchTestLatency', Object.assign({}, PostBase, {
+                        ids: ids,
+                        keyword: '仙逆'
+                    }))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                var data = response.data.data || {};
+                                var list = data.list || [];
+                                list.forEach(function (item) {
+                                    that.applyLatencyResult(item);
+                                });
+                                that.$message.success('批量延迟测试完成：成功 ' + (data.success || 0) + ' 条，失败 ' + (data.failed || 0) + ' 条');
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function () {
+                            that.$message.error('服务器内部错误');
+                        })
+                        .finally(function () {
+                            that.latencyTesting = false;
+                        });
+                },
+                formatSchemaMessage(data) {
+                    data = data || {};
+                    var missing = data.missing || [];
+                    var present = data.present || [];
+                    if (!missing.length) {
+                        return 'qf_api_list 结构正常，已包含 ' + present.length + ' 个扩展字段。';
+                    }
+                    return '缺少字段：' + missing.map(function (item) {
+                        return item.field;
+                    }).join('、');
+                },
+                checkSchema() {
+                    var that = this;
+                    axios.post('/admin/api_list/checkSchema', Object.assign({}, PostBase))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                var data = response.data.data || {};
+                                if (data.ok) {
+                                    that.$message.success(that.formatSchemaMessage(data));
+                                } else {
+                                    that.$alert(that.formatSchemaMessage(data), '结构检测结果', {
+                                        confirmButtonText: '知道了'
+                                    });
+                                }
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function () {
+                            that.$message.error('服务器内部错误');
+                        });
+                },
+                repairSchema() {
+                    var that = this;
+                    this.$confirm('将检测并补齐 qf_api_list 的 TG 资源池字段，同时整理 TG 旧数据。是否继续?', '结构修复确认', {
+                        confirmButtonText: '开始修复',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function () {
+                        axios.post('/admin/api_list/repairSchema', Object.assign({}, PostBase))
+                            .then(function (response) {
+                                if (response.data.code == CODE_SUCCESS) {
+                                    var data = response.data.data || {};
+                                    var fixed = data.fixed || [];
+                                    var updated = data.updated_rows || [];
+                                    that.$alert(
+                                        '补齐字段：' + (fixed.length ? fixed.map(function (item) { return item.field; }).join('、') : '无') +
+                                        '<br>整理 TG 数据：' + updated.length + ' 条',
+                                        '结构修复完成',
+                                        {
+                                            dangerouslyUseHTMLString: true,
+                                            confirmButtonText: '知道了'
+                                        }
+                                    );
+                                    that.getList();
+                                } else {
+                                    that.$message.error(response.data.message);
+                                }
+                            })
+                            .catch(function () {
+                                that.$message.error('服务器内部错误');
+                            });
+                    }).catch(function () {});
+                },
+                postEdit() {
+                    var that = this;
+                    that.$refs["formEdit"].validate((valid) => {
+                        if (valid) {
+                            if (that.formEdit.type === 'tg') {
+                                that.formEdit.pan_types = that.normalizePanTypes(that.formEdit.pan_types, that.formEdit.pantype);
+                                that.formEdit.pantype = that.formEdit.pan_types[0];
+                                that.prepareTgPayload(that.formEdit);
+                            } else if (that.formEdit.type === 'pansou') {
+                                that.formEdit.pan_types = that.normalizePanTypes(that.formEdit.pan_types, that.formEdit.pantype);
+                                that.formEdit.pantype = that.formEdit.pan_types[0];
+                                that.hydratePanSouForm(that.formEdit);
+                                that.applyPanSouTemplate(that.formEdit);
+                            } else {
+                                that.formEdit.pan_types = '';
+                            }
+                            if (that.formEdit.type !== 'pansou') {
+                                that.applyPanSouTemplate(that.formEdit);
+                            }
+                            axios.post('/admin/api_list/update', Object.assign({}, PostBase, that.formEdit))
+                                .then(function (response) {
+                                    that.getList();
+                                    if (response.data.code == CODE_SUCCESS) {
+                                        that.$message({
+                                            message: response.data.message,
+                                            type: 'success'
+                                        });
+                                        that.dialogFormEdit = false;
+                                    } else {
+                                        that.$message.error(response.data.message);
+                                    }
+                                })
+                                .catch(function (error) {
+                                    that.$message.error('服务器内部错误');
+                                });
+                        }
+                    });
+                },
+                postAdd() {
+                    var that = this;
+                    that.$refs['formAdd'].validate((valid) => {
+                        if (valid) {
+                            if (that.formAdd.type === 'tg') {
+                                that.formAdd.pan_types = that.normalizePanTypes(that.formAdd.pan_types, that.formAdd.pantype);
+                                that.formAdd.pantype = that.formAdd.pan_types[0];
+                                that.formAdd.tg_channels = that.normalizeTgChannelRows(that.formAdd.url);
+                                that.prepareTgPayload(that.formAdd);
+                            } else if (that.formAdd.type === 'pansou') {
+                                that.formAdd.pan_types = that.normalizePanTypes(that.formAdd.pan_types, that.formAdd.pantype);
+                                that.formAdd.pantype = that.formAdd.pan_types[0];
+                                that.hydratePanSouForm(that.formAdd);
+                                that.applyPanSouTemplate(that.formAdd);
+                            } else {
+                                that.formAdd.pan_types = '';
+                            }
+                            if (that.formAdd.type !== 'pansou') {
+                                that.applyPanSouTemplate(that.formAdd);
+                            }
+                            axios.post('/admin/api_list/add', Object.assign({}, PostBase, that.formAdd))
+                                .then(function (response) {
+                                    that.getList();
+                                    if (response.data.code == CODE_SUCCESS) {
+                                        that.$message({
+                                            message: response.data.message,
+                                            type: 'success'
+                                        });
+                                        that.dialogFormAdd = false;
+                                    } else {
+                                        that.$message.error(response.data.message);
+                                    }
+                                })
+                                .catch(function (error) {
+                                    that.$message.error('服务器内部错误');
+                                });
+                        }
+                    });
+                },
+                clickAdd() {
+                    var that = this;
+                    that.advancedAddCollapse = [];
+                    that.formAdd = {
+                        pantype: 0,
+                        pan_types: [0, 2, 3, 4],
+                        tg_channels: [],
+                        type: 'api',
+                        method: 'GET',
+                        weight: 0,
+                        count: 5,
+                        tg_scan_limit: 5,
+                        pansou_token: '',
+                        pansou_plugins: [],
+                        pansou_channels: [],
+                        pansou_selected_plugins: [],
+                        pansou_selected_channels: [],
+                        pansou_image_proxy: '',
+                        pansou_config_mode: 'default',
+                        pansou_plugin_filter: '',
+                        pansou_channel_filter: '',
+                        tg_channel_filter: '',
+                        pansou_health_text: '',
+                        status: true,
+                        html_type: 0,
+                        fixed_params: `{
+    "search": "{keyword}"
+}`,
+                        field_map: `{
+    "list_path": "数组字段",
+    "fields": {
+        "title": "资源名称",
+        "url": "资源地址",
+        "image": "图片URL（可选）",
+        "images": ["图片数组（可选，自动选择第一张）"]
+    }
+}`
+                    };
+
+                    that.dialogFormAdd = true;
+                },
+                clickDelete(row) {
+                    var that = this;
+                    this.$confirm('即将删除这个分类, 是否确认?', '删除提醒', {
+                        confirmButtonText: '删除',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        axios.post('/admin/api_list/delete', Object.assign({}, PostBase, {
+                            id: row.id
+                        }))
+                            .then(function (response) {
+                                that.getList();
+                                if (response.data.code == CODE_SUCCESS) {
+                                    that.$message({
+                                        message: response.data.message,
+                                        type: 'success'
+                                    });
+                                } else {
+                                    that.$message.error(response.data.message);
+                                }
+                            })
+                            .catch(function (error) {
+                                that.$message.error('服务器内部错误');
+                            });
+                    }).catch(() => {
+                    });
+                },
+                clickEdit(row) {
+                    var that = this;
+                    that.advancedEditCollapse = [];
+                    that.formEdit = row;
+                    axios.post('/admin/api_list/detail', Object.assign({}, PostBase, {
+                        id: row.id
+                    }))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.formEdit = response.data.data;
+                                that.formEdit.status = that.formEdit.status == 1 ? true : false;
+                                that.formEdit.pan_types = that.normalizePanTypes(that.formEdit.pan_types, that.formEdit.pantype);
+                                that.formEdit.tg_channels = that.normalizeTgChannelRows(that.formEdit.tg_channels || that.formEdit.url);
+                                that.$set(that.formEdit, 'tg_channel_filter', '');
+                                that.$set(that.formEdit, 'pansou_plugin_filter', '');
+                                that.$set(that.formEdit, 'pansou_channel_filter', '');
+                                that.hydratePanSouForm(that.formEdit);
+                                if (that.formEdit.type === 'tg') {
+                                    that.formEdit.url = '';
+                                }
+                                if (that.formEdit.type !== 'pansou') {
+                                    that.applyPanSouTemplate(that.formEdit);
+                                }
+                                that.dialogFormEdit = true;
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.$message.error('服务器内部错误');
+                        });
+
+                },
+                getList() {
+                    var that = this;
+                    that.loading = true;
+                    axios.post('/admin/api_list/getList', Object.assign({}, PostBase))
+                        .then(function (response) {
+                            that.loading = false;
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.dataList = (response.data.data || []).map(function (item) {
+                                    if (item.type === 'tg') {
+                                        item.pan_types = that.normalizePanTypes(item.pan_types, item.pantype);
+                                        item.tg_channels = that.normalizeTgChannelRows(item.tg_channels || item.url);
+                                    } else if (item.type === 'pansou') {
+                                        item.pan_types = that.normalizePanTypes(item.pan_types, item.pantype);
+                                    }
+                                    return item;
+                                });
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.loading = false;
+                            that.$message.error('服务器内部错误');
+                        });
+                },
+
+                clickStatus(row) {
+                    var that = this;
+                    let url = row.status ? '/admin/api_list/disable' : '/admin/api_list/enable'
+                    axios.post(url, Object.assign({}, PostBase, {
+                        id: row.id
+                    }))
+                        .then(function (response) {
+                            that.getList();
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.$message({
+                                    message: response.data.message,
+                                    type: 'success'
+                                });
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function (error) {
+                            that.$message.error('服务器内部错误');
+                        });
+                },
+
+                handleSelectionChange(val) {
+                    this.multipleSelection = val;
+                },
+
+                batchSetStatus(status) {
+                    if (this.multipleSelection.length === 0) {
+                        this.$message.warning('请选择要操作的项目');
+                        return;
+                    }
+                    var that = this;
+                    var ids = that.multipleSelection.map(function (item) {
+                        return item.id;
+                    }).join(',');
+                    var url = status ? '/admin/api_list/enable' : '/admin/api_list/disable';
+                    axios.post(url, Object.assign({}, PostBase, { id: ids }))
+                        .then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.$message.success(response.data.message);
+                                that.getList();
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(function () {
+                            that.$message.error('服务器内部错误');
+                        });
+                },
+
+                exportJson() {
+                    const data = JSON.stringify(this.dataList, null, 2);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'api_config.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                },
+
+                showImportDialog() {
+                    this.dialogImportVisible = true;
+                    this.importJsonData = '';
+                    this.importOverwrite = false;
+                },
+
+                importJson() {
+                    if (!this.importJsonData.trim()) {
+                        this.$message.error('请输入JSON数据');
+                        return;
+                    }
+                    
+                    try {
+                        const data = JSON.parse(this.importJsonData);
+                        const importData = (Array.isArray(data) ? data : [data]).map((item) => {
+                            if (item.type === 'tg' || item.type === 'pansou') {
+                                item.pan_types = this.normalizePanTypes(item.pan_types, item.pantype);
+                                item.pantype = item.pan_types[0];
+                            }
+                            return item;
+                        });
+                        axios.post('/admin/api_list/import', Object.assign({}, PostBase, {
+                            data: importData,
+                            overwrite: this.importOverwrite
+                        }))
+                        .then((response) => {
+                            if (response.data.code == CODE_SUCCESS) {
+                                this.$message({
+                                    message: response.data.message,
+                                    type: 'success'
+                                });
+                                this.dialogImportVisible = false;
+                                this.getList();
+                            } else {
+                                this.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(() => {
+                            this.$message.error('服务器内部错误');
+                        });
+                    } catch (e) {
+                        this.$message.error('JSON格式错误');
+                    }
+                },
+
+                batchDelete() {
+                    if (this.multipleSelection.length === 0) {
+                        this.$message.warning('请选择要删除的项目');
+                        return;
+                    }
+                    
+                    this.$confirm(`即将删除选中的 ${this.multipleSelection.length} 个配置, 是否确认?`, '批量删除提醒', {
+                        confirmButtonText: '删除',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        const ids = this.multipleSelection.map(item => item.id);
+                        axios.post('/admin/api_list/batchDelete', Object.assign({}, PostBase, {
+                            ids: ids
+                        }))
+                        .then((response) => {
+                            if (response.data.code == CODE_SUCCESS) {
+                                this.$message({
+                                    message: response.data.message,
+                                    type: 'success'
+                                });
+                                this.getList();
+                            } else {
+                                this.$message.error(response.data.message);
+                            }
+                        })
+                        .catch(() => {
+                            this.$message.error('服务器内部错误');
+                        });
+                    }).catch(() => {});
+                }
+
+            }
+        })
+    </script>
+
+
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{$node.node_title|default='维护工具'}</title>
+    {include file="common/header"/}
+    <link rel="stylesheet" href="/static/admin/css/maintenance-tools.css?v=2026052201">
+    <div class="maintenance-page">
+        <div class="maintenance-hero">
+            <div class="maintenance-title-card">
+                <div class="maintenance-title">维护工具</div>
+                <div class="maintenance-desc">
+                    集中处理缓存清理、临时资源、诊断日志、主题管理和接口结构检查。高风险操作仍保留在对应页面二次确认。
+                </div>
+            </div>
+            <div class="maintenance-note-card">
+                <div class="maintenance-note-title">使用建议</div>
+                <ul class="maintenance-note-list">
+                    <li>日常优先清理系统配置缓存和运行缓存。</li>
+                    <li>搜索结果缓存只影响数据库缓存，不删除网盘文件。</li>
+                    <li>临时转存资源会尝试删除网盘临时目录，建议进入清理页预览。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="maintenance-grid" v-loading="loading">
+            <div class="maintenance-card">
+                <div class="maintenance-card-head">
+                    <div>
+                        <div class="maintenance-card-title">搜索结果缓存</div>
+                        <div class="maintenance-card-desc">表 <code>qf_search_cache</code>，保存关键词搜索结果，下次搜索可重新生成。</div>
+                    </div>
+                    <el-tag size="small" type="info">数据库</el-tag>
+                </div>
+                <div class="maintenance-stats">
+                    <div class="maintenance-stat"><span>关键词</span><strong>{{ searchStats.total }}</strong></div>
+                    <div class="maintenance-stat"><span>有效</span><strong>{{ searchStats.valid }}</strong></div>
+                    <div class="maintenance-stat"><span>过期</span><strong>{{ searchStats.expired }}</strong></div>
+                </div>
+                <div class="maintenance-card-actions">
+                    <el-button size="small" plain icon="el-icon-refresh" @click="loadSearchStats">刷新</el-button>
+                    <el-button size="small" type="warning" plain icon="el-icon-delete" :loading="cleaningSearch" @click="cleanSearchCache">清理搜索缓存</el-button>
+                    <el-button size="small" plain icon="el-icon-right" @click="go('/qfadmin/system/clean')">进入清理页</el-button>
+                </div>
+            </div>
+
+            <div class="maintenance-card">
+                <div class="maintenance-card-head">
+                    <div>
+                        <div class="maintenance-card-title">临时转存资源</div>
+                        <div class="maintenance-card-desc">表 <code>qf_source</code> 中 <code>is_time=1</code> 的资源，可能包含网盘目录 FID。</div>
+                    </div>
+                    <el-tag size="small" type="warning">网盘</el-tag>
+                </div>
+                <div class="maintenance-stats">
+                    <div class="maintenance-stat"><span>临时资源</span><strong>{{ tempStats.total }}</strong></div>
+                    <div class="maintenance-stat"><span>超30分钟</span><strong>{{ tempStats.expired_30_count }}</strong></div>
+                    <div class="maintenance-stat"><span>网盘类型</span><strong>{{ tempStats.type_stats.length }}</strong></div>
+                </div>
+                <div class="maintenance-card-actions">
+                    <el-button size="small" plain icon="el-icon-refresh" @click="loadTempStats">刷新</el-button>
+                    <el-button size="small" plain icon="el-icon-view" @click="go('/qfadmin/system/clean')">预览并清理</el-button>
+                </div>
+            </div>
+
+            <div class="maintenance-card">
+                <div class="maintenance-card-head">
+                    <div>
+                        <div class="maintenance-card-title">诊断日志</div>
+                        <div class="maintenance-card-desc">搜索、转存、目录树问题排查入口。建议只在排查时开启日志记录。</div>
+                    </div>
+                    <el-tag size="small" :type="diagnostic.enabled ? 'success' : 'info'">{{ diagnostic.enabled ? '已开启' : '已关闭' }}</el-tag>
+                </div>
+                <div class="maintenance-stats">
+                    <div class="maintenance-stat"><span>日志数</span><strong>{{ diagnostic.log_count }}</strong></div>
+                    <div class="maintenance-stat"><span>表大小</span><strong>{{ diagnostic.table_size_human || '-' }}</strong></div>
+                    <div class="maintenance-stat"><span>状态</span><strong>{{ diagnostic.enabled ? '记录中' : '关闭' }}</strong></div>
+                </div>
+                <div class="maintenance-card-actions">
+                    <el-button size="small" plain icon="el-icon-refresh" @click="loadDiagnostic">刷新</el-button>
+                    <el-button size="small" plain icon="el-icon-right" @click="go('/qfadmin/system/diagnostic')">进入诊断页</el-button>
+                </div>
+            </div>
+
+            <div class="maintenance-card">
+                <div class="maintenance-card-head">
+                    <div>
+                        <div class="maintenance-card-title">前端主题</div>
+                        <div class="maintenance-card-desc">管理首页、搜索页、详情页主题。默认主题受保护，不能删除。</div>
+                    </div>
+                    <el-tag size="small" type="success">{{ theme.current || 'news' }}</el-tag>
+                </div>
+                <div class="maintenance-stats">
+                    <div class="maintenance-stat"><span>主题数</span><strong>{{ theme.themes.length }}</strong></div>
+                    <div class="maintenance-stat"><span>可用</span><strong>{{ validThemeCount }}</strong></div>
+                    <div class="maintenance-stat"><span>当前</span><strong>{{ theme.current || '-' }}</strong></div>
+                </div>
+                <div class="maintenance-card-actions">
+                    <el-button size="small" plain icon="el-icon-refresh" @click="loadThemes">刷新</el-button>
+                    <el-button size="small" plain icon="el-icon-right" @click="go('/qfadmin/system/theme')">进入主题管理</el-button>
+                </div>
+            </div>
+        </div>
+
+        <div class="maintenance-panel">
+            <div class="maintenance-panel-head">
+                <div>
+                    <div class="maintenance-panel-title">接口结构检查</div>
+                    <div class="maintenance-panel-sub">检查 <code>qf_api_list</code> 是否缺少 PanSou/TG 批量管理等新版字段。</div>
+                </div>
+                <div>
+                    <el-button size="small" plain icon="el-icon-search" :loading="schemaChecking" @click="checkSchema">检查结构</el-button>
+                    <el-button size="small" type="primary" plain icon="el-icon-magic-stick" :loading="schemaRepairing" @click="repairSchema">自动补齐</el-button>
+                </div>
+            </div>
+            <el-alert class="schema-result" v-if="schemaMessage" :title="schemaMessage" :type="schemaType" show-icon :closable="false"></el-alert>
+            <ul class="schema-result-list" v-if="schemaDetails.length">
+                <li v-for="item in schemaDetails" :key="item">{{ item }}</li>
+            </ul>
+        </div>
+    </div>
+    {include file="common/footer"/}
+    <script>
+        new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    loading: false,
+                    cleaningSearch: false,
+                    schemaChecking: false,
+                    schemaRepairing: false,
+                    searchStats: {
+                        total: 0,
+                        valid: 0,
+                        expired: 0
+                    },
+                    tempStats: {
+                        total: 0,
+                        expired_30_count: 0,
+                        type_stats: []
+                    },
+                    diagnostic: {
+                        enabled: 0,
+                        log_count: 0,
+                        table_size_human: ''
+                    },
+                    theme: {
+                        current: '',
+                        themes: []
+                    },
+                    schemaMessage: '',
+                    schemaType: 'info',
+                    schemaDetails: []
+                };
+            },
+            computed: {
+                validThemeCount: function () {
+                    return this.theme.themes.filter(function (item) {
+                        return item.is_valid;
+                    }).length;
+                }
+            },
+            mounted: function () {
+                this.refreshAll();
+            },
+            methods: {
+                go: function (url) {
+                    location.href = url;
+                },
+                refreshAll: function () {
+                    var that = this;
+                    this.loading = true;
+                    Promise.all([
+                        this.loadSearchStats(true),
+                        this.loadTempStats(true),
+                        this.loadDiagnostic(true),
+                        this.loadThemes(true)
+                    ]).finally(function () {
+                        that.loading = false;
+                    });
+                },
+                loadSearchStats: function (silent) {
+                    var that = this;
+                    return axios.post('/admin/system/searchCacheStats', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code === CODE_SUCCESS) {
+                            that.searchStats = Object.assign({}, that.searchStats, response.data.data || {});
+                        } else if (!silent) {
+                            that.$message.error(response.data.message || '搜索缓存统计获取失败');
+                        }
+                    }).catch(function () {
+                        if (!silent) {
+                            that.$message.error('搜索缓存统计获取失败');
+                        }
+                    });
+                },
+                loadTempStats: function (silent) {
+                    var that = this;
+                    return axios.post('/admin/system/temporaryResourceStats', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code === CODE_SUCCESS) {
+                            that.tempStats = Object.assign({}, that.tempStats, response.data.data || {});
+                            that.tempStats.type_stats = that.tempStats.type_stats || [];
+                        } else if (!silent) {
+                            that.$message.error(response.data.message || '临时资源统计获取失败');
+                        }
+                    }).catch(function () {
+                        if (!silent) {
+                            that.$message.error('临时资源统计获取失败');
+                        }
+                    });
+                },
+                loadDiagnostic: function (silent) {
+                    var that = this;
+                    return axios.post('/admin/diagnostic_log/getConfig', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code === CODE_SUCCESS) {
+                            that.diagnostic = Object.assign({}, that.diagnostic, response.data.data || {});
+                        } else if (!silent) {
+                            that.$message.error(response.data.message || '诊断状态获取失败');
+                        }
+                    }).catch(function () {
+                        if (!silent) {
+                            that.$message.error('诊断状态获取失败');
+                        }
+                    });
+                },
+                loadThemes: function (silent) {
+                    var that = this;
+                    return axios.post('/admin/system/themeList', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code === CODE_SUCCESS) {
+                            that.theme = Object.assign({}, that.theme, response.data.data || {});
+                            that.theme.themes = that.theme.themes || [];
+                        } else if (!silent) {
+                            that.$message.error(response.data.message || '主题列表获取失败');
+                        }
+                    }).catch(function () {
+                        if (!silent) {
+                            that.$message.error('主题列表获取失败');
+                        }
+                    });
+                },
+                cleanSearchCache: function () {
+                    var that = this;
+                    this.$confirm('确认清理搜索结果缓存？这只会删除数据库缓存，不会删除网盘文件。', '提示', {
+                        type: 'warning'
+                    }).then(function () {
+                        that.cleaningSearch = true;
+                        axios.post('/admin/system/clean', Object.assign({}, PostBase, {
+                            types: ['search']
+                        })).then(function (response) {
+                            if (response.data.code === CODE_SUCCESS) {
+                                that.$message.success(response.data.message || '清理完成');
+                                that.loadSearchStats(true);
+                            } else {
+                                that.$message.error(response.data.message || '清理失败');
+                            }
+                        }).catch(function () {
+                            that.$message.error('清理失败');
+                        }).finally(function () {
+                            that.cleaningSearch = false;
+                        });
+                    }).catch(function () {});
+                },
+                checkSchema: function () {
+                    var that = this;
+                    this.schemaChecking = true;
+                    this.schemaMessage = '';
+                    this.schemaDetails = [];
+                    axios.post('/admin/api_list/checkSchema', Object.assign({}, PostBase)).then(function (response) {
+                        that.handleSchemaResponse(response.data, '接口结构检查完成');
+                    }).catch(function () {
+                        that.schemaType = 'error';
+                        that.schemaMessage = '接口结构检查失败';
+                    }).finally(function () {
+                        that.schemaChecking = false;
+                    });
+                },
+                repairSchema: function () {
+                    var that = this;
+                    this.$confirm('确认自动补齐接口配置表字段？该操作只添加缺失字段，不删除已有数据。', '提示', {
+                        type: 'warning'
+                    }).then(function () {
+                        that.schemaRepairing = true;
+                        that.schemaMessage = '';
+                        that.schemaDetails = [];
+                        axios.post('/admin/api_list/repairSchema', Object.assign({}, PostBase)).then(function (response) {
+                            that.handleSchemaResponse(response.data, '接口结构修复完成');
+                        }).catch(function () {
+                            that.schemaType = 'error';
+                            that.schemaMessage = '接口结构修复失败';
+                        }).finally(function () {
+                            that.schemaRepairing = false;
+                        });
+                    }).catch(function () {});
+                },
+                handleSchemaResponse: function (data, defaultMessage) {
+                    var payload = data.data || {};
+                    this.schemaType = data.code === CODE_SUCCESS ? 'success' : 'warning';
+                    this.schemaMessage = data.message || defaultMessage;
+                    this.schemaDetails = [];
+                    if (payload.missing && payload.missing.length) {
+                        this.schemaDetails = payload.missing.map(function (item) {
+                            return '缺失字段：' + (item.label || item.field || item);
+                        });
+                    } else if (payload.fixed && payload.fixed.length) {
+                        this.schemaDetails = payload.fixed.map(function (item) {
+                            return '已补齐字段：' + (item.label || item.field || item);
+                        });
+                    } else if (payload.after && payload.after.present) {
+                        this.schemaDetails = ['结构完整，已存在字段：' + payload.after.present.length + ' 个'];
+                    } else if (payload.columns && payload.columns.length) {
+                        this.schemaDetails = ['当前字段数：' + payload.columns.length];
+                    } else if (payload.present && payload.present.length) {
+                        this.schemaDetails = ['结构完整，已存在字段：' + payload.present.length + ' 个'];
+                    }
+                }
+            }
+        });
+    </script>
+</html>

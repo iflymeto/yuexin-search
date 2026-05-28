@@ -1,0 +1,81 @@
+{
+  "site": {
+    "name": "Twilight Cinema",
+    "tagline": "聚合影视浏览与接口学习示例",
+    "heroTitle": "发现最新影视资源",
+    "heroText": "用一个本地 HTML 学会分类、搜索、分页、详情、播放地址解析与代理请求。"
+  },
+  "api": {
+    "baseUrl": "http://cj.10010888.xyz/api.php/provide/vod/",
+    "proxyPrefix": "https://proxyd.picpi.top/",
+    "proxyMode": "raw",
+    "parserPrefix": "https://jx.xmflv.com/?url="
+  },
+  "apis": [
+    {
+      "name": "TW 资源站",
+      "baseUrl": "http://cj.10010888.xyz/api.php/provide/vod/",
+      "proxyPrefix": "https://proxyd.picpi.top/",
+      "proxyMode": "raw",
+      "parserPrefix": "https://jx.xmflv.com/?url="
+    },
+    {
+      "name": "备用域名",
+      "baseUrl": "https://cj.10010888.xyz/api.php/provide/vod/",
+      "proxyPrefix": "https://proxyd.picpi.top/",
+      "proxyMode": "raw",
+      "parserPrefix": "https://jx.xmflv.com/?url="
+    }
+  ],
+  "sections": [
+    { "title": "最新上线", "type": "", "source": "", "page": 1 },
+    { "title": "电影精选", "type": "1", "source": "", "page": 1 },
+    { "title": "短剧热更", "type": "7", "source": "", "page": 1 }
+  ],
+  "ranking": {
+    "url": "/api/tool/ranking",
+    "channels": ["短剧", "电影", "电视剧", "动漫", "综艺"],
+    "defaultChannel": "短剧",
+    "mobileMode": false,
+    "initialCount": 6,
+    "pageSize": 6
+  },
+  "images": {
+    "proxyVodImages": true,
+    "proxyRankingImages": false,
+    "proxyBannerImages": false,
+    "lazyRootMargin": "160px 0px"
+  },
+  "banners": {
+    "interval": 4500,
+    "items": [
+      {
+        "title": "御赐小仵作",
+        "subtitle": "王子奇苏晓彤破奇案洗冤情",
+        "keyword": "御赐小仵作",
+         "image": "https://tv.puui.qpic.cn/tv/0/mz_tv_image_frontend_442f1e-8_1212520037_1768650960239121_pic_1920x800/0?imageView2/2/w/1600"
+     
+         },
+      {
+        "title": "剑来",
+        "subtitle": "少年仗剑，一路向前",
+        "keyword": "剑来",
+        "image": "https://tv.puui.qpic.cn/tv/0/mz_tv_image_frontend_442f1e-8_195920731_1768384693513190_pic_1920x800/0?imageView2/2/w/1600"
+     
+        }
+    ]
+  },
+  "sources": [
+    { "value": "", "label": "全部来源" },
+    { "value": "qq", "label": "腾讯视频" },
+    { "value": "qiyi", "label": "爱奇艺" },
+    { "value": "youku", "label": "优酷" },
+    { "value": "mgtv", "label": "芒果 TV" },
+    { "value": "bilibili", "label": "B 站" }
+  ],
+  "defaults": {
+    "keyword": "",
+    "page": 1,
+    "autoLoad": true
+  }
+}

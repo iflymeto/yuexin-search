@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{$node.node_title}</title>
+    {include file="common/header"/}
+    <div class="cache-clean-page">
+        <div class="clean-hero">
+            <div class="clean-title-card">
+                <div class="clean-title">系统数据清理</div>
+                <div class="clean-desc">
+                    按需清理不同缓存。目录树永久缓存位于 <code>data/pan_tree_cache</code>，默认不会被这里的清理操作删除。
+                </div>
+            </div>
+            <div class="clean-safe-card">
+                <div class="clean-safe-title">清理建议</div>
+                <ul class="clean-safe-list">
+                    <li>日常只选“系统配置缓存”和“运行缓存”。</li>
+                    <li>“搜索结果缓存”只清数据库缓存，不删除网盘文件。</li>
+                    <li>“临时转存资源”会删除网盘临时目录，建议先预览。</li>
+                    <li>“ThinkPHP 全局缓存”会清掉临时凭证和短期锁，谨慎使用。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="clean-compare-grid">
+            <div class="clean-compare-card">
+                <div class="clean-compare-head">
+                    <div>
+                        <div class="clean-compare-title">搜索结果缓存</div>
+                        <div class="clean-compare-desc">表 <code>qf_search_cache</code>，保存关键词搜索结果，用于减少重复请求线路。</div>
+                    </div>
+                    <el-button size="mini" plain icon="el-icon-refresh" @click="loadSearchCacheStats">刷新</el-button>
+                </div>
+                <div class="clean-mini-stats">
+                    <div><span>缓存关键词</span><strong>{{ searchCacheStats.total }}</strong></div>
+                    <div><span>有效缓存</span><strong>{{ searchCacheStats.valid }}</strong></div>
+                    <div><span>过期缓存</span><strong>{{ searchCacheStats.expired }}</strong></div>
+                    <div><span>缓存结果</span><strong>{{ searchCacheStats.result_count }}</strong></div>
+                </div>
+                <div class="clean-compare-foot">
+                    <span>最后写入：{{ searchCacheStats.latest_search_text }}</span>
+                    <span>操作影响：只删除数据库缓存，下次搜索会重新请求线路。</span>
+                </div>
+            </div>
+            <div class="clean-compare-card danger">
+                <div class="clean-compare-head">
+                    <div>
+                        <div class="clean-compare-title">临时转存资源</div>
+                        <div class="clean-compare-desc">表 <code>qf_source</code> 中 <code>is_time=1</code> 的临时资源，包含网盘目录 FID。</div>
+                    </div>
+                    <el-button size="mini" plain icon="el-icon-refresh" @click="loadTemporaryStats">刷新</el-button>
+                </div>
+                <div class="clean-mini-stats">
+                    <div><span>临时资源</span><strong>{{ temporaryStats.total }}</strong></div>
+                    <div><span>超过30分钟</span><strong>{{ temporaryStats.expired_30_count }}</strong></div>
+                    <div><span>最久未访问</span><strong>{{ temporaryStats.oldest_age_minutes }}</strong></div>
+                    <div><span>网盘类型</span><strong>{{ temporaryStats.type_stats.length }}</strong></div>
+                </div>
+                <div class="clean-compare-foot">
+                    <span>操作影响：删除数据库记录，并尝试删除对应网盘临时目录。</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="clean-panel">
+            <div class="clean-panel-head">
+                <div>
+                    <div class="clean-panel-title">缓存清理范围</div>
+                    <div class="clean-panel-sub">请选择要清理的缓存类型</div>
+                </div>
+                <el-tag size="small" type="info">目录树永久缓存受保护</el-tag>
+            </div>
+
+            <el-checkbox-group v-model="selectedTypes">
+                <div class="cache-option-grid">
+                    <el-checkbox class="cache-option" label="config">
+                        <div class="option-title-row">
+                            <span class="option-title">系统配置缓存</span>
+                            <span class="option-tag">推荐</span>
+                        </div>
+                        <div class="option-desc">清理 <code>system_config_all</code> 和 <code>system_config_version</code>，后台配置保存后通常会自动执行。</div>
+                    </el-checkbox>
+
+                    <el-checkbox class="cache-option" label="runtime">
+                        <div class="option-title-row">
+                            <span class="option-title">运行缓存</span>
+                            <span class="option-tag">推荐</span>
+                        </div>
+                        <div class="option-desc">清理 <code>runtime</code> 下的模板、文件缓存和运行产物，不删除 <code>data/pan_tree_cache</code>。</div>
+                    </el-checkbox>
+
+                    <el-checkbox class="cache-option" label="global">
+                        <div class="option-title-row">
+                            <span class="option-title">ThinkPHP 全局缓存</span>
+                            <span class="option-tag warn">谨慎</span>
+                        </div>
+                        <div class="option-desc">执行全局缓存清理，会清掉临时凭证、短期锁和其他框架缓存；目录树永久缓存不受影响。</div>
+                    </el-checkbox>
+
+                    <el-checkbox class="cache-option" label="search">
+                        <div class="option-title-row">
+                            <span class="option-title">搜索结果缓存</span>
+                            <span class="option-tag danger">按需</span>
+                        </div>
+                        <div class="option-desc">清空 <code>qf_search_cache</code>，当前 {{ searchCacheStats.total }} 个关键词缓存；不会删除网盘文件。</div>
+                    </el-checkbox>
+                </div>
+            </el-checkbox-group>
+
+            <div class="clean-actions">
+                <div class="clean-action-left">
+                    <el-button type="primary" plain @click="selectRoutine">选择常规清理</el-button>
+                    <el-button plain @click="clearSelection">取消选择</el-button>
+                    <span class="selected-count">已选择 {{selectedTypes.length}} 项</span>
+                </div>
+                <div class="clean-action-right">
+                    <el-button type="danger" :loading="loading" @click="clearCache">清理所选缓存</el-button>
+                </div>
+            </div>
+        </div>
+
+        <div class="clean-panel temporary-clean-panel">
+            <div class="clean-panel-head">
+                <div>
+                    <div class="clean-panel-title">临时转存资源</div>
+                    <div class="clean-panel-sub">清理搜索后转存到网盘的临时资源，会同步删除数据库记录和网盘目录</div>
+                </div>
+                <el-button size="mini" plain icon="el-icon-refresh" @click="loadTemporaryStats">刷新统计</el-button>
+            </div>
+
+            <el-alert class="temporary-danger-note" type="warning" show-icon :closable="false"
+                title="这不是搜索缓存：这里会删除 qf_source 临时记录，并尝试删除网盘临时目录。建议先预览匹配资源。">
+            </el-alert>
+
+            <div class="temporary-stats">
+                <div class="temporary-stat-item">
+                    <span class="temporary-stat-label">临时资源</span>
+                    <strong>{{ temporaryStats.total }}</strong>
+                </div>
+                <div class="temporary-stat-item">
+                    <span class="temporary-stat-label">超过30分钟</span>
+                    <strong>{{ temporaryStats.expired_30_count }}</strong>
+                </div>
+                <div class="temporary-stat-item">
+                    <span class="temporary-stat-label">最久未访问</span>
+                    <strong>{{ temporaryStats.oldest_age_minutes }} 分钟</strong>
+                </div>
+                <div class="temporary-stat-tags">
+                    <el-tag v-for="item in temporaryStats.type_stats" :key="item.is_type" size="mini" effect="plain">
+                        {{ getPanTypeName(item.is_type) }} {{ item.count }}
+                    </el-tag>
+                </div>
+            </div>
+
+            <el-form class="temporary-filter" :inline="true" :model="temporaryForm" size="small">
+                <el-form-item label="过期分钟">
+                    <el-input-number v-model="temporaryForm.expire_minutes" :min="1" :max="10080" :step="10" controls-position="right"></el-input-number>
+                </el-form-item>
+                <el-form-item label="网盘">
+                    <el-select v-model="temporaryForm.is_type" clearable placeholder="全部" style="width: 110px;">
+                        <el-option label="夸克" value="0"></el-option>
+                        <el-option label="阿里" value="1"></el-option>
+                        <el-option label="百度" value="2"></el-option>
+                        <el-option label="UC" value="3"></el-option>
+                        <el-option label="迅雷" value="4"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="标题">
+                    <el-input v-model="temporaryForm.keyword" clearable placeholder="可选关键词" style="width: 180px;"></el-input>
+                </el-form-item>
+                <el-form-item label="上限">
+                    <el-input-number v-model="temporaryForm.limit" :min="1" :max="1000" :step="50" controls-position="right"></el-input-number>
+                </el-form-item>
+                <el-form-item>
+                    <el-button plain icon="el-icon-view" :loading="temporaryPreviewLoading" @click="previewTemporaryResources">预览</el-button>
+                    <el-button type="danger" plain icon="el-icon-delete" :loading="temporaryCleanLoading" @click="cleanTemporaryResources">清理匹配资源</el-button>
+                </el-form-item>
+            </el-form>
+
+            <div class="temporary-preview-head">
+                <span>匹配 {{ temporaryPreview.total }} 条，当前预览 {{ temporaryPreview.list.length }} 条</span>
+                <el-tag size="mini" type="warning" effect="plain">建议先预览再清理</el-tag>
+            </div>
+
+            <el-table class="temporary-preview-table" :data="temporaryPreview.list" size="mini" empty-text="暂无预览数据" max-height="260">
+                <el-table-column prop="source_id" label="ID" width="70"></el-table-column>
+                <el-table-column prop="type_name" label="网盘" width="70"></el-table-column>
+                <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="short_url" label="地址" min-width="130" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="age_minutes" label="未访问" width="86">
+                    <template slot-scope="scope">{{ scope.row.age_minutes }} 分钟</template>
+                </el-table-column>
+                <el-table-column prop="has_fid" label="FID" width="66">
+                    <template slot-scope="scope">
+                        <el-tag size="mini" :type="scope.row.has_fid ? 'success' : 'info'">{{ scope.row.has_fid ? '有' : '无' }}</el-tag>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+
+        <el-alert class="clean-note" type="info" show-icon :closable="false"
+            title="常规建议：平时只需要清理系统配置缓存和运行缓存；除非搜索结果明显过旧，否则不必清搜索结果缓存。">
+        </el-alert>
+    </div>
+
+    {include file="common/footer"/}
+    <script>
+        (function () {
+            if (document.getElementById('cache-clean-style')) {
+                return;
+            }
+            var link = document.createElement('link');
+            link.id = 'cache-clean-style';
+            link.rel = 'stylesheet';
+            link.href = '/static/admin/css/cache-clean.css?v=2026051401';
+            document.head.appendChild(link);
+        })();
+
+        var app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    loading: false,
+                    selectedTypes: ['config', 'runtime'],
+                    searchCacheStats: {
+                        total: 0,
+                        valid: 0,
+                        expired: 0,
+                        result_count: 0,
+                        latest_search_text: '-',
+                        type_stats: []
+                    },
+                    temporaryStats: {
+                        total: 0,
+                        expired_30_count: 0,
+                        oldest_age_minutes: 0,
+                        type_stats: []
+                    },
+                    temporaryForm: {
+                        expire_minutes: 30,
+                        is_type: '',
+                        keyword: '',
+                        limit: 100
+                    },
+                    temporaryPreview: {
+                        total: 0,
+                        limit: 100,
+                        list: []
+                    },
+                    temporaryPreviewLoading: false,
+                    temporaryCleanLoading: false
+                };
+            },
+            mounted() {
+                this.loadSearchCacheStats();
+                this.loadTemporaryStats();
+            },
+            methods: {
+                selectRoutine() {
+                    this.selectedTypes = ['config', 'runtime'];
+                },
+                clearSelection() {
+                    this.selectedTypes = [];
+                },
+                clearCache() {
+                    var that = this;
+                    if (!this.selectedTypes.length) {
+                        this.$message.warning('请至少选择一种缓存类型');
+                        return;
+                    }
+                    this.$confirm('即将清理所选缓存，目录树永久缓存不会被删除。是否确认?', '清理缓存', {
+                        confirmButtonText: '清理',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function () {
+                        that.loading = true;
+                        axios.post('/admin/system/clean', Object.assign({}, PostBase, {
+                            types: that.selectedTypes
+                        })).then(function (response) {
+                            if (response.data.code == CODE_SUCCESS) {
+                                that.$message({
+                                    message: response.data.message,
+                                    type: 'success'
+                                });
+                                that.loadSearchCacheStats();
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                            that.loading = false;
+                        }).catch(function (error) {
+                            that.loading = false;
+                            that.$message.error('服务器内部错误');
+                            if (typeof debugLog !== 'undefined') {
+                                debugLog.log(error);
+                            } else {
+                                console.warn(error);
+                            }
+                        });
+                    }).catch(function () {});
+                },
+                getPanTypeName(type) {
+                    var map = {
+                        0: '夸克',
+                        1: '阿里',
+                        2: '百度',
+                        3: 'UC',
+                        4: '迅雷'
+                    };
+                    return map[type] || '未知';
+                },
+                loadSearchCacheStats() {
+                    var that = this;
+                    axios.post('/admin/system/searchCacheStats', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code == CODE_SUCCESS) {
+                            that.searchCacheStats = Object.assign({
+                                total: 0,
+                                valid: 0,
+                                expired: 0,
+                                result_count: 0,
+                                latest_search_text: '-',
+                                type_stats: []
+                            }, response.data.data || {});
+                        } else {
+                            that.$message.error(response.data.message);
+                        }
+                    }).catch(function (error) {
+                        that.$message.error('搜索缓存统计获取失败');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                getTemporaryPayload() {
+                    return Object.assign({}, PostBase, {
+                        expire_minutes: this.temporaryForm.expire_minutes,
+                        is_type: this.temporaryForm.is_type,
+                        keyword: this.temporaryForm.keyword,
+                        limit: this.temporaryForm.limit
+                    });
+                },
+                loadTemporaryStats() {
+                    var that = this;
+                    axios.post('/admin/system/temporaryResourceStats', Object.assign({}, PostBase)).then(function (response) {
+                        if (response.data.code == CODE_SUCCESS) {
+                            that.temporaryStats = Object.assign({
+                                total: 0,
+                                expired_30_count: 0,
+                                oldest_age_minutes: 0,
+                                type_stats: []
+                            }, response.data.data || {});
+                        } else {
+                            that.$message.error(response.data.message);
+                        }
+                    }).catch(function (error) {
+                        that.$message.error('临时资源统计获取失败');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                previewTemporaryResources() {
+                    var that = this;
+                    that.temporaryPreviewLoading = true;
+                    axios.post('/admin/system/previewTemporaryResources', that.getTemporaryPayload()).then(function (response) {
+                        that.temporaryPreviewLoading = false;
+                        if (response.data.code == CODE_SUCCESS) {
+                            that.temporaryPreview = Object.assign({
+                                total: 0,
+                                limit: that.temporaryForm.limit,
+                                list: []
+                            }, response.data.data || {});
+                        } else {
+                            that.$message.error(response.data.message);
+                        }
+                    }).catch(function (error) {
+                        that.temporaryPreviewLoading = false;
+                        that.$message.error('临时资源预览失败');
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                cleanTemporaryResources() {
+                    var that = this;
+                    var title = '清理临时转存资源';
+                    var message = '将按当前条件清理临时资源，并尝试删除对应网盘目录。是否确认？';
+                    this.$confirm(message, title, {
+                        confirmButtonText: '清理',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function () {
+                        that.temporaryCleanLoading = true;
+                        axios.post('/admin/system/cleanTemporaryResources', that.getTemporaryPayload()).then(function (response) {
+                            that.temporaryCleanLoading = false;
+                            if (response.data.code == CODE_SUCCESS) {
+                                var data = response.data.data || {};
+                                that.$message.success(response.data.message + '，成功 ' + (data.deleted_count || 0) + ' 条，失败 ' + (data.failed_count || 0) + ' 条');
+                                that.loadTemporaryStats();
+                                that.previewTemporaryResources();
+                            } else {
+                                that.$message.error(response.data.message);
+                            }
+                        }).catch(function (error) {
+                            that.temporaryCleanLoading = false;
+                            that.$message.error('临时资源清理失败');
+                            if (typeof debugLog !== 'undefined') {
+                                debugLog.log(error);
+                            } else {
+                                console.warn(error);
+                            }
+                        });
+                    }).catch(function () {});
+                }
+            }
+        })
+    </script>
+
+</html>

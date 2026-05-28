@@ -1,0 +1,48 @@
+{if condition="$menuLists"}
+<el-aside width="160px">
+    <a class="titlehome admin-menu-logo" href="/qfadmin"><img
+            src="/static/admin/images/logo.png" width="40px" /></a>
+    <el-menu class="el-menu-vertical-demo" text-color="#333333" default-active="'{$node.node_pid}-{$node.node_id}'"
+        :collapse="false" :default-openeds="['{$node.node_pid}']">
+        {volist name="menuLists" id="item"}
+        {if condition="count($item.subList)>0"}
+        <el-submenu index="{$item.node_id}">
+            <template slot="title">
+                <i {if condition='$item.node_icon' }class="{$item.node_icon}" {else}class="el-icon-menu" {/if}></i>
+                {$item.node_title}
+            </template>
+            {volist name="$item.subList" id="subItem"}
+            <el-menu-item
+                onclick="location.href='/{$subItem.node_module}/{$subItem.node_controller}/{$subItem.node_action}';"
+                index="{$item.node_id}-{$subItem.node_id}" {if
+                condition="$subItem.node_controller==strtolower($controller) && $subItem.node_action==strtolower($action)"
+                }class="is-active" {/if}>{$subItem.node_title}</el-menu-item>
+            {/volist}
+        </el-submenu>
+        {else}
+        {if condition="$item.node_controller=='' && $item.node_action==''"}
+        <el-menu-item index="{$item.node_id}" onclick="testalert('暂无该功能')">
+            <i {if condition='$item.node_icon' }class="{$item.node_icon}" {else}class="el-icon-menu" {/if}></i>
+            {$item.node_title}
+        </el-menu-item>
+        {else}
+        <el-menu-item index="{$item.node_id}"
+            onclick="location.href='/{$item.node_module}/{$item.node_controller}/{$item.node_action}';" {if
+            condition="$item.node_controller==strtolower($controller) && $item.node_action==strtolower($action)"
+            }class="is-active" {/if}>
+            <i {if condition='$item.node_icon' }class="{$item.node_icon}" {else}class="el-icon-menu" {/if}></i>
+            {$item.node_title}
+        </el-menu-item>
+        {/if}
+        {/if}
+        {/volist}
+        <div class="admin-menu-spacer"></div>
+    </el-menu>
+    <div class="version">资源管理系统<br> Version 4.0</div>
+</el-aside>
+{else}
+<div class="admin-menu-fallback">
+    <a class="title admin-menu-fallback-logo" href="/admin"><img
+            src="/static/admin/images/logo.png" width="40px" /></a>
+</div>
+{/if}

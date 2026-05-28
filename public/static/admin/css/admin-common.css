@@ -1,0 +1,107 @@
+.admin-header-nav {
+    width: auto;
+}
+
+.admin-top-menu {
+    border: none;
+}
+
+.admin-user-area {
+    width: 240px;
+    float: right;
+}
+
+.admin-menu-logo,
+.admin-menu-fallback-logo {
+    display: block;
+    height: 62px;
+    line-height: 62px;
+    text-align: center;
+}
+
+.admin-menu-logo img,
+.admin-menu-fallback-logo img {
+    vertical-align: middle;
+}
+
+.admin-menu-spacer {
+    height: 120px;
+}
+
+.admin-menu-fallback {
+    position: absolute;
+    top: -72px;
+    left: 0;
+    width: 160px;
+    background-color: #fff;
+    box-shadow: 0 0 12px 0 rgb(47 75 168 / 6%);
+    border-radius: 12px;
+}
+
+.component-empty {
+    text-align: center;
+}
+
+.component-dialog-note {
+    float: left;
+    font-size: 13px;
+}
+
+.component-accent {
+    color: #f56c6c;
+}
+
+.component-drag-item {
+    cursor: all-scroll;
+}
+
+.component-direct-url {
+    margin-top: 10px;
+}
+
+.component-sku-actions {
+    padding-bottom: 10px;
+}
+
+.component-short-input {
+    width: 120px;
+}
+
+.component-toolbar {
+    float: right;
+}
+
+.component-category-filter {
+    width: 100px;
+    margin-bottom: 0;
+}
+
+.component-category-filter .el-cascader {
+    width: 100%;
+}
+
+.component-toolbar-item {
+    margin-bottom: 0;
+}
+
+.component-table {
+    min-height: 425px;
+}
+
+.component-goods-image {
+    width: 50px;
+    height: 50px;
+}
+
+.component-line-clamp {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.component-footer-pager {
+    padding-bottom: 10px;
+}

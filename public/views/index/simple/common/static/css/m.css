@@ -1,0 +1,2047 @@
+@media screen and (max-width: 768px) {
+    html, body {
+        font-size: 4vw;
+        width: 100%;
+        -webkit-tap-highlight-color:transparent
+    }
+    a:hover {
+      color: inherit;
+    }
+    .headerBox,.headerKox{
+        height: 15vw;
+    }
+    
+    .headerBox .box {
+        width: 100%;
+        padding: 0 3vw;
+    }
+    .headerBox .box .logoBox .logo {
+        height: 10vw;
+    }
+    .headerBox .box .logoBox .title {
+        margin-left: 3vw;
+        font-size: 4.8vw;
+    }
+    .headerBox .box .search {
+        display: none;
+    }
+    .headerBox .box .navs .item,.headerBox .box .navs .btns {
+        display: none;
+    }
+    .headerBox .box .navs .iconfont {
+        display: block;
+        font-weight: bold;
+        font-size: 20px;
+    }
+    .drawer .item{
+        font-size: 4vw;
+        color: var(--theme-color);
+    }
+    .drawer .item,.drawer a{
+        display: block;
+        height: 10vw;
+        line-height: 10vw;
+        font-size: 4vw;
+        color: var(--theme-color);
+        text-align: center;
+    }
+    .homeBox{
+        width: 100%;
+        padding: 6vw 5vw 0;
+    }
+    
+    .homeBox .box {
+        width: 100%;
+    }
+    .homeBox .logoBox .logo {
+        height: 13.2vw;
+    }
+    .homeBox .logoBox .title {
+        margin-left: 3.4vw;
+        font-size: 5.6vw;
+    }
+    
+    .searchBox .search {
+        margin-top: 5vw;
+        height: 12.5vw;
+        border-radius: 12.5vw;
+    }
+    .searchBox .search input {
+        border-radius: 12.5vw;
+        font-size: 4.2vw;
+        padding-left: 5vw;
+    }
+    .searchBox .search .btn {
+        width: 15vw;
+        height: 12.5vw;
+    }
+    .searchBox .search .btn .iconfont{
+        font-size: 5.8vw;
+    }
+    .home {
+        flex-wrap: wrap;
+        margin-top: 10vw;
+    }
+    .home .nav{
+        font-size: 4.2vw;
+        padding: 0 3vw 2vw;
+    }
+    .home .nav img {
+        width: 6vw;
+        height: 6vw;
+        margin-right: 2.6vw;
+    }
+    .home .content {
+        min-height: auto;
+    }
+    
+    .home .content .list{
+        padding: 0 0 2vw 2vw;
+    }
+    .home .content .list .item {
+        width: 26.8vw;
+        margin: 1vw;
+        padding: 1vw 0;
+    }
+    
+    .home .content .list .item .img {
+        height: 40vw;
+    }
+    .home .content .list .item p{
+        margin-top: 2vw;
+    }
+    
+    
+    .home .content .list .item:hover{
+        transform: translateY(0);
+    }
+    
+    .home.homeNO .block {
+        margin: 0;
+        margin-bottom: 5vw;
+        width: 100%;
+        flex: auto;
+    }
+    
+    .home.homeNO .content .list {
+        padding: 0 3vw 3vw;
+    }
+    .home.homeNO .content .list .item{
+        max-width: 100%;
+    }
+    
+    
+    .footerBox {
+        padding: 5vw;
+    }
+    .footerBox .box {
+        width: 100%;
+    }
+    
+    
+    .listBox {
+        width: 100%;
+        min-height: calc(100vh - 60vw);
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+    }
+    .listBox .screen{
+        width: 100%;
+        margin: 0 3vw;
+    }
+    .listBox .screen .fixed h3{
+        display: none;
+    }
+    
+    .listBox .right {
+        display: none;
+    }
+    .listBox .left {
+        padding: 0 3vw;
+    }
+    
+    .listBox > h3,
+    .listBox .left > h3 {
+        position: relative;
+        padding: 20.4vw 0 0;
+        font-size: 3.8vw;
+        text-align: center;
+    }
+    .listBox > h3:after,
+    .listBox .left > h3:after {
+        display: none;
+    }
+    .listBox .box {
+        padding: 0 3vw 6vw;
+        margin-top: 4vw;
+        text-align: justify;
+        min-height: calc(100% - 50vw);
+    }
+    .listBox .Ebox{
+        padding: 0 3vw 5vw;
+        margin-top: 2vw;
+        margin-bottom: 4vw;
+        text-align: justify;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .listBox .left .Ebox .list {
+        padding: 0;
+    }
+
+    .listBox .left .Ebox .list .item {
+        margin-bottom: 2.8vw;
+        padding: 3.2vw 4vw !important;
+        border: 1px solid #f0f0f0;
+        border-radius: 3.2vw;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .listBox .left .Ebox .list .item:last-child{
+        margin-bottom: 0;
+    }
+
+    .listBox .left .Ebox .list .item .title {
+        position: relative;
+        height: auto;
+        min-height: auto;
+        padding: 0 0 0 2.8vw;
+        font-size: 4vw;
+        line-height: 1.35;
+        color: #1a1a1a;
+        -webkit-line-clamp: 3;
+    }
+
+    .listBox .left .Ebox .list .item .title::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: .6vw;
+        bottom: .6vw;
+        width: .8vw;
+        border-radius: .6vw;
+        background: #ff4d4f;
+    }
+
+    .listBox .left .Ebox .list .item .type {
+        margin-top: 2.6vw;
+        padding-left: 0;
+        color: #999;
+        font-size: 3.4vw;
+    }
+
+    .listBox .left .Ebox .list .item .type::after {
+        display: none;
+    }
+
+    /* 移动端有图片的卡片样式 */
+    .listBox .left .Ebox .list .item.has-image {
+        display: flex;
+        align-items: flex-start;
+        gap: 3vw;
+    }
+
+    .listBox .left .Ebox .list .item .item-image {
+        flex-shrink: 0;
+        width: 25vw;
+        height: 16vw;
+        border-radius: 2vw;
+        overflow: hidden;
+        background-color: #f5f5f5;
+    }
+
+    .listBox .left .Ebox .list .item .item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: #fff;
+    }
+
+    .listBox .left .Ebox .list .item .item-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .listBox .left .Ebox .list .item.has-image .item-content .title {
+        margin-bottom: 1.5vw;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 4vw;
+        line-height: 1.4;  /* 行高1.4，避免过大导致第三行显示 */
+        font-weight: 600;
+        word-break: break-word;
+        height: auto;
+    }
+
+    .listBox .left .Ebox .list .item.has-image .item-content .type {
+        margin-bottom: 2vw;
+        font-size: 3.5vw;
+    }
+
+    .listBox .left .Ebox .list .item.has-image .item-content .btns2 {
+        font-size: 3.5vw;
+        padding: 2vw 4vw;
+    }
+
+    .listBox .left .Ebox .list .item .result-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 2vw;
+        margin-top: 3vw;
+    }
+
+    .listBox .left .Ebox .list .item .result-actions button {
+        height: 8vw;
+        padding: 0 3.4vw;
+        border-radius: 1.6vw;
+        font-size: 3.3vw;
+        line-height: 8vw;
+        font-weight: 500;
+    }
+
+    .listBox .left .Ebox .list .item .resource-tree-btn {
+        color: #666;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+    }
+
+    .listBox .left .Ebox .list .item .resource-get-btn {
+        color: #0052d9;
+        background: rgba(0,82,217,.06);
+        border: 1px solid #0052d9;
+    }
+
+    .listBox .left .Ebox .list .item .resource-tree-panel {
+        margin-top: 3vw;
+        padding: 2.5vw 3vw;
+        border-top: 1px dashed #ebebeb;
+        background: #fafafc;
+    }
+
+    .listBox .left .Ebox .list .item .resource-tree-header,
+    .listBox .left .Ebox .list .item .resource-tree-loading,
+    .listBox .left .Ebox .list .item .resource-tree-empty,
+    .listBox .left .Ebox .list .item .resource-tree-tip,
+    .listBox .left .Ebox .list .item .resource-tree-error,
+    .listBox .left .Ebox .list .item .resource-tree-body {
+        font-size: 3.3vw;
+    }
+
+    .listBox .left .Ebox .list .item .resource-tree-body {
+        max-height: 72vw;
+    }
+
+    /* 移动端无图片的卡片保持原样式 */
+    .listBox .left .Ebox .list .item:not(.has-image) {
+        display: block;
+    }
+    .Qloading {
+        padding-top: 3vw;
+    }
+    .Qtips{
+        padding-top: 3vw;
+    }
+    .loader{
+        font-size: 18px;
+        margin-top: 2vw;
+    }
+    .Qbtn{
+        padding-top: 3vw;
+    }
+
+    .listBox .left .list {
+        padding: 0;
+    }
+    .listBox .left .list .item {
+        padding: 5vw 0;
+    }
+    .listBox .left .list .item .title {
+        font-size: 4.4vw;
+        padding-bottom: 1.5vw;
+        line-height: 1.4;  /* 行高1.4，避免过大导致第三行显示 */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 600;
+        word-break: break-word;
+        height: 12.32vw;  /* 精确高度：4.4vw * 1.4 * 2 = 12.32vw */
+    }
+    .listBox .left .list .item .btns{
+        justify-content: space-between;
+    }
+        
+    .listBox .left .list .item .btns .btn{
+        margin-right: 0;    
+    }
+    .listBox .left .list .item .btns .btn .iconfont{
+        font-size: 4.5vw;
+        margin-right: 1vw;
+    }
+    .listBox .left .list .item .btns .btn .icon{
+        width: 4.6vw;
+        margin-right: 1vw;
+    }
+    .listBox .left .list .item .type{
+        margin-top: 2vw;
+    }
+    .listBox .left .list .item .type::after{
+    	top: -1vw;
+    	font-size: 5.3vw;
+    }
+    
+    
+    .listBox .details{
+        padding-top: 5vw;
+    }
+    .details .title {
+        font-size: 4.8vw;
+        margin-bottom: 4vw;
+    }
+    .details .cat {
+        display: flex;
+        font-size: 4.2vw;
+    }
+    .details .pic {
+        width: 30vw;
+        height: 40vw;
+        margin: 2vw auto 5vw;
+    }
+    
+    
+    .searchList{
+        position: fixed;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        padding: 0 5vw 2vw;
+        display: block;
+        background-color: var(--theme-background);
+    }
+    .searchList .search {
+        margin-top: 3vw;
+    }
+    .searchList .search .select{
+        font-size: 3.8vw;
+        line-height: 13.2vw;
+        height: 12.5vw;
+        width: 20vw;
+        text-align: center;
+        opacity: .8;
+    }
+    .searchList .search input {
+        padding-left: 3vw;
+    }
+    
+    .listBox .screen .box{
+        padding: 0 4vw 6vw;
+        margin-top: 17.5vw;
+        display: none;
+    }
+    
+    
+    .searchDetail{
+        position: fixed;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        padding: 0 5vw 2vw;
+        display: block;
+        background-color: var(--theme-background);
+    }
+    .searchDetail .search {
+        margin-top: 3vw;
+    }
+    .searchDetail .search input {
+        padding-left: 5vw;
+    }
+    .detailBox{
+        min-height: inherit;
+    }
+    .detailBox h3{
+        display: none;
+    }
+    .detailBox .details {
+        padding-top: 5vw;
+        margin-top: 20vw;
+        min-height: inherit;
+    }
+    .listBox .details.samelistBox{
+        padding: 3vw;
+        margin-top: 0;
+    }
+    .detailBox h3.samelistNav{
+        display: block;
+        position: relative;
+        padding: 30px 0 17px 15px;
+        font-size: 4.2vw;
+        text-align: left;
+    }
+    .detailBox h3.samelistNav:after {
+        display: block;
+    }
+    .samelist .item {
+        width: 100%;
+    }
+    .samelist .item p {
+        padding: 4px 6px;
+    }
+        
+    
+    /* 移动端搜索源切换 */
+    .listBox .left .source-switch {
+        margin-top: 20vw;
+        padding: 2vw 0 0 0 !important;
+        display: flex !important;
+        align-items: center;
+        min-height: auto;
+    }
+    
+    .listBox .left .source-switch h3 {
+        font-size: 3.4vw !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        margin-right: 3vw !important;
+        padding: 0 !important;
+        color: #666 !important;
+        font-weight: normal !important;
+        flex-shrink: 0;
+        text-align: left !important;
+        position: static !important;
+    }
+    
+    .switch-items {
+        gap: 5vw;
+        padding-top: 20vw;
+        display: flex;
+        align-items: center;
+        margin: 0;
+    }
+    
+    /* 搜索源切换的按钮容器不需要顶部padding */
+    .listBox .left .source-switch .switch-items {
+        padding-top: 0 !important;
+    }
+    
+    .listBox .left .source-switch .switch-items a,
+    .listBox .left .pan-type-tabs .switch-items a {
+        font-size: 3.6vw;
+        line-height: 1.2;
+        position: relative;
+        padding: 0.8vw 0 1.2vw;
+        color: #666;
+        font-weight: normal;
+        margin: 0;
+    }
+    
+    .listBox .left .source-switch .switch-items a.active,
+    .listBox .left .pan-type-tabs .switch-items a.active {
+        color: var(--theme-theme);
+        font-weight: 600;
+    }
+    
+    .listBox .left .source-switch .switch-items a.active:after,
+    .listBox .left .pan-type-tabs .switch-items a.active:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 60%;
+        height: 0.8vw;
+        margin: 0 auto;
+        border-radius: 2vw;
+        background-color: var(--theme-theme);
+    }
+    
+    /* 移动端网盘类型切换tabs - 使用统一风格 */
+    .listBox .left .pan-type-tabs {
+        padding: 1vw 0 1vw 0 !important;
+        margin-top: 1.5vw;
+        margin-bottom: 0;
+        border-bottom: 1px solid #f0f0f0;
+        min-height: auto;
+        display: flex !important;
+        align-items: center;
+    }
+    
+    .listBox .left .pan-type-tabs h3 {
+        font-size: 3.4vw !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        margin-right: 3vw !important;
+        padding: 0 !important;
+        color: #666 !important;
+        font-weight: normal !important;
+        flex-shrink: 0;
+        text-align: left !important;
+        position: static !important;
+    }
+    
+    .listBox .left .pan-type-tabs .switch-items {
+        padding-top: 0 !important;
+        gap: 5vw;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .btns2 {
+        height: 8.2vw;
+        line-height: 8.2vw;
+        font-size: 3.4vw;
+        width: 25vw;
+        bottom: 4vw;
+    }
+    .listBox .left .Ebox .list .item:last-child .btns2{
+        bottom: 0;
+    }
+
+    .dialogUrlBox{
+        width: 90vw;
+    }
+
+    /* ========================================
+       智能合并显示 - 移动端优化
+       ======================================== */
+
+    /* 搜索框区域 */
+    .searchBox.searchList {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* 统一搜索结果区域移动端优化 */
+    .search-results-section {
+        padding: 15px !important;
+        border-radius: 8px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* 缓存标签移动端优化 */
+    .cache-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        margin-right: 4px !important;
+    }
+    
+    /* 新增标签移动端优化 - 已禁用（仅使用红色左边框）
+    .new-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        margin-right: 4px !important;
+    }
+    */
+
+    /* 新增项移动端优化 - 已移除边框 */
+    .item.is-new {
+        /* 不再使用边框标识 */
+    }
+    
+    /* 两行紧凑布局移动端优化 */
+    .section-header-compact {
+        margin-bottom: 16px;
+    }
+    
+    .section-header-compact h3 {
+        font-size: 16px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .section-header-compact h3 .iconfont {
+        font-size: 18px !important;
+    }
+    
+    .section-header-compact h3 .search-status {
+        font-size: 13px !important;
+    }
+    
+    /* 简洁下划线风格移动端 */
+    .pan-filter-minimal {
+        gap: 16px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .pan-filter-minimal a {
+        padding: 8px 0;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    /* 简化加载动画 */
+    .loading-minimal {
+        padding: 15px 0;
+    }
+    
+    .loader-minimal {
+        width: 20px;
+        height: 20px;
+        border-width: 2px;
+    }
+    
+    /* 网盘筛选按钮移动端优化（保留兼容） */
+    .pan-filter {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .pan-filter button {
+        flex: 1;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        border-radius: 15px !important;
+    }
+    
+    /* 网络资源卡片优化 */
+    .network-section .item {
+        margin-bottom: 12px;
+    }
+    
+    /* 进度条优化 */
+    .progress-container {
+        padding: 10px !important;
+        margin: 10px 0 !important;
+    }
+    
+    .progress-text {
+        font-size: 12px !important;
+    }
+}
+
+/* ========== 移动端搜索页最终比例修正：参考结构，不放大字号 ========== */
+@media screen and (max-width: 768px) {
+    body {
+        background: #f5f6f8 !important;
+    }
+
+    .headerBox,
+    .headerKox {
+        height: 58px !important;
+    }
+
+    .headerBox {
+        background: #fff !important;
+        border-bottom: 1px solid #eeeeee !important;
+        box-shadow: none !important;
+    }
+
+    .headerBox .box {
+        height: 58px !important;
+        padding: 0 20px !important;
+        align-items: center !important;
+    }
+
+    .headerBox .box .logoBox .title {
+        font-size: 22px !important;
+        line-height: 58px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0 !important;
+    }
+
+    .headerBox .box .navs .iconfont {
+        font-size: 24px !important;
+        line-height: 58px !important;
+    }
+
+    .searchBox.searchList {
+        padding: 12px 20px 16px !important;
+        background: #fff !important;
+        border-bottom: 1px solid #eeeeee !important;
+    }
+
+    .searchBox.searchList .search {
+        height: 48px !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e5ea !important;
+        background: #f7f8fa !important;
+    }
+
+    .searchBox.searchList .search .pan-select-wrap {
+        width: 88px !important;
+        flex: 0 0 88px !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select,
+    .searchBox.searchList .search .select.pan-search-select {
+        width: 88px !important;
+        height: 46px !important;
+        padding: 0 12px !important;
+        border-right: 1px solid #e6e8ec !important;
+        color: #888 !important;
+        font-size: 14px !important;
+        line-height: 46px !important;
+        justify-content: center !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select span {
+        max-width: 52px !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: 46px !important;
+        padding-left: 16px !important;
+        font-size: 17px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: 20px !important;
+        color: #0b5cff !important;
+    }
+
+    .searchBox.searchList .pan-select-menu {
+        min-width: 110px !important;
+    }
+
+    .searchBox.searchList .pan-select-item {
+        height: 34px !important;
+        font-size: 14px !important;
+        line-height: 34px !important;
+    }
+
+    .listBox {
+        background: #f5f6f8 !important;
+    }
+
+    .search-results-section {
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .section-header-compact h3 {
+        min-height: 62px !important;
+        padding: 16px 20px 16px 33px !important;
+        border-bottom: 1px solid #eeeeee !important;
+        color: #666 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        gap: 5px !important;
+    }
+
+    .section-header-compact h3:before {
+        left: 20px !important;
+        top: 18px !important;
+        bottom: 18px !important;
+        width: 4px !important;
+        border-radius: 3px !important;
+        background: #1268ff !important;
+    }
+
+    .section-header-compact h3 .keyword-highlight {
+        max-width: 112px !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+    }
+
+    .section-header-compact h3 .search-status {
+        font-size: 15px !important;
+        font-weight: 500 !important;
+    }
+
+    .pan-filter-minimal {
+        gap: 34px !important;
+        padding: 14px 20px 0 !important;
+        border-bottom: 1px solid #eeeeee !important;
+        background: #fff !important;
+    }
+
+    .pan-filter-minimal a {
+        padding: 0 0 13px !important;
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+    }
+
+    .pan-filter-minimal a.active:after {
+        height: 3px !important;
+    }
+
+    .resource-result-list {
+        padding: 10px 10px 0 !important;
+        background: #f5f6f8 !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 10px !important;
+        border-radius: 10px !important;
+    }
+
+    .resource-card-main {
+        padding: 10px 12px 9px !important;
+    }
+
+    .resource-card-footer {
+        min-height: 48px !important;
+        padding: 8px 12px !important;
+    }
+
+    .listBox .left .list .item .resource-title {
+        font-size: 17px !important;
+        line-height: 1.35 !important;
+        max-height: 46px !important;
+    }
+
+    .cache-badge {
+        font-size: 12px !important;
+        line-height: 18px !important;
+        padding: 0 6px !important;
+    }
+
+    .resource-result-card .result-actions {
+        gap: 8px !important;
+    }
+
+    .resource-result-card .result-actions button {
+        height: 34px !important;
+        padding: 0 12px !important;
+        border-radius: 9px !important;
+        font-size: 14px !important;
+    }
+}
+
+/* ========== 移动端自适应比例：小屏不挤，宽屏不放大失控 ========== */
+@media screen and (max-width: 768px) {
+    :root {
+        --m-page-max: 560px;
+        --m-edge: clamp(14px, 4.8vw, 20px);
+        --m-card-gap: clamp(8px, 2.4vw, 12px);
+        --m-title-font: clamp(20px, 5.6vw, 23px);
+        --m-input-font: clamp(16px, 4.4vw, 18px);
+        --m-meta-font: clamp(14px, 3.9vw, 16px);
+        --m-tab-font: clamp(16px, 4.4vw, 18px);
+        --m-result-font: clamp(16px, 4.5vw, 18px);
+    }
+
+    .headerBox,
+    .headerKox {
+        height: clamp(54px, 14.8vw, 62px) !important;
+    }
+
+    .headerBox .box {
+        width: min(100%, var(--m-page-max)) !important;
+        height: clamp(54px, 14.8vw, 62px) !important;
+        margin: 0 auto !important;
+        padding: 0 var(--m-edge) !important;
+    }
+
+    .headerBox .box .logoBox .title {
+        font-size: var(--m-title-font) !important;
+        line-height: clamp(54px, 14.8vw, 62px) !important;
+    }
+
+    .headerBox .box .navs .iconfont {
+        font-size: clamp(22px, 6vw, 25px) !important;
+        line-height: clamp(54px, 14.8vw, 62px) !important;
+    }
+
+    .searchBox.searchList {
+        padding: clamp(10px, 3.2vw, 14px) var(--m-edge) clamp(14px, 3.8vw, 18px) !important;
+    }
+
+    .searchBox.searchList .search {
+        width: min(100%, var(--m-page-max)) !important;
+        height: clamp(44px, 12.2vw, 50px) !important;
+        margin: 0 auto !important;
+        border-radius: clamp(10px, 2.8vw, 13px) !important;
+    }
+
+    .searchBox.searchList .search .pan-select-wrap {
+        width: clamp(76px, 22vw, 92px) !important;
+        flex: 0 0 clamp(76px, 22vw, 92px) !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select,
+    .searchBox.searchList .search .select.pan-search-select {
+        width: clamp(76px, 22vw, 92px) !important;
+        height: calc(clamp(44px, 12.2vw, 50px) - 2px) !important;
+        padding: 0 clamp(9px, 2.8vw, 13px) !important;
+        font-size: clamp(13px, 3.8vw, 15px) !important;
+        line-height: calc(clamp(44px, 12.2vw, 50px) - 2px) !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select span {
+        max-width: clamp(46px, 13vw, 58px) !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: calc(clamp(44px, 12.2vw, 50px) - 2px) !important;
+        min-width: 0 !important;
+        padding-left: clamp(12px, 3.8vw, 16px) !important;
+        font-size: var(--m-input-font) !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: clamp(42px, 11.5vw, 48px) !important;
+        height: calc(clamp(44px, 12.2vw, 50px) - 2px) !important;
+        flex: 0 0 clamp(42px, 11.5vw, 48px) !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: clamp(20px, 5.8vw, 23px) !important;
+    }
+
+    .section-header-compact {
+        border-bottom: 1px solid #eeeeee !important;
+    }
+
+    .section-header-compact h3 {
+        width: min(100%, var(--m-page-max)) !important;
+        min-height: clamp(56px, 15.8vw, 66px) !important;
+        margin: 0 auto !important;
+        padding: clamp(14px, 4vw, 18px) var(--m-edge) clamp(14px, 4vw, 18px) calc(var(--m-edge) + 13px) !important;
+        border-bottom: 0 !important;
+        font-size: var(--m-meta-font) !important;
+        gap: clamp(4px, 1.2vw, 6px) !important;
+    }
+
+    .section-header-compact h3:before {
+        left: var(--m-edge) !important;
+        top: clamp(17px, 4.8vw, 21px) !important;
+        bottom: clamp(17px, 4.8vw, 21px) !important;
+        width: 4px !important;
+    }
+
+    .section-header-compact h3 .keyword-highlight {
+        max-width: clamp(86px, 28vw, 128px) !important;
+        padding: 2px 6px !important;
+        font-size: clamp(15px, 4.2vw, 17px) !important;
+    }
+
+    .section-header-compact h3 .search-status {
+        font-size: clamp(14px, 3.9vw, 16px) !important;
+    }
+
+    .pan-filter-minimal {
+        width: min(100%, var(--m-page-max)) !important;
+        margin: 0 auto !important;
+        padding: clamp(12px, 3.6vw, 16px) var(--m-edge) 0 !important;
+        gap: clamp(26px, 8vw, 40px) !important;
+        border-bottom: 0 !important;
+    }
+
+    .section-header-compact:has(.pan-filter-minimal),
+    .pan-filter-minimal {
+        border-bottom-color: #eeeeee !important;
+    }
+
+    .pan-filter-minimal a {
+        padding: 0 0 clamp(11px, 3vw, 14px) !important;
+        font-size: var(--m-tab-font) !important;
+    }
+
+    .resource-result-list {
+        width: min(100%, calc(var(--m-page-max) + var(--m-card-gap) * 2)) !important;
+        margin: 0 auto !important;
+        padding: var(--m-card-gap) var(--m-card-gap) 0 !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: var(--m-card-gap) !important;
+        border-radius: clamp(9px, 2.8vw, 12px) !important;
+    }
+
+    .resource-card-main {
+        padding: clamp(9px, 2.8vw, 12px) clamp(12px, 3.4vw, 15px) clamp(8px, 2.4vw, 10px) !important;
+    }
+
+    .resource-card-footer {
+        min-height: clamp(44px, 12vw, 50px) !important;
+        padding: clamp(7px, 2.2vw, 9px) clamp(12px, 3.4vw, 15px) !important;
+    }
+
+    .listBox .left .list .item .resource-title {
+        font-size: var(--m-result-font) !important;
+        max-height: calc(var(--m-result-font) * 2.75) !important;
+    }
+
+    .resource-pan-icon {
+        width: clamp(24px, 7vw, 30px) !important;
+        height: clamp(24px, 7vw, 30px) !important;
+    }
+
+    .resource-result-card .result-actions button {
+        height: clamp(32px, 9vw, 36px) !important;
+        padding: 0 clamp(10px, 3.2vw, 14px) !important;
+        font-size: clamp(13px, 3.8vw, 15px) !important;
+    }
+
+    .headerBox .box .navs .header-menu-btn {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        color: #333 !important;
+        transition: background-color .15s ease, color .15s ease !important;
+    }
+
+    .headerBox .box .navs .header-menu-btn:active {
+        background: #f2f4f7 !important;
+        color: #0052d9 !important;
+    }
+
+    .menu-dialog-wrapper {
+        width: min(210px, calc(100vw - 32px)) !important;
+        margin: 68px max(14px, calc((100vw - 560px) / 2 + 14px)) 0 auto !important;
+        border-radius: 12px !important;
+        overflow: visible !important;
+        background: #fff !important;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, .18) !important;
+    }
+
+    .menu-dialog-wrapper:before {
+        content: "" !important;
+        position: absolute !important;
+        top: -7px !important;
+        right: 20px !important;
+        width: 14px !important;
+        height: 14px !important;
+        background: #fff !important;
+        border-left: 1px solid rgba(15, 23, 42, .06) !important;
+        border-top: 1px solid rgba(15, 23, 42, .06) !important;
+        transform: rotate(45deg) !important;
+    }
+
+    .menu-dialog-wrapper .el-dialog__header {
+        display: none !important;
+    }
+
+    .menu-dialog-wrapper .el-dialog__body {
+        padding: 8px !important;
+    }
+
+    .menu-dialog-wrapper .drawer {
+        padding: 0 !important;
+    }
+
+    .menu-dialog-wrapper .drawer .item,
+    .menu-dialog-wrapper .drawer a {
+        height: 44px !important;
+        line-height: 44px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 0 12px !important;
+        border-radius: 8px !important;
+        color: #1f2937 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        text-decoration: none !important;
+    }
+
+    .menu-dialog-wrapper .drawer .item:active,
+    .menu-dialog-wrapper .drawer a:active {
+        background: #f4f7ff !important;
+        color: #0052d9 !important;
+    }
+
+    .menu-dialog-wrapper .drawer .btns {
+        display: block !important;
+    }
+
+    .menu-dialog-wrapper .drawer .btns a + a,
+    .menu-dialog-wrapper .drawer .item + .btns,
+    .menu-dialog-wrapper .drawer .item + .item {
+        margin-top: 2px !important;
+    }
+
+    .menu-dialog-wrapper .menu-dot {
+        width: 6px !important;
+        height: 6px !important;
+        border-radius: 50% !important;
+        background: #1268ff !important;
+        flex: 0 0 auto !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .headerBox,
+    .headerKox {
+        height: 56px;
+    }
+
+    .headerBox .box {
+        width: 100%;
+        padding: 0 22px;
+    }
+
+    .headerBox .box .logoBox .title {
+        font-size: 20px;
+    }
+
+    .searchBox.searchList {
+        margin-top: 0 !important;
+        padding: 10px 20px 12px !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
+    }
+
+    .searchBox .search {
+        height: 44px !important;
+        border-radius: 24px !important;
+    }
+
+    .search-results-section {
+        margin-top: 0 !important;
+        padding: 18px 22px 22px !important;
+        border-radius: 0 0 10px 10px !important;
+    }
+
+    .section-header-compact {
+        margin-bottom: 18px !important;
+    }
+
+    .section-header-compact h3 {
+        margin-bottom: 18px !important;
+        font-size: 18px !important;
+    }
+
+    .pan-filter-minimal {
+        margin-bottom: 14px !important;
+    }
+
+    .resource-result-list {
+        padding: 0 !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 12px !important;
+        border-radius: 10px !important;
+        border: 1px solid #f0f0f0 !important;
+        background: #fff !important;
+        overflow: hidden;
+    }
+
+    .resource-card-main {
+        display: flex;
+        gap: 3vw;
+        padding: 12px 14px 8px;
+    }
+
+    .resource-cover {
+        width: 25vw;
+        height: 16vw;
+        border-radius: 2vw;
+    }
+
+    .resource-title,
+    .list .item .resource-title,
+    .listBox .left .list .item .resource-title {
+        height: auto !important;
+        padding-left: 2.8vw !important;
+        color: #1a1a1a !important;
+        font-size: 4vw !important;
+        line-height: 1.38 !important;
+        -webkit-line-clamp: initial !important;
+        overflow: visible !important;
+    }
+
+    .resource-title::before {
+        top: .6vw;
+        bottom: .6vw;
+        width: .8vw;
+        border-radius: .6vw;
+    }
+
+    .resource-card-footer {
+        padding: 8px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .resource-pan-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    .resource-card-footer .result-actions,
+    .resource-result-card .result-actions {
+        justify-content: flex-end;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .resource-card-footer .result-actions button,
+    .resource-result-card .result-actions button {
+        height: 32px;
+        padding: 0 13px;
+        border-radius: 7px;
+        font-size: 13px;
+        line-height: 30px;
+    }
+
+    .resource-result-card .resource-tree-panel {
+        padding: 2.6vw 4vw 3vw !important;
+    }
+}
+
+/* ========== 移动端搜索页节奏修正 ========== */
+@media screen and (max-width: 768px) {
+    .headerBox,
+    .headerKox {
+        height: 56px !important;
+    }
+
+    .headerBox .box {
+        padding: 0 20px !important;
+    }
+
+    .headerBox .box .logoBox .title {
+        margin-left: 0 !important;
+        font-size: 22px !important;
+        line-height: 56px !important;
+    }
+
+    .headerBox .box .navs .iconfont {
+        font-size: 22px !important;
+    }
+
+    .searchBox.searchList {
+        position: sticky;
+        top: 56px;
+        z-index: 90;
+        padding: 8px 20px 10px !important;
+        background: #fff;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, .05) !important;
+    }
+
+    .searchBox.searchList .search {
+        margin-top: 0 !important;
+        height: 42px !important;
+        border-radius: 22px !important;
+        max-width: none !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: 42px !important;
+        font-size: 15px !important;
+        padding-left: 18px !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 52px !important;
+        height: 42px !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: 28px !important;
+    }
+
+    .search-results-section {
+        padding: 14px 22px 18px !important;
+        border-radius: 0 0 10px 10px !important;
+        margin-bottom: 0 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .04) !important;
+    }
+
+    .section-header-compact {
+        margin-bottom: 12px !important;
+    }
+
+    .section-header-compact h3 {
+        margin: 0 0 12px !important;
+        font-size: 17px !important;
+        line-height: 1.35 !important;
+        gap: 6px !important;
+    }
+
+    .section-header-compact h3 .search-status {
+        font-size: 13px !important;
+    }
+
+    .pan-filter-minimal {
+        gap: 20px !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 0 !important;
+    }
+
+    .pan-filter-minimal a {
+        padding: 7px 0 8px !important;
+        font-size: 14px !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 10px !important;
+    }
+
+    .resource-card-main {
+        padding: 10px 14px 8px !important;
+    }
+
+    .resource-card-footer {
+        padding: 7px 14px !important;
+        min-height: 46px;
+    }
+}
+
+/* ========== 移动端顶部布局：仅导航固定，搜索框随内容滚动 ========== */
+@media screen and (max-width: 768px) {
+    .headerBox {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 58px !important;
+        background: #fff;
+        border-bottom: 1px solid #f0f0f0;
+        box-shadow: none !important;
+    }
+
+    .headerKox {
+        height: 58px !important;
+    }
+
+    .headerBox .box {
+        height: 58px !important;
+        padding: 0 28px !important;
+    }
+
+    .headerBox .box .logoBox .title {
+        font-size: 22px !important;
+        line-height: 58px !important;
+    }
+
+    .searchBox.searchList {
+        position: static !important;
+        top: auto !important;
+        z-index: auto !important;
+        padding: 18px 26px 18px !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .searchBox.searchList .search {
+        margin-top: 0 !important;
+        height: 44px !important;
+        border-radius: 10px !important;
+        background: #f7f8fa !important;
+        border: 1px solid #e7e9ef !important;
+        box-shadow: none !important;
+    }
+
+    .searchBox.searchList .search:after {
+        display: none !important;
+    }
+
+    .searchBox.searchList .search .select {
+        height: 28px !important;
+        line-height: 28px !important;
+        padding: 0 14px 0 0 !important;
+        margin-left: 16px !important;
+        border-right: 1px solid #ddd;
+        color: #666;
+        font-size: 14px !important;
+        flex: none;
+    }
+
+    .searchBox.searchList .search input {
+        height: 42px !important;
+        padding-left: 16px !important;
+        font-size: 15px !important;
+        color: #222;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 50px !important;
+        height: 42px !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: 24px !important;
+    }
+
+    .listBox {
+        margin-top: 0 !important;
+        background: #f6f7fb;
+    }
+
+    .listBox .left {
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .search-results-section {
+        padding: 18px 26px 18px !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        background: #fff !important;
+    }
+
+    .search-results-section.is-loading {
+        min-height: calc(100vh - 260px) !important;
+    }
+
+    .section-header-compact {
+        margin-bottom: 14px !important;
+    }
+
+    .section-header-compact h3 {
+        margin: 0 0 18px !important;
+        font-size: 17px !important;
+        line-height: 1.4 !important;
+    }
+
+    .pan-filter-minimal {
+        margin-bottom: 14px !important;
+        border-bottom-color: #e6e6e6 !important;
+    }
+
+    .resource-result-list {
+        padding-top: 0 !important;
+    }
+}
+
+/* ========== 移动端紧凑版搜索结果 ========== */
+@media screen and (max-width: 768px) {
+    .searchBox.searchList {
+        padding: 10px 26px 10px !important;
+        border-bottom: 0 !important;
+    }
+
+    .searchBox.searchList .search {
+        height: 40px !important;
+        border-radius: 9px !important;
+    }
+
+    .searchBox.searchList .search .select {
+        height: 24px !important;
+        line-height: 24px !important;
+        margin-left: 14px !important;
+        padding-right: 12px !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: 38px !important;
+        font-size: 15px !important;
+        padding-left: 14px !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 46px !important;
+        height: 38px !important;
+    }
+
+    .listBox {
+        background: #fff !important;
+    }
+
+    .search-results-section {
+        padding: 10px 26px 16px !important;
+    }
+
+    .section-header-compact {
+        margin-bottom: 8px !important;
+    }
+
+    .section-header-compact h3 {
+        margin: 0 0 10px !important;
+        font-size: 16px !important;
+    }
+
+    .pan-filter-minimal {
+        margin-bottom: 8px !important;
+    }
+
+    .pan-filter-minimal a {
+        padding: 6px 0 7px !important;
+    }
+
+    .resource-title,
+    .list .item .resource-title,
+    .listBox .left .list .item .resource-title {
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 16px !important;
+        line-height: 1.35 !important;
+        max-height: 43.2px !important;
+    }
+
+    .resource-card-main {
+        padding: 10px 14px 7px !important;
+    }
+
+    .resource-card-footer {
+        padding: 7px 14px !important;
+        min-height: 44px !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 9px !important;
+    }
+}
+
+/* ========== 移动端搜索页顶部区域再压缩：搜索 / 关键词 / Tab 连续展示 ========== */
+@media screen and (max-width: 768px) {
+    .searchBox.searchList {
+        position: static !important;
+        top: auto !important;
+        z-index: auto !important;
+        margin: 0 !important;
+        padding: 12px 20px 16px !important;
+        background: #fff !important;
+        border-top: 1px solid #f2f2f2 !important;
+        border-bottom: 1px solid #eeeeee !important;
+        box-shadow: none !important;
+    }
+
+    .searchBox.searchList .search {
+        height: 56px !important;
+        margin: 0 !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e5ea !important;
+        background: #f7f8fa !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    .searchBox.searchList .search .pan-select-wrap {
+        width: 96px !important;
+        height: 100% !important;
+        flex: 0 0 96px !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select {
+        width: 96px !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 14px !important;
+        border-right: 1px solid #e5e7eb !important;
+        color: #777 !important;
+        font-size: 16px !important;
+        line-height: 56px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        text-align: center !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select span {
+        display: block;
+        max-width: 62px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .searchBox.searchList .search .pan-search-select .iconfont {
+        flex: 0 0 auto;
+        color: #9a9a9a;
+        font-size: 13px !important;
+        line-height: 1 !important;
+    }
+
+    .searchBox.searchList .search .select {
+        height: 24px !important;
+        line-height: 24px !important;
+        margin-left: 12px !important;
+        padding-right: 10px !important;
+        font-size: 13px !important;
+    }
+
+    .searchBox.searchList .search .select .iconfont {
+        font-size: 12px !important;
+    }
+
+    .searchBox.searchList .search .select.pan-search-select {
+        width: 96px !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 14px !important;
+        font-size: 16px !important;
+        line-height: 56px !important;
+    }
+
+    .searchBox.searchList .pan-select-menu {
+        top: calc(100% + 8px) !important;
+        left: 0 !important;
+        min-width: 116px !important;
+        padding: 6px !important;
+        border-radius: 10px !important;
+        border: 1px solid #ececec !important;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1) !important;
+    }
+
+    .searchBox.searchList .pan-select-item {
+        height: 36px !important;
+        padding: 0 12px !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        line-height: 36px !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: 54px !important;
+        padding-left: 16px !important;
+        padding-right: 6px !important;
+        font-size: 20px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 52px !important;
+        height: 54px !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: 22px !important;
+        color: #0b5cff !important;
+    }
+
+    .listBox {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        background: #f6f7f9 !important;
+        min-height: auto !important;
+    }
+
+    .listBox .left {
+        padding: 0 !important;
+    }
+
+    .search-results-section {
+        margin: 0 !important;
+        padding: 0 0 14px !important;
+        border-radius: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    .section-header-compact {
+        margin: 0 !important;
+        background: #fff !important;
+    }
+
+    .section-header-compact h3 {
+        position: relative !important;
+        margin: 0 !important;
+        padding: 18px 20px 18px 34px !important;
+        border-bottom: 1px solid #eeeeee !important;
+        color: #666 !important;
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        line-height: 1.35 !important;
+        gap: 7px !important;
+        min-height: 72px !important;
+        display: flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+    }
+
+    .section-header-compact h3:before {
+        content: "" !important;
+        position: absolute !important;
+        left: 20px !important;
+        top: 22px !important;
+        bottom: 22px !important;
+        width: 5px !important;
+        border-radius: 4px !important;
+        background: #1268ff !important;
+    }
+
+    .section-header-compact h3:after {
+        display: none !important;
+    }
+
+    .section-header-compact h3 .keyword-highlight {
+        display: inline-block !important;
+        max-width: 118px !important;
+        padding: 2px 7px !important;
+        border-radius: 6px !important;
+        background: rgba(0, 82, 217, 0.08) !important;
+        color: #0052d9 !important;
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        vertical-align: bottom !important;
+    }
+
+    .section-header-compact h3 .search-status {
+        flex: 0 0 auto !important;
+        color: #999 !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+    }
+
+    .pan-filter-minimal {
+        gap: 34px !important;
+        margin: 0 !important;
+        padding: 16px 21px 0 !important;
+        border-bottom: 1px solid #eeeeee !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .pan-filter-minimal::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pan-filter-minimal a {
+        flex: 0 0 auto !important;
+        position: relative !important;
+        padding: 0 0 14px !important;
+        color: #666 !important;
+        font-size: 19px !important;
+        font-weight: 600 !important;
+        line-height: 1.35 !important;
+    }
+
+    .pan-filter-minimal a.active {
+        color: #0052d9 !important;
+        font-weight: 700 !important;
+    }
+
+    .pan-filter-minimal a.active:after {
+        content: "" !important;
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: -1px !important;
+        height: 3px !important;
+        border-radius: 4px 4px 0 0 !important;
+        background: #1268ff !important;
+    }
+
+    .resource-result-list {
+        padding: 10px 10px 0 !important;
+        background: #f6f7f9 !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 10px !important;
+    }
+}
+
+/* ========== 移动端搜索页最终比例修正：放在末尾保证覆盖旧规则 ========== */
+@media screen and (max-width: 768px) {
+    body {
+        background: #f5f6f8 !important;
+    }
+
+    .headerBox,
+    .headerKox {
+        height: 58px !important;
+    }
+
+    .headerBox {
+        background: #fff !important;
+        border-bottom: 1px solid #eeeeee !important;
+        box-shadow: none !important;
+    }
+
+    .headerBox .box {
+        height: 58px !important;
+        padding: 0 20px !important;
+        align-items: center !important;
+    }
+
+    .headerBox .box .logoBox .title {
+        font-size: 22px !important;
+        line-height: 58px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0 !important;
+    }
+
+    .headerBox .box .navs .iconfont {
+        font-size: 24px !important;
+        line-height: 58px !important;
+    }
+
+    .searchBox.searchList {
+        padding: 12px 20px 16px !important;
+        background: #fff !important;
+        border-bottom: 1px solid #eeeeee !important;
+    }
+
+    .searchBox.searchList .search {
+        height: 48px !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e5ea !important;
+        background: #f7f8fa !important;
+    }
+
+    .searchBox.searchList .search .pan-select-wrap {
+        width: 88px !important;
+        flex: 0 0 88px !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select,
+    .searchBox.searchList .search .select.pan-search-select {
+        width: 88px !important;
+        height: 46px !important;
+        padding: 0 12px !important;
+        border-right: 1px solid #e6e8ec !important;
+        color: #888 !important;
+        font-size: 14px !important;
+        line-height: 46px !important;
+        justify-content: center !important;
+    }
+
+    .searchBox.searchList .search .pan-search-select span {
+        max-width: 52px !important;
+    }
+
+    .searchBox.searchList .search input {
+        height: 46px !important;
+        padding-left: 16px !important;
+        font-size: 17px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+    }
+
+    .searchBox.searchList .search .btn {
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    .searchBox.searchList .search .btn .iconfont {
+        font-size: 20px !important;
+        color: #0b5cff !important;
+    }
+
+    .searchBox.searchList .pan-select-menu {
+        min-width: 110px !important;
+    }
+
+    .searchBox.searchList .pan-select-item {
+        height: 34px !important;
+        font-size: 14px !important;
+        line-height: 34px !important;
+    }
+
+    .listBox {
+        background: #f5f6f8 !important;
+    }
+
+    .search-results-section {
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .section-header-compact h3 {
+        min-height: 62px !important;
+        padding: 16px 20px 16px 33px !important;
+        border-bottom: 1px solid #eeeeee !important;
+        color: #666 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        gap: 5px !important;
+    }
+
+    .section-header-compact h3:before {
+        left: 20px !important;
+        top: 18px !important;
+        bottom: 18px !important;
+        width: 4px !important;
+        border-radius: 3px !important;
+        background: #1268ff !important;
+    }
+
+    .section-header-compact h3 .keyword-highlight {
+        max-width: 112px !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+    }
+
+    .section-header-compact h3 .search-status {
+        font-size: 15px !important;
+        font-weight: 500 !important;
+    }
+
+    .pan-filter-minimal {
+        gap: 34px !important;
+        padding: 14px 20px 0 !important;
+        border-bottom: 1px solid #eeeeee !important;
+        background: #fff !important;
+    }
+
+    .pan-filter-minimal a {
+        padding: 0 0 13px !important;
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+    }
+
+    .pan-filter-minimal a.active:after {
+        height: 3px !important;
+    }
+
+    .resource-result-list {
+        padding: 10px 10px 0 !important;
+        background: #f5f6f8 !important;
+    }
+
+    .resource-result-card {
+        margin-bottom: 10px !important;
+        border-radius: 10px !important;
+    }
+
+    .resource-card-main {
+        padding: 10px 12px 9px !important;
+    }
+
+    .resource-card-footer {
+        min-height: 48px !important;
+        padding: 8px 12px !important;
+    }
+
+    .listBox .left .list .item .resource-title {
+        font-size: 17px !important;
+        line-height: 1.35 !important;
+        max-height: 46px !important;
+    }
+
+    .cache-badge {
+        font-size: 12px !important;
+        line-height: 18px !important;
+        padding: 0 6px !important;
+    }
+
+    .resource-result-card .result-actions {
+        gap: 8px !important;
+    }
+
+    .resource-result-card .result-actions button {
+        height: 34px !important;
+        padding: 0 12px !important;
+        border-radius: 9px !important;
+        font-size: 14px !important;
+    }
+}

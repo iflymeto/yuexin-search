@@ -1,0 +1,26 @@
+.source-manage-page .source-toolbar {
+    float: right;
+}
+
+.source-manage-page .source-filter {
+    width: 120px;
+}
+
+.source-manage-page .source-tip {
+    color: #999;
+}
+
+.source-manage-page .source-warning {
+    color: orangered;
+}
+
+@media (max-width: 768px) {
+    .source-manage-page .source-toolbar {
+        float: none;
+        margin-top: 8px;
+    }
+
+    .source-manage-page .source-filter {
+        width: 100%;
+    }
+}

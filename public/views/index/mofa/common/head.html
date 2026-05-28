@@ -1,0 +1,193 @@
+<div class="headerBox">
+    <div class="bg" {notempty name="fixed" }:style="{ opacity: elementOpacity }" {/notempty}></div>
+    <div class="box">
+        <a href="/" class="logoBox" {notempty name="fixed" }:style="{ opacity: elementOpacity }" {/notempty}>
+            {notempty name="config.logo"}
+            <img class="logo" src="{$config.logo}" alt="{$config.app_name}"></img>
+            {/notempty}
+
+            {if condition="$config.app_name && $config.app_name_hide!=1"}
+            <div class="title">{$config.app_name}</div>
+            {/if}
+        </a>
+        <div class="search" {notempty name="fixed" }:style="{ opacity: elementOpacity }" {/notempty}>
+            <input type="text" v-model="keyword" placeholder="输入关键字进行搜索" @keyup.enter="searchBtn" confirm-type="search"
+                @confirm="searchBtn">
+            <div class="btn" @click="searchBtn">
+                <i class="iconfont icon-sousuo"></i>
+            </div>
+        </div>
+        <div class="navs">
+            {notempty name="config.qcode"}
+            <div class="item" @click="qcodeVisible = true">加入群聊</div>
+            {/notempty}
+            {empty name="config.app_demand"}
+            <div class="item" @click="layerVisible = true">提交需求</div>
+            {/empty}
+            <div class="btns" v-html="`{$config.app_links}`"></div>
+
+            <div class="iconfont icon-caidan header-menu-btn" @click="drawer = true"></div>
+        </div>
+    </div>
+</div>
+<div class="headerKox"></div>
+
+
+<el-dialog v-model="qcodeVisible" width="300">
+    <img src="{$config.qcode}" style="width: 100%" />
+</el-dialog>
+
+<el-dialog v-model="layerVisible" width="300">
+    <div class="layerBox">
+        <div class="vname">提交需求</div>
+        <el-input v-model="content" placeholder="请输入你想看的资源信息~" type="textarea" resize='none'></el-input>
+        <el-input v-model="email" placeholder="请输入联系邮箱（选填）" style="margin-top: 10px;"></el-input>
+        <div class="vbtn" @click="saveBtn">提交</div>
+    </div>
+</el-dialog>
+
+<el-dialog v-model="drawer" width="300" custom-class="menu-dialog-wrapper" :show-close="false">
+    <div class="drawer">
+        {notempty name="config.qcode"}
+        <div class="item" @click="drawer = false; qcodeVisible = true">
+            <span class="menu-dot"></span>
+            <span>加入群聊</span>
+        </div>
+        {/notempty}
+        {empty name="config.app_demand"}
+        <div class="item" @click="drawer = false; layerVisible = true">
+            <span class="menu-dot"></span>
+            <span>提交需求</span>
+        </div>
+        {/empty}
+        <div class="btns" v-html="`{$config.app_links}`"></div>
+    </div>
+</el-dialog>
+
+<button
+    v-show="showBackTop"
+    type="button"
+    class="global-backtop"
+    title="返回顶部"
+    aria-label="返回顶部"
+    @click="scrollToTop">
+    <span class="global-backtop-arrow"></span>
+</button>
+
+<!-- 密码验证弹窗 -->
+<el-dialog title="资源访问验证" v-model="passwordDialogVisible" :width="passwordDialogWidth" :close-on-click-modal="false" custom-class="password-dialog-wrapper">
+    <div class="password-dialog">
+        <div class="password-tips">
+            <i class="el-icon-lock"></i>
+            <div class="password-hint-content" v-html="passwordHintText"></div>
+        </div>
+        <el-form @submit.prevent="submitPassword">
+            <el-form-item>
+                <el-input 
+                    v-model="passwordInput" 
+                    type="password" 
+                    :placeholder="passwordPlaceholder"
+                    show-password
+                    @keyup.enter="submitPassword"
+                    :disabled="passwordLoading"
+                    ref="passwordInputRef">
+                </el-input>
+            </el-form-item>
+            <div class="password-error" v-if="passwordError">
+                <i class="el-icon-warning"></i>
+                <span>{{passwordError}}</span>
+            </div>
+        </el-form>
+    </div>
+    <template #footer>
+        <span class="dialog-footer">
+            <el-button @click="cancelPassword" :disabled="passwordLoading">取消</el-button>
+            <el-button type="primary" @click="submitPassword" :loading="passwordLoading">确认</el-button>
+        </span>
+    </template>
+</el-dialog>
+
+<!-- 资源展示弹窗 -->
+<el-dialog title="" v-model="dialogUrl" class="dialogUrlBox" :close-on-click-modal="true">
+    <div v-loading="dialogLoading" class="dialogUrl" v-if="dialogUrl">
+        <div class="resource-dialog-card" :class="{'is-error': !dialogItem.showUrl && !dialogLoading}">
+            <div class="resource-dialog-shell" :class="{'no-poster': !dialogItem.image, 'has-landscape': dialogItem.imageLandscape}">
+                <div class="resource-dialog-poster" v-if="dialogItem.image" :class="{'is-cover-loaded': dialogItem.imageLoaded, 'is-landscape': dialogItem.imageLandscape}">
+                    <img class="resource-dialog-poster-bg" :src="dialogItem.image" alt="" loading="lazy" :class="{'is-loaded': dialogItem.imageLoaded}">
+                    <div class="resource-dialog-poster-main">
+                        <img :src="dialogItem.image" :alt="dialogItem.title || '资源封面'" loading="lazy" :class="{'is-loaded': dialogItem.imageLoaded}" @load="handleImageLoad($event, dialogItem)" @error="handleImageError($event, dialogItem)">
+                    </div>
+                </div>
+                <div class="resource-dialog-info">
+                    <div class="resource-dialog-header">
+                        <div class="resource-dialog-title red-bar-title">
+                            {{dialogItem.title || '资源获取结果'}}
+                        </div>
+                    </div>
+
+                    <div class="resource-dialog-link-card" v-if="dialogItem.showUrl">
+                        <div class="resource-dialog-pan">
+                            <img :src="getPanIcon(dialogItem)" :alt="getPanName(dialogItem)" class="resource-dialog-pan-icon">
+                            <div class="resource-dialog-pan-info">
+                                <div class="resource-dialog-pan-name">{{getPanName(dialogItem)}}</div>
+                                <a class="resource-dialog-url" :href="dialogItem.showUrl" target="_blank">{{dialogItem.showUrl}}</a>
+                            </div>
+                        </div>
+                        <div class="resource-dialog-actions">
+                            <button type="button" class="resource-dialog-btn btn-copy" @click="copyDialogLink">复制链接</button>
+                            <a class="resource-dialog-btn btn-open" :href="dialogItem.showUrl" target="_blank">打开链接</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-dialog-error" v-else-if="!dialogLoading">
+                        <div class="resource-dialog-error-title">获取失败</div>
+                        <div class="resource-dialog-error-text">{{dialogItem.message || '资源获取失败，请稍后重试'}}</div>
+                    </div>
+
+                    <div class="resource-dialog-qr" v-if="dialogItem.showUrl && pc_type!=1">
+                        <div class="resource-dialog-qr-text">
+                            <span v-if="dialogItem.is_type==0">可使用夸克 APP 扫码获取</span>
+                            <span v-else-if="dialogItem.is_type==3">可使用 UC 浏览器扫码获取</span>
+                            <span v-else>可使用手机扫码获取</span>
+                        </div>
+                        <div class="qrcode" id="qrcode"></div>
+                    </div>
+
+                    <div class="resource-dialog-tree" v-if="dialogItem.showUrl && canShowDialogTree(dialogItem)">
+                        <button type="button" class="resource-dialog-tree-toggle" @click="toggleDialogTree(dialogItem)">
+                            <span v-if="dialogItem.treeLoading">目录加载中...</span>
+                            <span v-else-if="dialogItem.treeExpanded">收起目录结构</span>
+                            <span v-else>查看目录结构</span>
+                            <em v-if="dialogItem.treeData && dialogItem.treeData.total">共 {{dialogItem.treeData.total}} 项</em>
+                        </button>
+                        <div class="pan-tree-box" v-if="dialogItem.treeExpanded || dialogItem.treeLoading">
+                            <div class="pan-tree-loading" v-if="dialogItem.treeLoading">目录加载中...</div>
+                            <div class="pan-tree-error" v-else-if="dialogItem.treeError">
+                                <span>{{dialogItem.treeError}}</span>
+                                <button type="button" @click.stop="loadItemPanTree(dialogItem, true)">重试</button>
+                            </div>
+                            <div class="pan-tree-body" v-else-if="dialogItem.treeData && dialogItem.treeData.tree && dialogItem.treeData.tree.length">
+                                <pan-tree-node
+                                    v-for="(node, treeIndex) in dialogItem.treeData.tree"
+                                    :key="(node.fid || node.fs_id || node.path || node.name || 'root') + '_' + treeIndex"
+                                    :node="node"
+                                    :level="0">
+                                </pan-tree-node>
+                            </div>
+                            <div class="pan-tree-empty" v-else>暂无目录信息</div>
+                            <div class="pan-tree-tip" v-if="dialogItem.treeData && dialogItem.treeData.truncated">目录内容较多，已截取前部分展示。</div>
+                        </div>
+                    </div>
+
+                    <div class="statement">
+                        <div class="content">
+                            <p>本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。</p>
+                            <p>文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</el-dialog>
+

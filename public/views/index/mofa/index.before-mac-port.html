@@ -1,0 +1,285 @@
+{include file="mofa/common/header"}
+<meta name="referrer" content="never">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" href="__STATIC__/mofa/common/static/css/home.css?v=2026052203">
+<link rel="stylesheet" href="__STATIC__/mofa/common/static/css/mofa-home.css?v=2026052202">
+</head>
+
+<body>
+    <div id="app" class="mofa-app" v-cloak data-page="home">
+        <header class="common-header">
+            {include file="mofa/common/head"}
+        </header>
+
+        <main class="mofa-shell">
+            <div class="mofa-search-wrap">
+                <div class="search-container relative">
+                    <div class="flex">
+                        <input type="text"
+                               class="search-input"
+                               v-model="keyword"
+                               @input="handleInput"
+                               @blur="handleBlur"
+                               @focus="handleFocus"
+                               placeholder="即刻搜索，即刻播放"
+                               @keyup.enter="searchBtn">
+                        <button class="search-button" @click="searchBtn" aria-label="搜索">
+                            <i class="fa fa-search mr-2"></i><span></span>
+                        </button>
+                    </div>
+
+                    <div v-if="showSuggestions" class="search-suggestions">
+                        <div v-if="loadingSuggestions" class="skeleton-loader">
+                            <div class="skeleton-item" style="width: 80%"></div>
+                            <div class="skeleton-item" style="width: 60%"></div>
+                            <div class="skeleton-item" style="width: 90%"></div>
+                        </div>
+                        <div v-else-if="suggestions.length > 0">
+                            <div v-for="(item, index) in suggestions"
+                                 :key="index"
+                                 class="suggestion-item"
+                                 @mousedown="selectSuggestion(item)">
+                                <span v-html="highlightKeyword(item)"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {php}
+                $mofaSettings = $theme_settings ?? [];
+                $mofaBanners = $mofaSettings['banners'] ?? [];
+                if (empty($mofaBanners)) {
+                    $mofaBanners = [[
+                        'title' => '剑来',
+                        'subtitle' => '少年仗剑，一路向前',
+                        'keyword' => '剑来',
+                        'image' => '/views/index/mofa/common/static/images/mac/vajra-bg.jpg',
+                    ]];
+                }
+                $mofaNotice = $mofaSettings['notice_text'] ?? '点击继续观看 雨霖铃 - 第1集';
+                $mofaDownloadUrl = $mofaSettings['download_url'] ?? '';
+                $mofaRankingType = (int)($config['ranking_type'] ?? 0);
+            {/php}
+
+            <section class="mofa-carousel" id="mofaCarousel">
+                <div class="mofa-carousel-track" id="mofaCarouselTrack">
+                    {volist name="mofaBanners" id="banner"}
+                    <div class="mofa-slide" data-keyword="{$banner.keyword|default=$banner.title}" style="background-image:url('{$banner.image|default='/views/index/mofa/common/static/images/mac/vajra-bg.jpg'}')">
+                        <div class="mofa-slide-text">
+                            <div class="mofa-slide-title">{$banner.title|default='剑来'}</div>
+                            <div class="mofa-slide-subtitle">{$banner.subtitle|default='少年仗剑，一路向前'}</div>
+                        </div>
+                    </div>
+                    {/volist}
+                </div>
+                <div class="mofa-dots" id="mofaDots">
+                    {volist name="mofaBanners" id="banner" key="dotIndex"}
+                    <span class="mofa-dot {if $dotIndex==1}active{/if}"></span>
+                    {/volist}
+                </div>
+            </section>
+
+            <section class="mofa-notice" id="mofaNotice">
+                <span>{$mofaNotice}</span>
+                <button class="mofa-notice-close" type="button" aria-label="关闭">×</button>
+            </section>
+
+            <section class="mofa-feature-grid">
+                <button type="button" class="mofa-feature-card large" id="mofaThemeToggle">
+                    <strong>白天模式</strong>
+                    <span>点击切换主题</span>
+                </button>
+                <button type="button" class="mofa-feature-card orange" id="mofaHistorySearch">
+                    <strong>历史搜索</strong>
+                    <span>查看搜索记录</span>
+                    <i class="mofa-feature-icon">◷</i>
+                </button>
+                <button type="button" class="mofa-feature-card purple" id="mofaDownloadApp" data-url="{$mofaDownloadUrl}">
+                    <strong>下载APP</strong>
+                    <span>追剧不迷路</span>
+                    <i class="mofa-feature-icon">▣</i>
+                </button>
+            </section>
+
+            <section class="mofa-ranking">
+                <div class="mofa-tabs" id="mofaTabs">
+                    {volist name="hotList" id="vo" key="k"}
+                    <button type="button" class="mofa-tab nav-item {if $k==1}active nav-active{/if}" data-category="{$k}" @click="switchCategory('{$k}')">{$vo.name}</button>
+                    {/volist}
+                    <button type="button" class="mofa-refresh" id="mofaRefresh" aria-label="换一换">⟳</button>
+                </div>
+
+                {volist name="hotList" id="vo" key="k"}
+                <div id="category-{$k}" class="resource-list {if $k != 1}hidden{/if}">
+                    {if $mofaRankingType == 1}
+                    <div class="mofa-rank-grid">
+                        {volist name="vo.list" id="vos"}
+                        <a class="mofa-rank-card resource-item" href="{if isset($vos.id) && $vos.id != ''}/d/{$vos.id}.html{else}/s/{$vos.title}.html{/if}" target="_blank" data-resource-index="{$key}">
+                            <div class="mofa-poster">
+                                <img src="{$vos.src|default=''}" alt="{$vos.title}" loading="lazy" onerror="this.style.display='none'">
+                                <span class="mofa-rank-badge">热榜第{$key+1}名</span>
+                            </div>
+                            <div class="mofa-rank-title">{$vos.title}</div>
+                        </a>
+                        {/volist}
+                    </div>
+                    {else /}
+                    <div class="mofa-text-list">
+                        {volist name="vo.list" id="vos"}
+                        <a class="mofa-text-item resource-item" href="{if isset($vos.id) && $vos.id != ''}/d/{$vos.id}.html{else}/s/{$vos.title}.html{/if}" target="_blank" data-resource-index="{$key}">
+                            <span class="mofa-text-num">{$key+1}</span>
+                            <span class="mofa-text-title">{$vos.title}</span>
+                        </a>
+                        {/volist}
+                    </div>
+                    {/if}
+                </div>
+                {/volist}
+                <div class="home-card-count" style="display:none">共 <span id="resource-count">0</span> 条资源</div>
+                <h2 id="current-category" style="display:none">{php}echo $hotList[0]['name'] ?? '短剧';{/php}</h2>
+            </section>
+        </main>
+
+        <nav class="mofa-bottom-tabs">
+            <button type="button" class="mofa-bottom-tab active"><span>▣</span>首页</button>
+            <button type="button" class="mofa-bottom-tab" id="mofaShortTab"><span>♨</span>短剧</button>
+            <button type="button" class="mofa-bottom-tab" id="mofaDiscoverTab"><span>◌</span>发现</button>
+            <button type="button" class="mofa-bottom-tab" id="mofaMineTab"><span>☺</span>我的</button>
+        </nav>
+
+        <div class="mofa-discover-panel" id="mofaDiscoverPanel">
+            <div class="mofa-discover-card">
+                <div class="mofa-discover-title">发现</div>
+                {empty name="config.app_demand"}
+                <button type="button" class="mofa-demand-button" @click="layerVisible = true">提交需求</button>
+                {/empty}
+                <button type="button" class="mofa-discover-close" id="mofaDiscoverClose">关闭</button>
+            </div>
+        </div>
+
+        {include file="mofa/common/foot"}
+
+        <div v-if="announcementVisible && announcementData" class="ios-announcement-overlay" @click.self="confirmAnnouncement">
+            <div class="ios-announcement-dialog" @click.stop>
+                <div class="ios-announcement-title" v-text="announcementData.title"></div>
+                <div class="ios-announcement-content" :class="{'is-scrollable': announcementScrollable}" v-html="announcementData.content"></div>
+                <div class="ios-announcement-buttons">
+                    <button v-if="announcementData.type == 3" class="ios-announcement-button" @click="hideAnnouncementTemporarily">近期不再显示</button>
+                    <button class="ios-announcement-button primary" @click="confirmAnnouncement">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {include file="mofa/common/footer"}
+    <script>
+        (function () {
+            var index = 0;
+            var track = document.getElementById('mofaCarouselTrack');
+            var dots = Array.prototype.slice.call(document.querySelectorAll('.mofa-dot'));
+            var slides = Array.prototype.slice.call(document.querySelectorAll('.mofa-slide'));
+            function setSlide(next) {
+                if (!track || !slides.length) return;
+                index = (next + slides.length) % slides.length;
+                track.style.transform = 'translateX(-' + (index * 100) + '%)';
+                dots.forEach(function (dot, i) { dot.classList.toggle('active', i === index); });
+            }
+            dots.forEach(function (dot, i) {
+                dot.addEventListener('click', function () { setSlide(i); });
+            });
+            slides.forEach(function (slide) {
+                slide.addEventListener('click', function () {
+                        var titleNode = slide.querySelector('.mofa-slide-title');
+                        var keyword = slide.getAttribute('data-keyword') || (titleNode ? titleNode.textContent : '');
+                    if (keyword) {
+                        location.href = '/s/' + encodeURIComponent(keyword) + '.html';
+                    }
+                });
+            });
+            if (slides.length > 1) {
+                setInterval(function () { setSlide(index + 1); }, 4500);
+            }
+
+            var themeBtn = document.getElementById('mofaThemeToggle');
+            var savedTheme = localStorage.getItem('mofa:theme');
+            if (savedTheme === 'night') {
+                document.body.classList.add('mofa-night');
+                if (themeBtn) themeBtn.querySelector('strong').textContent = '黑夜模式';
+            }
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function () {
+                    document.body.classList.toggle('mofa-night');
+                    var night = document.body.classList.contains('mofa-night');
+                    localStorage.setItem('mofa:theme', night ? 'night' : 'day');
+                    themeBtn.querySelector('strong').textContent = night ? '黑夜模式' : '白天模式';
+                });
+            }
+
+            var notice = document.getElementById('mofaNotice');
+            var noticeClose = notice ? notice.querySelector('.mofa-notice-close') : null;
+            if (noticeClose) {
+                noticeClose.addEventListener('click', function () { notice.style.display = 'none'; });
+            }
+
+            var downloadBtn = document.getElementById('mofaDownloadApp');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function () {
+                    var url = downloadBtn.getAttribute('data-url');
+                    if (url) {
+                        window.open(url, '_blank');
+                    }
+                });
+            }
+
+            var discoverPanel = document.getElementById('mofaDiscoverPanel');
+            var discoverTab = document.getElementById('mofaDiscoverTab');
+            var discoverClose = document.getElementById('mofaDiscoverClose');
+            if (discoverTab && discoverPanel) {
+                discoverTab.addEventListener('click', function () { discoverPanel.classList.add('show'); });
+            }
+            if (discoverClose && discoverPanel) {
+                discoverClose.addEventListener('click', function () { discoverPanel.classList.remove('show'); });
+            }
+            if (discoverPanel) {
+                discoverPanel.addEventListener('click', function (event) {
+                    if (event.target === discoverPanel) {
+                        discoverPanel.classList.remove('show');
+                    }
+                });
+            }
+
+            var historyBtn = document.getElementById('mofaHistorySearch');
+            if (historyBtn) {
+                historyBtn.addEventListener('click', function () {
+                    var raw = localStorage.getItem('xinyue_search_history') || localStorage.getItem('cinema:searchHistory') || '[]';
+                    var list = [];
+                    try { list = JSON.parse(raw) || []; } catch (e) { list = []; }
+                    if (list.length && list[0]) {
+                        location.href = '/s/' + encodeURIComponent(list[0]) + '.html';
+                    }
+                });
+            }
+
+            var tabs = Array.prototype.slice.call(document.querySelectorAll('.mofa-tab'));
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(function (item) { item.classList.remove('active', 'nav-active'); });
+                    tab.classList.add('active');
+                    tab.classList.add('nav-active');
+                });
+            });
+            var refresh = document.getElementById('mofaRefresh');
+            if (refresh && tabs.length) {
+                refresh.addEventListener('click', function () {
+                    var active = document.querySelector('.mofa-tab.active');
+                    var current = tabs.indexOf(active);
+                    var next = tabs[(current + 1) % tabs.length];
+                    if (next) next.click();
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

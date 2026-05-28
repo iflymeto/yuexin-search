@@ -131,3 +131,9 @@
 > **温馨提示**：项目代码免费开放，但不提供搭建服务，如有问题可在群内讨论或私信咨询。
 
 ---
+
+## Community
+
+LinuxDO（https://linux.do/）: sincere, friendly, united, and professional
+
+---

@@ -26,6 +26,37 @@ if (!file_exists(__DIR__ . '/'.$config['handleFile'])) {
 }
 //设置报错级别并返回当前级别。
 error_reporting(E_ALL & ~E_NOTICE);
+
+function install_create_mysqli($dbHost, $dbUser, $dbPwd)
+{
+	$mysqli = @new mysqli($dbHost, $dbUser, $dbPwd);
+	return $mysqli;
+}
+
+function install_format_db_connect_error($mysqli)
+{
+	$error = '';
+	if ($mysqli instanceof mysqli) {
+		$error = $mysqli->connect_error;
+	}
+	if ($error === '') {
+		$error = mysqli_connect_error();
+	}
+	if ($error === '') {
+		$error = '未知错误';
+	}
+
+	if (
+		stripos($error, 'caching_sha2_password') !== false
+		|| stripos($error, 'authentication method unknown') !== false
+		|| stripos($error, 'requested authentication method unknown') !== false
+	) {
+		return '数据库链接失败！当前数据库用户使用 caching_sha2_password 认证方式，但当前 PHP mysqli/mysqlnd 不支持。请将该数据库用户认证方式改为 mysql_native_password，或升级 PHP 的 mysqli/mysqlnd 后重试。原始错误信息：' . $error;
+	}
+
+	return '数据库链接失败！错误信息：' . $error;
+}
+
 //安装步骤
 $steps = array(
 	'1' => '安装许可协议',
@@ -96,10 +127,10 @@ switch ($step) {
 			empty($_POST['dbname'])?alert(0,'数据库名不能为空！','dbname'):'';
 			empty($_POST['dbport'])?alert(0,'数据库端口不能为空！','dbport'):'';
 			$dbHost = $_POST['dbhost'] . ':' . $_POST['dbport'];
-			$mysqli = new mysqli($dbHost,  $_POST['dbuser'], $_POST['dbpw']);
+			$mysqli = install_create_mysqli($dbHost,  $_POST['dbuser'], $_POST['dbpw']);
 			// 改进错误检查机制
 			if($mysqli->connect_error)  {
-				alert(0,'数据库链接失败！错误信息：' . $mysqli->connect_error,'dbpw');
+				alert(0, install_format_db_connect_error($mysqli), 'dbpw');
 			}else{
 				// 测试数据库版本
 				if ($mysqli->server_info < 5.0) {
@@ -178,12 +209,12 @@ switch ($step) {
 			//表前缀
 			$dbPrefix = empty($_POST['dbprefix']) ? 'db_' : trim($_POST['dbprefix']);
 			//链接数据库
-			$mysqli = new mysqli($dbHost, $dbUser, $dbPwd);
+			$mysqli = install_create_mysqli($dbHost, $dbUser, $dbPwd);
 			//导入政采商品
 			$sitegoods = trim($_POST['sitegoods']);
 			// 改进数据库连接错误检查
 			if ($mysqli->connect_error) {
-				alert(0,'数据库链接失败！错误信息：' . $mysqli->connect_error);
+				alert(0, install_format_db_connect_error($mysqli));
 			}
 			
 			// 设置字符集

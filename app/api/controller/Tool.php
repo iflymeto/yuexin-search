@@ -5,6 +5,7 @@ namespace app\api\controller;
 use think\App;
 use think\facade\Request;
 use think\facade\Cache;
+use think\facade\Db;
 use app\api\QfShop;
 use app\model\User as Usermodel;
 use app\model\Ads as Adsmodel;
@@ -102,6 +103,8 @@ class Tool extends QfShop
     {
         $channel = input('channel');
         $is_m = input('is_m')??0;
+        $rankingNum = $this->getConfigIntFromDb('ranking_num', (int)(Config('qfshop.ranking_num') ?: 10), 1, 200);
+        $rankingMobileNum = $this->getConfigIntFromDb('ranking_m_num', (int)(Config('qfshop.ranking_m_num') ?: 6), 1, 200);
         
         if (empty($channel)) {
             return [];
@@ -113,14 +116,17 @@ class Tool extends QfShop
             mkdir($cacheDir, 0755, true); // 确保缓存目录存在
         }
     
-        // 根据 channel 值生成缓存文件名
-        $cacheFile = $cacheDir . "ranking_data_{$channel}.cache";
+        // 根据 channel 和拉取数量生成缓存文件名，避免后台数量变更后继续命中旧缓存。
+        $cacheFile = $cacheDir . 'ranking_data_' . md5((string)$channel) . "_{$rankingNum}.cache";
         $cacheTime = 12*3600; // 缓存时间为 12 小时
     
         // 检查缓存文件是否存在且在缓存时间内
         if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTime) {
             // 从缓存中读取数据
             $data = json_decode(file_get_contents($cacheFile), true);
+            if (!is_array($data)) {
+                $data = [];
+            }
         } else {
             $data = [];
             if (!empty($channel)) {
@@ -132,7 +138,7 @@ class Tool extends QfShop
                     "cate" =>  "全部",
                     "from" =>  "hot_page",
                     "start" =>  0,
-                    "hit" =>  Config('qfshop.ranking_num') ?? 1,
+                    "hit" =>  $rankingNum,
                 );
                 $res = curlHelper("https://biz.quark.cn/api/trending/ranking/getYingshiRanking", "GET", null, [], $queryParams)['body'];
                 $res = json_decode($res, true);
@@ -165,11 +171,31 @@ class Tool extends QfShop
         }
         
         if($is_m==1){
-             $ranking_m_num = Config('qfshop.ranking_m_num') ?? 6;
-            $data = array_slice($data, 0, $ranking_m_num);
+            $data = array_slice($data, 0, $rankingMobileNum);
         }
        
         return json(['code' => 1, 'message' => '获取成功', 'data' => $data]);
+    }
+
+    private function getConfigIntFromDb($key, $fallback, $min = 1, $max = 200)
+    {
+        try {
+            $value = Db::name('conf')->where('conf_key', $key)->value('conf_value');
+            if ($value !== null && $value !== '') {
+                $fallback = (int)$value;
+            }
+        } catch (\Exception $error) {
+            trace('读取配置失败: key=' . $key . ', error=' . $error->getMessage(), 'error');
+        }
+
+        $value = (int)$fallback;
+        if ($value < $min) {
+            return $min;
+        }
+        if ($value > $max) {
+            return $max;
+        }
+        return $value;
     }
 
 

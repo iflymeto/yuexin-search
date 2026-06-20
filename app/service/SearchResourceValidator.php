@@ -76,24 +76,159 @@ class SearchResourceValidator
 
     private function verificationUrl($url)
     {
-        $code = '';
-        if (preg_match('/\?pwd=([^,\s&]+)/', $url, $pwdMatch)) {
-            $code = trim($pwdMatch[1]);
-        }
-        $urlData = [
-            'url' => $url,
-            'code' => $code,
-            'isType' => 1
-        ];
-
-        $transfer = new \netdisk\Transfer();
-        $res = $transfer->transfer($urlData);
-
-        if ($res['code'] !== 200) {
+        $pwdId = $this->extractQuarkPwdId($url);
+        if ($pwdId === '') {
             return 0;
         }
 
-        return $res['data'];
+        $tokenData = $this->requestQuarkJson(
+            'https://drive-pc.quark.cn/1/clouddrive/share/sharepage/token',
+            'POST',
+            [
+                'passcode' => $this->extractQuarkPasscode($url),
+                'pwd_id' => $pwdId,
+                'support_visit_limit_private_share' => true,
+            ],
+            [
+                'pr' => 'ucpro',
+                'fr' => 'pc',
+                'uc_param_str' => '',
+            ]
+        );
+
+        if (!$this->isQuarkApiOk($tokenData) || empty($tokenData['data']['stoken'])) {
+            return 0;
+        }
+
+        $stoken = str_replace(' ', '+', $tokenData['data']['stoken']);
+        $detailData = $this->requestQuarkJson(
+            'https://drive-pc.quark.cn/1/clouddrive/share/sharepage/detail',
+            'GET',
+            [],
+            [
+                'pr' => 'ucpro',
+                'fr' => 'pc',
+                'uc_param_str' => '',
+                'pwd_id' => $pwdId,
+                'stoken' => $stoken,
+                'pdir_fid' => '0',
+                'force' => '0',
+                '_page' => '1',
+                '_size' => '100',
+                '_fetch_banner' => '1',
+                '_fetch_share' => '1',
+                '_fetch_total' => '1',
+                '_sort' => 'file_type:asc,updated_at:desc',
+            ]
+        );
+
+        if (!$this->isQuarkApiOk($detailData) || !$this->isQuarkShareUsable($detailData)) {
+            return 0;
+        }
+
+        return [
+            'title' => $tokenData['data']['title'] ?? ($detailData['data']['share']['title'] ?? ''),
+            'share_url' => $url,
+            'stoken' => $stoken,
+        ];
+    }
+
+    private function extractQuarkPwdId($url)
+    {
+        $url = trim((string)$url, " \t\n\r\0\x0B`'\"");
+        if (preg_match('~pan\.quark\.cn/s/([^/?#\s]+)~i', $url, $match)) {
+            return trim($match[1]);
+        }
+        if (preg_match('~(?:^|[?&])pwd_id=([^&#\s]+)~i', $url, $match)) {
+            return trim(urldecode($match[1]));
+        }
+        return '';
+    }
+
+    private function extractQuarkPasscode($url)
+    {
+        if (preg_match('/[?&]pwd=([^,\s&#]+)/', $url, $pwdMatch)) {
+            return trim(urldecode($pwdMatch[1]));
+        }
+        if (preg_match('/[?&]passcode=([^,\s&#]+)/', $url, $pwdMatch)) {
+            return trim(urldecode($pwdMatch[1]));
+        }
+        return '';
+    }
+
+    private function requestQuarkJson($url, $method, array $data = [], array $queryParams = [])
+    {
+        $headers = [
+            'Accept: application/json, text/plain, */*',
+            'Accept-Language: zh-CN,zh;q=0.9',
+            'Content-Type: application/json;charset=UTF-8',
+            'Origin: https://pan.quark.cn',
+            'Referer: https://pan.quark.cn/',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ];
+
+        try {
+            $result = curlHelper($url, $method, empty($data) ? null : json_encode($data), $headers, $queryParams, '', 10);
+            if (!empty($result['error']) || empty($result['body'])) {
+                Log::warning('[QuarkCheck] 请求失败: ' . $url . ' ' . ($result['error'] ?? 'empty body'));
+                return null;
+            }
+
+            $json = json_decode($result['body'], true);
+            if (!is_array($json)) {
+                Log::warning('[QuarkCheck] 响应不是JSON: ' . $url);
+                return null;
+            }
+            return $json;
+        } catch (\Exception $e) {
+            Log::error('[QuarkCheck] 请求异常: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function isQuarkApiOk($response)
+    {
+        if (!is_array($response)) {
+            return false;
+        }
+        if (isset($response['status']) && intval($response['status']) !== 200) {
+            return false;
+        }
+        if (isset($response['code']) && intval($response['code']) !== 0) {
+            return false;
+        }
+        $message = strtolower((string)($response['message'] ?? ''));
+        if ($message !== '' && strpos($message, 'ok') === false) {
+            return false;
+        }
+        return true;
+    }
+
+    private function isQuarkShareUsable(array $detailData)
+    {
+        $data = $detailData['data'] ?? [];
+        $share = $data['share'] ?? [];
+        $status = intval($share['status'] ?? 0);
+        $auditStatus = intval($share['audit_status'] ?? ($data['audit_status'] ?? 0));
+        $partialViolation = !empty($share['partial_violation']);
+        $list = $data['list'] ?? [];
+        $fileTotal = intval($share['all_file_num'] ?? ($share['file_num'] ?? ($detailData['metadata']['_total'] ?? 0)));
+        $listCount = is_array($list) ? count($list) : 0;
+
+        if ($status !== 1) {
+            return false;
+        }
+        if ($auditStatus > 0 && $auditStatus !== 1) {
+            return false;
+        }
+        if ($partialViolation && $listCount === 0) {
+            return false;
+        }
+        if ($listCount === 0 && $fileTotal <= 0) {
+            return false;
+        }
+
+        return true;
     }
 
     private function checkUrlByPanCheckApi($url, $isType)

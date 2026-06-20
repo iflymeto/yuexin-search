@@ -20,6 +20,7 @@ $allowedHosts = [
     'drive-h.quark.cn',
     'pan.baidu.com',
     'drive.uc.cn',
+    'pc-api.uc.cn',
     'pan.xunlei.com',
     'api-pan.xunlei.com',
 ];

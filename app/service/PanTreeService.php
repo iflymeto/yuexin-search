@@ -482,9 +482,6 @@ class PanTreeService
         if (isset($queryParams['referer'])) {
             unset($queryParams['referer']);
         }
-        if (!empty($queryParams)) {
-            $url .= '?' . http_build_query($queryParams);
-        }
 
         $headers = [
             'Accept: application/json, text/plain, */*',
@@ -494,34 +491,20 @@ class PanTreeService
             'Referer: ' . $referer,
         ];
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, self::API_TIMEOUT);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::API_TIMEOUT);
-
-        if (strtoupper($method) === 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $method = strtoupper($method);
+        $body = $method === 'GET' ? null : json_encode($data);
+        $result = curlHelper($url, $method, $body, $headers, $queryParams, '', self::API_TIMEOUT);
+        if (!empty($result['error'])) {
+            throw new Exception('请求失败: ' . $result['error']);
         }
 
-        $response = curl_exec($ch);
-        if ($response === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            throw new Exception('请求失败: ' . $error);
-        }
-        curl_close($ch);
-
-        $result = json_decode($response, true);
+        $response = isset($result['body']) ? $result['body'] : '';
+        $json = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new Exception('响应解析失败');
         }
 
-        return $result;
+        return $json;
     }
 
     private function baiduHttpRequest($client, $url, $method = 'GET', $body = null, $extraHeaders = [])

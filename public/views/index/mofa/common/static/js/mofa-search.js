@@ -177,6 +177,75 @@
       return String(keyword || "").trim() + "|" + String(panType);
     }
 
+    function resetSearchBuckets() {
+      state.searchBuckets = {
+        local: [],
+        fresh: [],
+        cached: [],
+        seen: new Map()
+      };
+    }
+
+    function getSearchItemKey(item) {
+      return String(item && (item.originalUrl || item.treeSourceUrl || item.url || item.title || "")).trim();
+    }
+
+    function isLocalSearchItem(item) {
+      return Boolean(item && (item.is_local || item.isLocal));
+    }
+
+    function isFreshSearchItem(item) {
+      return Boolean(item && (item.is_new || item.isNew || item.insert_position === "top"));
+    }
+
+    function mergeSearchItem(target, source) {
+      if (!target || !source) return target || source;
+      Object.keys(source).forEach(key => {
+        if (source[key] !== undefined && source[key] !== null && source[key] !== "") {
+          target[key] = source[key];
+        }
+      });
+      if (isLocalSearchItem(source)) {
+        target.is_local = true;
+        target.isLocal = true;
+      }
+      return target;
+    }
+
+    function removeBucketItem(bucket, item) {
+      const index = bucket.indexOf(item);
+      if (index >= 0) bucket.splice(index, 1);
+    }
+
+    function addSearchItemToBuckets(item) {
+      if (!state.searchBuckets) resetSearchBuckets();
+      const buckets = state.searchBuckets;
+      const key = getSearchItemKey(item);
+      if (!key) return state.searchItems;
+
+      let existing = buckets.seen.get(key);
+      if (existing) {
+        item = mergeSearchItem(existing, item);
+        removeBucketItem(buckets.local, existing);
+        removeBucketItem(buckets.fresh, existing);
+        removeBucketItem(buckets.cached, existing);
+      }
+
+      if (isLocalSearchItem(item)) {
+        item.is_local = true;
+        item.isLocal = true;
+        buckets.local.push(item);
+      } else if (isFreshSearchItem(item)) {
+        buckets.fresh.push(item);
+      } else {
+        buckets.cached.push(item);
+      }
+
+      buckets.seen.set(key, item);
+      state.searchItems = buckets.local.concat(buckets.fresh, buckets.cached);
+      return state.searchItems;
+    }
+
     function renderSearchItems(target, items) {
       el.searchResult.classList.toggle("is-empty", !items.length);
       target.className = "search-result-list";
@@ -197,6 +266,7 @@
       const requestId = state.searchRequestId;
       const previousVisibleCount = options.keepPrevious ? target.querySelectorAll(".search-resource-card").length : 0;
       state.searchItems = [];
+      resetSearchBuckets();
       state.searchKeyword = keyword;
       state.searchLoading = true;
       state.searchPendingReplace = Boolean(options.keepPrevious);
@@ -257,10 +327,11 @@
           target.appendChild(status);
           state.searchPendingReplace = false;
         }
-        state.searchItems.push(data);
+        addSearchItemToBuckets(data);
         renderSearchResultHeader(keyword, state.searchItems.length, true);
         setStatusText(status, currentPanName() + "已找到 " + state.searchItems.length + " 条，继续搜索中");
-        target.appendChild(createSearchResultCard(data, state.searchItems.length - 1));
+        renderSearchItems(target, state.searchItems);
+        target.appendChild(status);
       };
 
       source.onerror = () => {

@@ -65,6 +65,12 @@
       if (item.treeKey && !item.tree_key) {
         item.tree_key = item.treeKey;
       }
+      if (item.isLocal && !item.is_local) {
+        item.is_local = true;
+      }
+      if (item.is_local && !item.isLocal) {
+        item.isLocal = true;
+      }
       if (item.is_type === undefined || item.is_type === null || item.is_type === "") {
         item.is_type = state.searchPanType;
       }
@@ -282,7 +288,7 @@
 
       const title = document.createElement("button");
       title.className = "search-resource-title";
-      const localBadge = item.is_local ? '<span class="search-local-badge">本地</span>' : '';
+      const localBadge = item.is_local || item.isLocal ? '<span class="search-local-badge">本地</span>' : '';
       title.innerHTML = '<span class="search-resource-title-text">' + localBadge + highlightKeywordText(item.title || item.vod_name || "未命名资源", state.searchKeyword) + '</span>';
       title.addEventListener("click", () => {
         if (isPanResource && item.url) {
@@ -293,7 +299,7 @@
       });
 
       const metaText = isPanResource
-        ? (item.desc || (item.is_local ? "" : item.source) || "")
+        ? (item.desc || ((item.is_local || item.isLocal) ? "" : item.source) || "")
         : [item.type_name || item.vod_class || "未知分类", item.vod_remarks || "", item.vod_play_from || ""].filter(Boolean).join(" · ");
       const meta = document.createElement("div");
       meta.className = "search-resource-meta";

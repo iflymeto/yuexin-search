@@ -729,9 +729,20 @@ class Other extends QfShop
      */
     public function delete_search()
     {
+        $expireMinutes = (int)input('expire_minutes', 30);
+        if ($expireMinutes < 1) {
+            $expireMinutes = 1;
+        }
+        if ($expireMinutes > 10080) {
+            $expireMinutes = 10080;
+        }
+        $force = input('force', '') === '1';
+
         // 搜索条件
         $map[] = ['is_time', '=', 1];
-        $map[] = ['update_time', '<=', time() - (30 * 60)];
+        if (!$force) {
+            $map[] = ['update_time', '<=', time() - ($expireMinutes * 60)];
+        }
         
         // ✅ 用数组记录删除的资源
         $deletedResources = [];
@@ -749,7 +760,7 @@ class Other extends QfShop
 
                 try {
                     // 删除数据库记录
-                    $this->model->where('fid', $deles['fid'])->delete();
+                    $this->model->where('source_id', $deles['source_id'])->delete();
                     
                     // 删除网盘文件
                     $transfer = new \netdisk\Transfer();
@@ -759,7 +770,8 @@ class Other extends QfShop
                     $deletedResources[] = [
                         'source_id' => $deles['source_id'],
                         'title' => $deles['title'],
-                        'is_type' => $deles['is_type']
+                        'is_type' => $deles['is_type'],
+                        'update_time' => $deles['update_time'] ?? 0
                     ];
                     $deleteCount++;
                 } catch (\Exception $e) {
@@ -771,7 +783,9 @@ class Other extends QfShop
 
         return jok('临时资源删除成功', [
             'deleted_count' => $deleteCount,
-            'deleted_resources' => $deletedResources
+            'deleted_resources' => $deletedResources,
+            'expire_minutes' => $force ? 0 : $expireMinutes,
+            'force' => $force ? 1 : 0
         ]);
     }
 

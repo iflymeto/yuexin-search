@@ -73,6 +73,28 @@
 - `data/pan_tree_cache` 为运行时目录树缓存目录，仓库仅保留占位文件，缓存内容不应提交。
 - 当前仓库保留 `vendor/` 以方便直接部署运行；后续可进一步整理为标准 Composer 依赖管理模式。
 
+#### 维护接口
+
+临时转存资源会写入资源表并标记为 `is_time=1`。可通过定时任务调用以下接口清理：
+
+```text
+/api/other/delete_search
+```
+
+默认删除 `update_time` 超过 30 分钟的临时资源。
+
+```text
+/api/other/delete_search?expire_minutes=10
+```
+
+删除 `update_time` 超过 10 分钟的临时资源。`expire_minutes` 最小为 1，最大为 10080。
+
+```text
+/api/other/delete_search?force=1
+```
+
+强制删除所有 `is_time=1` 的临时资源，不再判断 `update_time`。该参数适合手动排查或彻底清理，定时任务请谨慎使用。
+
 ---
 
 ## 🔌 推荐配套项目

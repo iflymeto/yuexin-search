@@ -76,7 +76,15 @@
     function updateNavStuck() {
       const mobile = window.innerWidth <= 520;
       const threshold = mobile && el.hero ? Math.max(48, el.hero.offsetTop - 16) : 28;
-      document.body.classList.toggle("nav-stuck", window.scrollY > threshold);
+      const stuck = document.body.classList.contains("nav-stuck");
+      const enterOffset = mobile ? 8 : 0;
+      const leaveOffset = mobile ? 16 : 0;
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      if (!stuck && scrollY > threshold + enterOffset) {
+        document.body.classList.add("nav-stuck");
+      } else if (stuck && scrollY < threshold - leaveOffset) {
+        document.body.classList.remove("nav-stuck");
+      }
     }
 
     function showHome() {

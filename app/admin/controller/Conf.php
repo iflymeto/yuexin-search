@@ -111,6 +111,10 @@ class Conf extends QfShop
             'fake_mode_enable' => ['0', '伪装模式开关', '开启后，前台资源链接会按网盘类型替换为下方配置的测试链接', 1006, 2, "关闭=>0\n开启=>1"],
             'fake_quark_url' => ['', '伪装夸克链接', '伪装模式开启后，夸克类型资源会展示此链接', 1007, 0, null],
             'fake_baidu_url' => ['', '伪装百度链接', '伪装模式开启后，百度类型资源会展示此链接', 1008, 0, null],
+            'network_accel_mode' => ['off', '网盘API加速模式', '选择网盘API请求加速方式；relay 和代理二选一', 999, 2, "关闭=>off\n代理=>proxy\nRelay中转=>relay", 1],
+            'relay_url' => ['', 'Relay中转地址', '部署在香港或国内直连机器上的 relay.php 地址', 1009, 0, null, 1],
+            'relay_secret' => ['', 'Relay密钥', '主站与 relay.php 之间的签名密钥，必须与 relay.php 配置一致', 1010, 0, null, 1],
+            'relay_timeout' => ['20', 'Relay超时时间', '通过 Relay 请求网盘API的超时时间，单位秒', 1011, 0, null, 1],
             'frontend_theme' => ['news', '前端主题', '选择前台首页、搜索页、详情页使用的主题；主题缺失时自动回退默认主题', 100, 3, "默认主题=>news\n简洁主题=>simple", 2],
         ];
         $exists = $this->model->whereIn('conf_key', array_keys($needItems))->column('conf_key');
@@ -137,6 +141,15 @@ class Conf extends QfShop
         }
         if (!empty($insertRows)) {
             $this->model->insertAll($insertRows);
+            if (in_array('network_accel_mode', array_column($insertRows, 'conf_key'), true)) {
+                $proxyEnabled = (string)$this->model->where('conf_key', 'proxy_enable')->value('conf_value');
+                if ($proxyEnabled === '1') {
+                    $this->model->where('conf_key', 'network_accel_mode')->update([
+                        'conf_value' => 'proxy',
+                        'conf_updatetime' => $now,
+                    ]);
+                }
+            }
             $this->clearConfigCache();
         }
     }
@@ -166,11 +179,24 @@ class Conf extends QfShop
                     $v = 'file';
                 }
             }
+            if ($k === 'network_accel_mode') {
+                $v = strtolower((string)$v);
+                if (!in_array($v, ['off', 'proxy', 'relay'], true)) {
+                    $v = 'off';
+                }
+            }
             if(is_array($v)){
                 $v = implode(",",$v);
             }
             $this->model->where("conf_key", $k)->update([
                 "conf_value" => $v,
+                "conf_updatetime" => $now
+            ]);
+        }
+        if (array_key_exists('network_accel_mode', input("post."))) {
+            $mode = strtolower((string)input('network_accel_mode', 'off'));
+            $this->model->where("conf_key", 'proxy_enable')->update([
+                "conf_value" => $mode === 'proxy' ? '1' : '0',
                 "conf_updatetime" => $now
             ]);
         }
@@ -535,6 +561,115 @@ class Conf extends QfShop
                 'diagnosis' => ($willEnable ? '代理会启用' : '代理不会启用')
             ]
         ]);
+    }
+
+    public function testRelay()
+    {
+        $error = $this->access();
+        if ($error) {
+            return $error;
+        }
+
+        $url = trim(input('url', ''));
+        $secret = trim(input('secret', ''));
+        $timeout = intval(input('timeout', 20));
+        if ($timeout <= 0) {
+            $timeout = 20;
+        }
+
+        if ($url === '' || $secret === '') {
+            return jerr('Relay地址和密钥不能为空');
+        }
+        if (!preg_match('/^https?:\/\//i', $url)) {
+            return jerr('Relay地址必须以 http:// 或 https:// 开头');
+        }
+
+        $healthStart = microtime(true);
+        $health = $this->requestRelay($url, $secret, '__health_check__', 'GET', [], '', '', $timeout);
+        $healthLatency = round((microtime(true) - $healthStart) * 1000, 2);
+        if (!empty($health['error'])) {
+            return jerr('Relay健康检查失败: ' . $health['error']);
+        }
+
+        $target = 'https://pan.baidu.com/';
+        $targetStart = microtime(true);
+        $targetRes = $this->requestRelay($url, $secret, $target, 'GET', [], '', '', $timeout);
+        $targetLatency = round((microtime(true) - $targetStart) * 1000, 2);
+        if (!empty($targetRes['error'])) {
+            return jerr('Relay目标请求失败: ' . $targetRes['error']);
+        }
+
+        $httpCode = intval($targetRes['http_code'] ?? 0);
+        if ($httpCode < 200 || $httpCode >= 500) {
+            return jerr('Relay目标响应异常: HTTP ' . $httpCode);
+        }
+
+        return jok('Relay连接成功', [
+            'health_latency' => $healthLatency,
+            'target_latency' => $targetLatency,
+            'target_http_code' => $httpCode,
+            'relay' => $url,
+            'target' => $target,
+        ]);
+    }
+
+    private function requestRelay($relayUrl, $secret, $targetUrl, $method = 'GET', $headers = [], $cookies = '', $postData = '', $timeout = 20)
+    {
+        $timestamp = time();
+        $nonce = bin2hex(random_bytes(8));
+        $headersJson = json_encode($headers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $sign = $this->makeRelaySign($secret, $method, $targetUrl, $timestamp, $nonce, $headersJson, $cookies, $postData);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $relayUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'target_url' => $targetUrl,
+            'method' => strtoupper($method),
+            'headers' => $headersJson,
+            'cookies' => $cookies,
+            'post_data' => $postData,
+            'timeout' => $timeout,
+            'timestamp' => $timestamp,
+            'nonce' => $nonce,
+            'sign' => $sign,
+        ]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout + 3);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, min($timeout, 10));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+        $body = curl_exec($ch);
+        if ($body === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return ['error' => $error];
+        }
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            return ['error' => 'Relay HTTP ' . $httpCode . ': ' . substr((string)$body, 0, 200)];
+        }
+
+        return [
+            'body' => $body,
+            'http_code' => $httpCode,
+        ];
+    }
+
+    private function makeRelaySign($secret, $method, $targetUrl, $timestamp, $nonce, $headersJson, $cookies, $postData)
+    {
+        $base = strtoupper($method) . "\n"
+            . $targetUrl . "\n"
+            . $timestamp . "\n"
+            . $nonce . "\n"
+            . hash('sha256', (string)$headersJson) . "\n"
+            . hash('sha256', (string)$cookies) . "\n"
+            . hash('sha256', (string)$postData);
+
+        return hash_hmac('sha256', $base, $secret);
     }
 
     /**

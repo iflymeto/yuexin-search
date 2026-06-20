@@ -198,6 +198,10 @@ INSERT INTO `qf_conf` VALUES ('85', 'web_search_dedup', '1', '全网搜去重开
 INSERT INTO `qf_conf` VALUES ('97', 'fake_mode_enable', '0', '伪装模式开关', '开启后，前台资源链接会按网盘类型替换为下方配置的测试链接', '0', '2', '关闭=>0\n开启=>1', '1', '1', '1006', '0', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 INSERT INTO `qf_conf` VALUES ('98', 'fake_quark_url', '', '伪装夸克链接', '伪装模式开启后，夸克类型资源会展示此链接', '0', '0', NULL, '1', '1', '1007', '0', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 INSERT INTO `qf_conf` VALUES ('99', 'fake_baidu_url', '', '伪装百度链接', '伪装模式开启后，百度类型资源会展示此链接', '0', '0', NULL, '1', '1', '1008', '0', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+INSERT INTO `qf_conf` VALUES ('101', 'network_accel_mode', 'off', '网盘API加速模式', '选择网盘API请求加速方式；Relay 和代理二选一', '0', '2', '关闭=>off\n代理=>proxy\nRelay中转=>relay', '1', '1', '999', '1', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+INSERT INTO `qf_conf` VALUES ('102', 'relay_url', '', 'Relay中转地址', '部署在香港或国内直连机器上的 relay.php 地址', '0', '0', NULL, '1', '1', '1009', '1', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+INSERT INTO `qf_conf` VALUES ('103', 'relay_secret', '', 'Relay密钥', '主站与 relay.php 之间的签名密钥，必须与 relay.php 配置一致', '0', '0', NULL, '1', '1', '1010', '1', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+INSERT INTO `qf_conf` VALUES ('104', 'relay_timeout', '20', 'Relay超时时间', '通过 Relay 请求网盘API的超时时间，单位秒', '0', '0', NULL, '1', '1', '1011', '1', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 INSERT INTO `qf_conf` VALUES ('100', 'frontend_theme', 'news', '前端主题', '选择前台首页、搜索页、详情页使用的主题；主题缺失时自动回退默认主题', '0', '2', '默认主题=>news\n简洁主题=>simple\n仿魔法影视模板=>mofa', '3', '1', '100', '1', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
 -- ----------------------------

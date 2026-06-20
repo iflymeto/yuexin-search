@@ -522,39 +522,116 @@ function getTicket($key)
  * @param int $timeout 请求超时时间，默认30秒
  * @return array 响应数组，包括header, body, detail, error
  */
-function curlHelper($url, $method = 'POST', $data = null, $header = [], $queryParams = "", $cookies = "", $timeout = 60)
+function curlHelperNetdiskAccelAllowed($url)
 {
-    $proxyEnabled = config('qfshop.proxy_enable');
-    $proxyHost = trim((string)config('qfshop.proxy_host'));
-    $proxyPort = (int)config('qfshop.proxy_port');
-    $proxyType = strtolower(trim((string)config('qfshop.proxy_type')));
-    $proxyUser = (string)config('qfshop.proxy_user');
-    $proxyPass = (string)config('qfshop.proxy_pass');
-    $needProxy = false;
-    if ($proxyEnabled && !empty($proxyHost) && $proxyPort > 0) {
-        $panDomains = [
-            'pan.quark.cn',
-            'drive.quark.cn',
-            'drive-pc.quark.cn',
-            'drive-h.quark.cn',
-            'pan.baidu.com',
-            'drive.uc.cn',
-            'pan.xunlei.com',
-            'api-pan.xunlei.com'
-        ];
-        foreach ($panDomains as $domain) {
-            if (strpos($url, $domain) !== false) {
-                $needProxy = true;
-                break;
-            }
-        }
+    $host = parse_url($url, PHP_URL_HOST);
+    if (!$host) {
+        return false;
+    }
+    $host = strtolower($host);
+    $panDomains = [
+        'pan.quark.cn',
+        'drive.quark.cn',
+        'drive-pc.quark.cn',
+        'drive-h.quark.cn',
+        'pan.baidu.com',
+        'drive.uc.cn',
+        'pan.xunlei.com',
+        'api-pan.xunlei.com'
+    ];
+
+    return in_array($host, $panDomains, true);
+}
+
+function curlHelperMakeRelaySign($secret, $method, $targetUrl, $timestamp, $nonce, $headersJson, $cookies, $postData)
+{
+    $base = strtoupper($method) . "\n"
+        . $targetUrl . "\n"
+        . $timestamp . "\n"
+        . $nonce . "\n"
+        . hash('sha256', (string)$headersJson) . "\n"
+        . hash('sha256', (string)$cookies) . "\n"
+        . hash('sha256', (string)$postData);
+
+    return hash_hmac('sha256', $base, $secret);
+}
+
+function curlHelperRequestViaRelay($relayUrl, $secret, $targetUrl, $method, $data, $header, $cookies, $timeout)
+{
+    $timestamp = time();
+    $nonce = bin2hex(random_bytes(8));
+    $headersJson = json_encode(is_array($header) ? $header : [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $postData = is_null($data) ? '' : (is_array($data) ? http_build_query($data) : $data);
+    $sign = curlHelperMakeRelaySign($secret, $method, $targetUrl, $timestamp, $nonce, $headersJson, $cookies, $postData);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $relayUrl);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'target_url' => $targetUrl,
+        'method' => strtoupper($method),
+        'headers' => $headersJson,
+        'cookies' => $cookies,
+        'post_data' => $postData,
+        'timeout' => $timeout,
+        'timestamp' => $timestamp,
+        'nonce' => $nonce,
+        'sign' => $sign,
+    ]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout + 3);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, min($timeout, 10));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+    if ($response === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['error' => $error];
     }
 
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $detail = curl_getinfo($ch);
+    $output = [
+        'header' => substr($response, 0, $headerSize),
+        'body' => substr($response, $headerSize),
+        'detail' => $detail,
+    ];
+    $output['detail']['relay'] = true;
+    curl_close($ch);
+
+    return $output;
+}
+
+function curlHelper($url, $method = 'POST', $data = null, $header = [], $queryParams = "", $cookies = "", $timeout = 60)
+{
     // 构建查询参数
     if (!empty($queryParams)) {
         $queryString = http_build_query($queryParams);
         $url .= '?' . $queryString;
     }
+
+    $accelMode = strtolower(trim((string)config('qfshop.network_accel_mode')));
+    if ($accelMode === '') {
+        $accelMode = config('qfshop.proxy_enable') ? 'proxy' : 'off';
+    }
+    $isAccelTarget = curlHelperNetdiskAccelAllowed($url);
+
+    $relayUrl = trim((string)config('qfshop.relay_url'));
+    $relaySecret = trim((string)config('qfshop.relay_secret'));
+    if ($accelMode === 'relay' && $isAccelTarget && $relayUrl !== '' && $relaySecret !== '') {
+        return curlHelperRequestViaRelay($relayUrl, $relaySecret, $url, $method, $data, $header, $cookies, $timeout);
+    }
+
+    $proxyEnabled = $accelMode === 'proxy';
+    $proxyHost = trim((string)config('qfshop.proxy_host'));
+    $proxyPort = (int)config('qfshop.proxy_port');
+    $proxyType = strtolower(trim((string)config('qfshop.proxy_type')));
+    $proxyUser = (string)config('qfshop.proxy_user');
+    $proxyPass = (string)config('qfshop.proxy_pass');
+    $needProxy = $proxyEnabled && !empty($proxyHost) && $proxyPort > 0 && $isAccelTarget;
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);

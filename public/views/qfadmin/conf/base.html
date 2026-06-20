@@ -71,6 +71,7 @@
                                         <div v-if="isActionTextControl(items)" class="config-inline-control config-control-root">
                                             <input class="config-native-input config-short-editor" v-model="items.conf_value" :placeholder="getInputPlaceholder(items)">
                                             <button type="button" class="config-native-btn" v-if="items.conf_key === 'proxy_host'" @click="testProxy">测试代理</button>
+                                            <button type="button" class="config-native-btn" v-if="items.conf_key === 'relay_url'" @click="testRelay">测试Relay</button>
                                             <button type="button" class="config-native-btn" v-if="items.conf_key === 'other_pan_check_api' && isPanCheckMode()" @click="testPanCheck(items.conf_value)">测试连接</button>
                                             <button type="button" class="config-native-btn" v-if="items.conf_key === 'redis_host'" @click="testRedisCache">测试 Redis</button>
                                             <button type="button" class="config-native-btn" v-if="items.conf_key === 'memcached_host'" @click="testMemcachedCache">测试 Memcached</button>
@@ -361,11 +362,11 @@
                         },
                         {
                             key: 'proxy',
-                            title: '网络与代理',
-                            desc: '仅对夸克、百度、UC、迅雷等网盘 API 域名生效。代理配置修改后请先保存，再运行诊断。',
+                            title: '网络加速',
+                            desc: '仅对夸克、百度、UC、迅雷等网盘 API 域名生效。SOCKS5/HTTP 代理和 Relay 中转二选一。',
                             tag: '诊断',
                             tagType: 'info',
-                            keys: ['proxy_enable', 'proxy_type', 'proxy_host', 'proxy_port', 'proxy_user', 'proxy_pass']
+                            keys: ['network_accel_mode', 'proxy_type', 'proxy_host', 'proxy_port', 'proxy_user', 'proxy_pass', 'relay_url', 'relay_secret', 'relay_timeout']
                         },
                         {
                             key: 'fake',
@@ -680,8 +681,17 @@
                     if (['fake_mode_enable', 'fake_quark_url', 'fake_baidu_url'].includes(item.conf_key)) {
                         return true;
                     }
-                    if (item.conf_key.indexOf('relay_') === 0) {
+                    const accelMode = this.getConfValue('network_accel_mode') || 'off';
+                    const proxyKeys = ['proxy_type', 'proxy_host', 'proxy_port', 'proxy_user', 'proxy_pass'];
+                    const relayKeys = ['relay_url', 'relay_secret', 'relay_timeout'];
+                    if (item.conf_key === 'proxy_enable') {
                         return false;
+                    }
+                    if (proxyKeys.includes(item.conf_key)) {
+                        return accelMode === 'proxy';
+                    }
+                    if (relayKeys.includes(item.conf_key)) {
+                        return accelMode === 'relay';
                     }
                     if (redisKeys.includes(item.conf_key)) {
                         return driver === 'redis';
@@ -705,12 +715,12 @@
                         'announce_status', 'app_demand', 'home_new', 'app_name_hide', 'resource_password_enable'
                     ];
                     const numberKeys = [
-                        'proxy_port', 'redis_port', 'memcached_port', 'announce_interval_days',
+                        'proxy_port', 'relay_timeout', 'redis_port', 'memcached_port', 'announce_interval_days',
                         'ranking_num', 'ranking_m_num', 'resource_password_expire',
                         'upload_max_image', 'upload_max_file'
                     ];
                     const secretKeys = [
-                        'proxy_pass', 'proxy_user', 'api_key',
+                        'proxy_pass', 'proxy_user', 'relay_secret', 'api_key',
                         'quark_cookie', 'baidu_cookie', 'uc_cookie', 'xunlei_cookie',
                         'redis_password', 'memcached_username', 'memcached_password', 'resource_password'
                     ];
@@ -752,7 +762,8 @@
                         'quark_file', 'quark_file_time', 'baidu_file', 'baidu_file_time',
                         'uc_file', 'uc_file_time', 'ali_file', 'ali_file_time',
                         'xunlei_file', 'xunlei_file_time',
-                        'redis_host', 'memcached_host', 'fake_quark_url', 'fake_baidu_url'
+                        'redis_host', 'memcached_host', 'fake_quark_url', 'fake_baidu_url',
+                        'relay_url'
                     ];
                     return shortTextKeys.includes(item.conf_key);
                 },
@@ -760,7 +771,7 @@
                     if (!this.isTextControl(item)) {
                         return false;
                     }
-                    return ['proxy_host', 'other_pan_check_api', 'redis_host', 'memcached_host'].includes(item.conf_key);
+                    return ['proxy_host', 'relay_url', 'other_pan_check_api', 'redis_host', 'memcached_host'].includes(item.conf_key);
                 },
                 getEditorRows(item) {
                     if (!item) {
@@ -772,7 +783,7 @@
                         'quark_file', 'quark_file_time', 'baidu_file', 'baidu_file_time',
                         'uc_file', 'uc_file_time', 'ali_file', 'ali_file_time',
                         'xunlei_file', 'xunlei_file_time', 'redis_host', 'memcached_host',
-                        'proxy_host', 'fake_quark_url', 'fake_baidu_url'
+                        'proxy_host', 'relay_url', 'fake_quark_url', 'fake_baidu_url'
                     ];
                     const tallKeys = [
                         'announce_content', 'footer_dec', 'footer_copyright',
@@ -828,6 +839,15 @@
                 getInputPlaceholder(item) {
                     if (item.conf_key === 'proxy_host') {
                         return '127.0.0.1 或 proxy.example.com';
+                    }
+                    if (item.conf_key === 'relay_url') {
+                        return '例如：http://103.231.58.19:13456/relay.php';
+                    }
+                    if (item.conf_key === 'relay_secret') {
+                        return '必须与 relay.php 中的 RELAY_SECRET 保持一致';
+                    }
+                    if (item.conf_key === 'relay_timeout') {
+                        return '建议 10-30 秒';
                     }
                     if (item.conf_key === 'other_pan_check_api') {
                         return '例如：http://your-domain.com/api/v1/links/check';
@@ -1322,6 +1342,76 @@
                     .catch(function (error) {
                         loading.close();
                         that.$message.error('连接失败：' + error.message);
+                        if (typeof debugLog !== 'undefined') {
+                            debugLog.log(error);
+                        } else {
+                            console.warn(error);
+                        }
+                    });
+                },
+                testRelay() {
+                    var that = this;
+
+                    let url = '';
+                    let secret = '';
+                    let timeout = '20';
+
+                    for (let item of that.form) {
+                        if (item.conf_key === 'relay_url') {
+                            url = item.conf_value;
+                        }
+                        if (item.conf_key === 'relay_secret') {
+                            secret = item.conf_value;
+                        }
+                        if (item.conf_key === 'relay_timeout') {
+                            timeout = item.conf_value || '20';
+                        }
+                    }
+
+                    if (!url || !secret) {
+                        that.$message.error('请先填写 Relay 地址和密钥');
+                        return;
+                    }
+
+                    const loading = that.$loading({
+                        lock: true,
+                        text: '正在测试 Relay 中转，请稍候...',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+
+                    axios.post('/admin/conf/testRelay', Object.assign({}, PostBase, {
+                        url: url,
+                        secret: secret,
+                        timeout: timeout
+                    }))
+                    .then(function (res) {
+                        loading.close();
+
+                        if (res.data.code == 200) {
+                            const data = res.data.data;
+                            let message = '连接成功！<br><br>';
+                            message += '健康检查: <strong>' + data.health_latency + 'ms</strong><br>';
+                            message += '目标请求: <strong>' + data.target_latency + 'ms</strong><br>';
+                            message += 'HTTP: <strong>' + data.target_http_code + '</strong><br>';
+                            message += 'Relay: <code>' + that.escapeHtml(data.relay) + '</code><br>';
+                            message += '目标: <code>' + that.escapeHtml(data.target) + '</code>';
+
+                            that.$alert(message, 'Relay测试结果', {
+                                confirmButtonText: '确定',
+                                type: 'success',
+                                dangerouslyUseHTMLString: true
+                            });
+                        } else {
+                            that.$alert(res.data.message, '测试失败', {
+                                confirmButtonText: '确定',
+                                type: 'error'
+                            });
+                        }
+                    })
+                    .catch(function (error) {
+                        loading.close();
+                        that.$message.error('Relay测试失败：' + error.message);
                         if (typeof debugLog !== 'undefined') {
                             debugLog.log(error);
                         } else {

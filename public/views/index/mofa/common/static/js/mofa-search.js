@@ -217,6 +217,51 @@
       if (index >= 0) bucket.splice(index, 1);
     }
 
+    function firstBucketCard(bucket) {
+      for (const item of bucket) {
+        if (item && item.__searchCard && item.__searchCard.parentNode) {
+          return item.__searchCard;
+        }
+      }
+      return null;
+    }
+
+    function ensureSearchItemCard(item) {
+      if (!item.__searchCard) {
+        item.__searchCard = createSearchResultCard(item);
+      }
+      return item.__searchCard;
+    }
+
+    function refreshSearchItemCard(item) {
+      if (!item || !item.__searchCard) return;
+      const oldCard = item.__searchCard;
+      const newCard = createSearchResultCard(item);
+      item.__searchCard = newCard;
+      if (oldCard.parentNode) {
+        oldCard.parentNode.replaceChild(newCard, oldCard);
+      }
+    }
+
+    function insertSearchItemCard(target, item, status) {
+      if (!target || !item) return;
+      const buckets = state.searchBuckets;
+      const card = ensureSearchItemCard(item);
+      let beforeNode = status && status.parentNode === target ? status : null;
+
+      if (item.__searchBucket === "local") {
+        beforeNode = firstBucketCard(buckets.fresh) || firstBucketCard(buckets.cached) || beforeNode;
+      } else if (item.__searchBucket === "fresh") {
+        beforeNode = firstBucketCard(buckets.cached) || beforeNode;
+      }
+
+      if (beforeNode && beforeNode !== card) {
+        target.insertBefore(card, beforeNode);
+      } else if (card.parentNode !== target) {
+        target.appendChild(card);
+      }
+    }
+
     function addSearchItemToBuckets(item) {
       if (!state.searchBuckets) resetSearchBuckets();
       const buckets = state.searchBuckets;
@@ -225,19 +270,26 @@
 
       let existing = buckets.seen.get(key);
       if (existing) {
+        const wasLocal = isLocalSearchItem(existing);
         item = mergeSearchItem(existing, item);
         removeBucketItem(buckets.local, existing);
         removeBucketItem(buckets.fresh, existing);
         removeBucketItem(buckets.cached, existing);
+        if (!wasLocal && isLocalSearchItem(item)) {
+          refreshSearchItemCard(item);
+        }
       }
 
       if (isLocalSearchItem(item)) {
         item.is_local = true;
         item.isLocal = true;
+        item.__searchBucket = "local";
         buckets.local.push(item);
       } else if (isFreshSearchItem(item)) {
+        item.__searchBucket = "fresh";
         buckets.fresh.push(item);
       } else {
+        item.__searchBucket = "cached";
         buckets.cached.push(item);
       }
 
@@ -250,7 +302,10 @@
       el.searchResult.classList.toggle("is-empty", !items.length);
       target.className = "search-result-list";
       target.innerHTML = "";
-      items.forEach((item, index) => target.appendChild(createSearchResultCard(item, index)));
+      items.forEach(item => {
+        item.__searchCard = createSearchResultCard(item);
+        target.appendChild(item.__searchCard);
+      });
     }
 
     function closeSearchEventSource() {
@@ -328,10 +383,10 @@
           state.searchPendingReplace = false;
         }
         addSearchItemToBuckets(data);
+        insertSearchItemCard(target, data, status);
+        el.searchResult.classList.toggle("is-empty", state.searchItems.length === 0);
         renderSearchResultHeader(keyword, state.searchItems.length, true);
         setStatusText(status, currentPanName() + "已找到 " + state.searchItems.length + " 条，继续搜索中");
-        renderSearchItems(target, state.searchItems);
-        target.appendChild(status);
       };
 
       source.onerror = () => {

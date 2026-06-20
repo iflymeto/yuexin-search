@@ -23,17 +23,21 @@ class SearchResultPresenter
     public function outputCachedResults(array $cachedResults, $isShow)
     {
         $cachedUrls = [];
+        $validItems = [];
+        $skippedCount = 0;
         $this->emitter->event('cache_start', [
-            'message' => '正在显示上次搜索结果...',
+            'message' => '正在验证上次搜索结果...',
             'count' => $cachedResults['result_count'],
             'cache_time' => date('Y-m-d H:i:s', $cachedResults['cache_time'])
         ]);
 
         foreach ($cachedResults['data'] as $item) {
-            if ($this->validator->isInvalid($item['url'])) {
+            if (!$this->validator->validateCached($item)) {
+                $skippedCount++;
                 continue;
             }
 
+            $validItems[] = $item;
             $cachedUrls[$item['url']] = true;
             if (!empty($item['source_url'])) {
                 $cachedUrls[$item['source_url']] = true;
@@ -48,11 +52,17 @@ class SearchResultPresenter
         }
 
         $this->emitter->event('cache_end', [
-            'message' => '缓存显示完成，正在搜索新资源...'
+            'message' => '缓存验证完成，正在搜索新资源...',
+            'valid_count' => count($validItems),
+            'skipped_count' => $skippedCount
         ]);
 
-        Log::info('[搜索缓存] 缓存输出完成: 已输出=' . count($cachedUrls) . '条');
-        return $cachedUrls;
+        Log::info('[搜索缓存] 缓存输出完成: 已输出=' . count($validItems) . '条 跳过=' . $skippedCount . '条');
+        return [
+            'urls' => $cachedUrls,
+            'items' => $validItems,
+            'skipped' => $skippedCount,
+        ];
     }
 
     public function outputNewResult(array $item, $isShow)

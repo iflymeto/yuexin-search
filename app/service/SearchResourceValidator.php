@@ -71,6 +71,50 @@ class SearchResourceValidator
         return true;
     }
 
+    public function validateCached(&$item)
+    {
+        $isType = intval($item['is_type'] ?? -1);
+        if (empty($item['url'])) {
+            return false;
+        }
+
+        if ($this->invalidResourceModel->isInvalid($item['url'])) {
+            return false;
+        }
+
+        if (config('qfshop.is_quan_zc') == 1 && $isType == 0) {
+            $this->sendHeartbeat();
+            $infoData = $this->verificationUrl($item['url']);
+            if ($infoData === 0) {
+                $this->invalidResourceModel->recordInvalid($item['url'], $isType, '缓存资源已失效', 7);
+                return false;
+            }
+            if (!empty($infoData['stoken'])) {
+                $item['stoken'] = $infoData['stoken'];
+            }
+            return true;
+        }
+
+        if (config('qfshop.other_pan_check_enable') == 1 && in_array($isType, [1, 2, 3, 4])) {
+            $this->sendHeartbeat();
+            $checkMode = config('qfshop.other_pan_check_mode');
+            if ($checkMode === 'pancheck') {
+                $isValid = $this->checkUrlByPanCheckApi($item['url'], $isType);
+            } elseif ($checkMode === 'local') {
+                $isValid = $this->checkUrlByLocal($item['url']);
+            } else {
+                $isValid = $this->checkUrlByExternalApi($item['url'], $isType);
+            }
+
+            if (!$isValid) {
+                $this->invalidResourceModel->recordInvalid($item['url'], $isType, '缓存资源第三方检测失效', 7);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function sendHeartbeat()
     {
         echo ": checking\n\n";

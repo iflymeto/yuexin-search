@@ -23,6 +23,68 @@ class UcPan extends BasePan
         ];
     }
 
+    private function normalizeApiResponse($result, $fallbackMessage = 'UC接口请求异常')
+    {
+        if (!is_array($result)) {
+            return [
+                'status' => 500,
+                'code' => 500,
+                'message' => $fallbackMessage,
+                'data' => [],
+            ];
+        }
+
+        if (!isset($result['status'])) {
+            if (isset($result['code'])) {
+                $result['status'] = $result['code'];
+            } elseif (isset($result['status_code'])) {
+                $result['status'] = $result['status_code'];
+            } elseif (isset($result['errno'])) {
+                $result['status'] = $result['errno'];
+            } else {
+                $result['status'] = 500;
+            }
+        }
+
+        if (!isset($result['code'])) {
+            $result['code'] = $result['status'];
+        }
+
+        if (!isset($result['message']) || $result['message'] === '') {
+            if (isset($result['msg']) && $result['msg'] !== '') {
+                $result['message'] = $result['msg'];
+            } elseif (isset($result['error_msg']) && $result['error_msg'] !== '') {
+                $result['message'] = $result['error_msg'];
+            } elseif (isset($result['error']) && is_scalar($result['error']) && $result['error'] !== '') {
+                $result['message'] = $result['error'];
+            } else {
+                $result['message'] = $fallbackMessage;
+            }
+        }
+
+        if ($result['message'] === 'require login [guest]') {
+            $result['message'] = 'UC未登录，请检查cookie';
+        }
+
+        if (!isset($result['data']) || !is_array($result['data'])) {
+            $result['data'] = [];
+        }
+
+        return $result;
+    }
+
+    private function requestApi($url, $method, $data = [], $queryParams = [], $fallbackMessage = 'UC接口请求异常')
+    {
+        try {
+            $response = curlHelper($url, $method, json_encode($data), $this->urlHeader, $queryParams);
+            $body = isset($response['body']) ? $response['body'] : '';
+            $result = json_decode($body, true);
+            return $this->normalizeApiResponse($result, $fallbackMessage);
+        } catch (\Throwable $e) {
+            return $this->normalizeApiResponse(null, $e->getMessage() ?: $fallbackMessage);
+        }
+    }
+
     public function getFiles($pdir_fid=0)
     {
         // 原 getFiles 方法内容
@@ -38,13 +100,12 @@ class UcPan extends BasePan
             '_sort' => 'file_type:asc,updated_at:desc',
         ];
         
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/file/sort", "GET", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        $res = json_decode($res, true);
+        $res = $this->requestApi("https://pc-api.uc.cn/1/clouddrive/file/sort", "GET", $urlData, $queryParams);
         if($res['status'] !== 200){
-            return jerr2($res['message']=='require login [guest]'?'UC未登录，请检查cookie':$res['message']);
+            return jerr2($res['message']);
         }
         
-        return jok2('获取成功',$res['data']['list']);
+        return jok2('获取成功', isset($res['data']['list']) ? $res['data']['list'] : []);
     }
 
     public function transfer($pwd_id)
@@ -54,9 +115,12 @@ class UcPan extends BasePan
             $res = $this->getStoken($pwd_id);
             if($res['status'] !== 200) return jerr2($res['message']);
             $infoData = $res['data'];
+            if (empty($infoData['token_info']['stoken'])) {
+                return jerr2('UC分享信息异常，未获取到stoken');
+            }
             
             if($this->isType == 1){
-                $urls['title'] = $infoData['token_info']['title'];
+                $urls['title'] = isset($infoData['token_info']['title']) ? $infoData['token_info']['title'] : '';
                 $urls['share_url'] = $this->url;
                 $urls['stoken'] = $infoData['token_info']['stoken'];
                 return jok2('检验成功', $urls);
@@ -71,6 +135,9 @@ class UcPan extends BasePan
         $res = $this->getShare($pwd_id,$stoken);
         if($res['status']!== 200) return jerr2($res['message']);
         $detail = $res['data'];
+        if (empty($detail['share']['title']) || empty($detail['list']) || !is_array($detail['list'])) {
+            return jerr2('UC分享内容异常或为空');
+        }
 
         $fid_list = [];
         $fid_token_list = [];
@@ -83,12 +150,15 @@ class UcPan extends BasePan
         //转存资源到指定文件夹
         $res = $this->getShareSave($pwd_id,$stoken,$fid_list,$fid_token_list);
         if($res['status']!== 200) return jerr2($res['message']);
+        if (empty($res['data']['task_id'])) {
+            return jerr2('UC转存任务创建失败');
+        }
         $task_id = $res['data']['task_id'];
 
         //转存后根据task_id获取转存到自己网盘后的信息
         $retry_index = 0;
         $myData = '';
-        while ($myData=='' || $myData['status'] != 2) {
+        while ($myData=='' || intval(isset($myData['status']) ? $myData['status'] : 0) != 2) {
             $res = $this->getShareTask($task_id, $retry_index);
             if($res['message']== 'capacity limit[{0}]'){
                 return jerr2('容量不足');
@@ -100,8 +170,11 @@ class UcPan extends BasePan
             $retry_index++;
             // 可以添加一个最大重试次数的限制，防止无限循环
             if ($retry_index > 50) {
-                break;
+                return jerr2('UC转存任务超时，请稍后重试');
             }
+        }
+        if (empty($myData['save_as']['save_as_top_fids'])) {
+            return jerr2('UC转存结果异常，未获取到文件ID');
         }
 
         try {
@@ -150,28 +223,38 @@ class UcPan extends BasePan
         //分享资源并拿到更新后的task_id
         $res = $this->getShareBtn($myData['save_as']['save_as_top_fids'],$title);
         if($res['status']!== 200) return jerr2($res['message']);
+        if (empty($res['data']['task_id'])) {
+            return jerr2('UC分享任务创建失败');
+        }
         $task_id = $res['data']['task_id'];
 
         //根据task_id拿到share_id
         $retry_index = 0;
         $myData = '';
-        while ($myData=='' || $myData['status'] != 2) {
+        while ($myData=='' || intval(isset($myData['status']) ? $myData['status'] : 0) != 2) {
             $res = $this->getShareTask($task_id, $retry_index);
             if($res['status']!== 200) continue;
             $myData = $res['data'];
             $retry_index++;
             // 可以添加一个最大重试次数的限制，防止无限循环
             if ($retry_index > 50) {
-                break;
+                return jerr2('UC分享任务超时，请稍后重试');
             }
+        }
+        if (empty($myData['share_id'])) {
+            return jerr2('UC分享结果异常，未获取到share_id');
         }
 
         //根据share_id  获取到分享链接
         $res = $this->getSharePassword($myData['share_id']);
         if($res['status']!== 200) return jerr2($res['message']);
         $share = $res['data'];
+        $hasMultipleShareFids = is_array($shareFid) && count($shareFid) > 1;
+        if (!$hasMultipleShareFids && empty($share['first_file']['fid'])) {
+            return jerr2('UC分享链接生成失败');
+        }
         // $share['fid'] = $share['first_file']['fid'];
-        $share['fid'] = (is_array($shareFid) && count($shareFid) > 1) ? $shareFid : $share['first_file']['fid'];
+        $share['fid'] = $hasMultipleShareFids ? $shareFid : $share['first_file']['fid'];
 
         return jok2('转存成功', $share);
     }
@@ -187,8 +270,7 @@ class UcPan extends BasePan
             'passcode' => '',
             'pwd_id' => $pwd_id,
         );
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/share/sharepage/v2/detail?pr=UCBrowser&fr=pc", "POST",json_encode($urlData), $this->urlHeader)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/share/sharepage/v2/detail?pr=UCBrowser&fr=pc", "POST", $urlData);
     }
 
 
@@ -214,8 +296,7 @@ class UcPan extends BasePan
             "_fetch_total" => "1",
             "_sort" => "file_type:asc,updated_at:desc"
         ];
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/share/sharepage/detail", "GET", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/share/sharepage/detail", "GET", $urlData, $queryParams);
     }
 
 
@@ -245,8 +326,7 @@ class UcPan extends BasePan
             "fr" => "pc",
         ];
 
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/share/sharepage/save", "POST", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/share/sharepage/save", "POST", $urlData, $queryParams);
     }
 
     /**
@@ -269,8 +349,7 @@ class UcPan extends BasePan
             "pr" => "UCBrowser",
             "fr" => "pc",
         ];
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/share", "POST", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/share", "POST", $urlData, $queryParams);
     }
 
 
@@ -288,8 +367,7 @@ class UcPan extends BasePan
             "task_id" => $task_id,
             "retry_index" => $retry_index
         ];
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/task", "GET", json_encode($urlData), $this->urlHeader, $queryParams)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/task", "GET", $urlData, $queryParams);
     }
 
     /**
@@ -306,8 +384,7 @@ class UcPan extends BasePan
             "pr" => "UCBrowser",
             "fr" => "pc",
         ];
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/share/password", "POST", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        return json_decode($res, true);
+        return $this->requestApi("https://pc-api.uc.cn/1/clouddrive/share/password", "POST", $urlData, $queryParams);
     }
     
     
@@ -327,7 +404,7 @@ class UcPan extends BasePan
             "pr" => "UCBrowser",
             "fr" => "pc",
         ];
-        curlHelper("https://pc-api.uc.cn/1/clouddrive/file/delete", "POST", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
+        $this->requestApi("https://pc-api.uc.cn/1/clouddrive/file/delete", "POST", $urlData, $queryParams);
     }
     
     /**
@@ -348,12 +425,11 @@ class UcPan extends BasePan
             '_fetch_sub_dirs' => 0,
             '_sort' => 'file_type:asc,updated_at:desc',
         ];
-        $res = curlHelper("https://pc-api.uc.cn/1/clouddrive/file/sort", "GET", json_encode($urlData), $this->urlHeader,$queryParams)['body'];
-        $res = json_decode($res, true);
+        $res = $this->requestApi("https://pc-api.uc.cn/1/clouddrive/file/sort", "GET", $urlData, $queryParams);
         if($res['status'] !== 200){
             return [];
         }
-        return $res['data']['list'];
+        return isset($res['data']['list']) ? $res['data']['list'] : [];
     }
 
     /**

@@ -53,6 +53,8 @@ class SearchService
         $cachedResults = $this->SearchResultCacheService->getCache($title, $is_type);
         
         $cachedUrls = [];
+        $validCachedItems = [];
+        $cachedSkippedCount = 0;
         $debugMode = intval($is_show) === 1;
         DiagnosticLogService::record('search', 'mode', 'info', '搜索模式已确定', [
             'keyword' => $title,
@@ -71,11 +73,15 @@ class SearchService
                 'result_count' => $cachedResults['result_count'],
                 'cache_time' => $cachedResults['cache_time'],
             ]);
-            $cachedUrls = $this->SearchResultPresenter->outputCachedResults($cachedResults, $is_show);
+            $cacheOutput = $this->SearchResultPresenter->outputCachedResults($cachedResults, $is_show);
+            $cachedUrls = $cacheOutput['urls'];
+            $validCachedItems = $cacheOutput['items'];
+            $cachedSkippedCount = $cacheOutput['skipped'];
             DiagnosticLogService::record('search', 'cache_output', 'success', '缓存结果输出完成', [
                 'keyword' => $title,
                 'is_type' => $is_type,
-                'output' => count($cachedUrls),
+                'output' => count($validCachedItems),
+                'skipped' => $cachedSkippedCount,
                 'cache_count' => !empty($cachedResults['data']) ? count($cachedResults['data']) : 0,
             ]);
         }
@@ -90,11 +96,11 @@ class SearchService
         $newCacheResults = [];
         $cacheSaveBatchSize = 5;
         $lastIncrementalSaveCount = 0;
-        $saveIncrementalCache = function ($reason) use ($title, $is_type, &$newCacheResults, &$cachedResults, &$lastIncrementalSaveCount) {
+        $saveIncrementalCache = function ($reason) use ($title, $is_type, &$newCacheResults, &$validCachedItems, &$lastIncrementalSaveCount) {
             if (empty($newCacheResults) || count($newCacheResults) <= $lastIncrementalSaveCount) {
                 return;
             }
-            $this->SearchResultCacheService->saveIncrementally($title, $is_type, $newCacheResults, $cachedResults['data'] ?? []);
+            $this->SearchResultCacheService->saveIncrementally($title, $is_type, $newCacheResults, $validCachedItems);
             $lastIncrementalSaveCount = count($newCacheResults);
             DiagnosticLogService::record('search', 'cache_save_batch', 'success', '搜索缓存批量增量保存完成', [
                 'keyword' => $title,
@@ -280,7 +286,7 @@ class SearchService
 
         // 6. 最终保存缓存
         if (!empty($newCacheResults) || !empty($cachedResults)) {
-            $this->SearchResultCacheService->saveFinal($title, $is_type, $newCacheResults, $cachedResults['data'] ?? []);
+            $this->SearchResultCacheService->saveFinal($title, $is_type, $newCacheResults, $validCachedItems);
             $lastIncrementalSaveCount = count($newCacheResults);
         }
 
@@ -290,7 +296,8 @@ class SearchService
             'is_type' => $is_type,
             'line_count' => $totalLines,
             'new_count' => count($newCacheResults),
-            'cache_count' => !empty($cachedResults['data']) ? count($cachedResults['data']) : 0,
+            'cache_count' => count($validCachedItems),
+            'cache_skipped' => $cachedSkippedCount,
             'duration_ms' => intval((microtime(true) - $searchStart) * 1000),
         ]);
         $this->SearchSseEmitter->event('DONE');

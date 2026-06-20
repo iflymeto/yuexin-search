@@ -536,6 +536,7 @@ function curlHelperNetdiskAccelAllowed($url)
         'drive-h.quark.cn',
         'pan.baidu.com',
         'drive.uc.cn',
+        'fast.uc.cn',
         'pc-api.uc.cn',
         'pan.xunlei.com',
         'api-pan.xunlei.com'

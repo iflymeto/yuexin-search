@@ -143,6 +143,9 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HEADER, false);
 curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, min($timeout, 10));
+if (defined('CURL_IPRESOLVE_V4')) {
+    curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+}
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
 curl_setopt($ch, CURLOPT_ENCODING, '');
@@ -171,8 +174,13 @@ switch ($method) {
 $body = curl_exec($ch);
 if ($body === false) {
     $error = curl_error($ch);
+    $errno = curl_errno($ch);
     curl_close($ch);
-    relayJson(502, 'Target request failed: ' . $error, 502);
+    relayJson(502, 'Target request failed for ' . $host . ': ' . $error, 502, [
+        'host' => $host,
+        'errno' => $errno,
+        'timeout' => $timeout,
+    ]);
 }
 
 $targetHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

@@ -559,6 +559,10 @@ function curlHelperMakeRelaySign($secret, $method, $targetUrl, $timestamp, $nonc
 
 function curlHelperRequestViaRelay($relayUrl, $secret, $targetUrl, $method, $data, $header, $cookies, $timeout)
 {
+    $timeout = (int)$timeout;
+    if ($timeout <= 0) {
+        $timeout = 20;
+    }
     $timestamp = time();
     $nonce = bin2hex(random_bytes(8));
     $headersJson = json_encode(is_array($header) ? $header : [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -623,7 +627,11 @@ function curlHelper($url, $method = 'POST', $data = null, $header = [], $queryPa
     $relayUrl = trim((string)config('qfshop.relay_url'));
     $relaySecret = trim((string)config('qfshop.relay_secret'));
     if ($accelMode === 'relay' && $isAccelTarget && $relayUrl !== '' && $relaySecret !== '') {
-        return curlHelperRequestViaRelay($relayUrl, $relaySecret, $url, $method, $data, $header, $cookies, $timeout);
+        $relayTimeout = (int)config('qfshop.relay_timeout');
+        if ($relayTimeout <= 0) {
+            $relayTimeout = $timeout;
+        }
+        return curlHelperRequestViaRelay($relayUrl, $relaySecret, $url, $method, $data, $header, $cookies, $relayTimeout);
     }
 
     $proxyEnabled = $accelMode === 'proxy';

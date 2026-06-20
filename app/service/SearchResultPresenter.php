@@ -35,6 +35,12 @@ class SearchResultPresenter
             }
 
             $cachedUrls[$item['url']] = true;
+            if (!empty($item['source_url'])) {
+                $cachedUrls[$item['source_url']] = true;
+            }
+            if (!empty($item['original_url'])) {
+                $cachedUrls[$item['original_url']] = true;
+            }
             $item['is_new'] = false;
             $item = $this->treeKeyService->appendKey($item);
             $item = $this->protectUrlForClient($item, $isShow);
@@ -78,6 +84,7 @@ class SearchResultPresenter
 
     public function outputLocalResult(array $item, $isShow)
     {
+        $sourceUrl = $item['source_url'] ?? ($item['original_url'] ?? '');
         $cacheItem = [
             'url' => $item['url'],
             'title' => $item['title'],
@@ -85,6 +92,10 @@ class SearchResultPresenter
             'is_local' => true,
             'source' => $item['source'] ?? '本地资源',
         ];
+        if (!empty($sourceUrl)) {
+            $cacheItem['source_url'] = $sourceUrl;
+            $cacheItem['original_url'] = $sourceUrl;
+        }
         if (!empty($item['image'])) {
             $cacheItem['image'] = $item['image'];
         }
@@ -97,6 +108,10 @@ class SearchResultPresenter
         $item['insert_position'] = 'top';
         $item['highlight'] = 'red';
         $item['source'] = $item['source'] ?? '本地资源';
+        if (!empty($sourceUrl)) {
+            $item['source_url'] = $sourceUrl;
+            $item['original_url'] = $sourceUrl;
+        }
         $item = $this->treeKeyService->appendKey($item);
         $item = $this->protectUrlForClient($item, $isShow);
         $this->emitter->data($item);
@@ -108,6 +123,12 @@ class SearchResultPresenter
     {
         if (config('qfshop.is_quan_type') != 1 && $isShow != 1) {
             $item['url'] = encryptObject($item['url']);
+            if (!empty($item['source_url'])) {
+                $item['source_url'] = encryptObject($item['source_url']);
+            }
+            if (!empty($item['original_url'])) {
+                $item['original_url'] = encryptObject($item['original_url']);
+            }
         }
         return $item;
     }

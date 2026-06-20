@@ -45,11 +45,14 @@ class SearchDedupService
         $items = [];
         foreach ($rows as $row) {
             $url = trim((string)($row['url'] ?? ''));
+            $sourceUrl = trim((string)($row['content'] ?? ''));
             if ($url === '') {
                 continue;
             }
             $items[] = [
                 'url' => $url,
+                'source_url' => $sourceUrl,
+                'original_url' => $sourceUrl,
                 'title' => trim((string)($row['title'] ?? '')),
                 'desc' => trim((string)($row['description'] ?? '')),
                 'is_type' => intval($row['is_type'] ?? $isType),
@@ -85,6 +88,9 @@ class SearchDedupService
         foreach ($resources as $resource) {
             if (!empty($resource['url'])) {
                 $urls[] = $resource['url'];
+            }
+            if (!empty($resource['source_url'])) {
+                $urls[] = $resource['source_url'];
             }
         }
         return $urls;

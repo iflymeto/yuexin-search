@@ -136,6 +136,14 @@ class SearchService
             $newCacheResults[] = $this->SearchResultPresenter->outputLocalResult($item, $is_show);
             $cachedUrls[$item['url']] = true;
             $localUrlsMap[$item['url']] = true;
+            if (!empty($item['source_url'])) {
+                $cachedUrls[$item['source_url']] = true;
+                $localUrlsMap[$item['source_url']] = true;
+            }
+            if (!empty($item['original_url'])) {
+                $cachedUrls[$item['original_url']] = true;
+                $localUrlsMap[$item['original_url']] = true;
+            }
             $localOutputResources[] = $item;
             $localOutputCount++;
             if ((count($newCacheResults) - $lastIncrementalSaveCount) >= $cacheSaveBatchSize) {

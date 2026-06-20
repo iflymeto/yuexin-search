@@ -187,7 +187,7 @@
     }
 
     function getSearchItemKey(item) {
-      return String(item && (item.originalUrl || item.treeSourceUrl || item.url || item.title || "")).trim();
+      return String(item && (item.source_url || item.original_url || item.sourceUrl || item.originalUrl || item.treeSourceUrl || item.url || item.title || "")).trim();
     }
 
     function isLocalSearchItem(item) {

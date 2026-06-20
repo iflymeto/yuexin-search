@@ -53,6 +53,20 @@
       if (image) {
         item.image = image;
       }
+      const sourceUrl = firstNonEmpty([
+        item.source_url,
+        item.original_url,
+        item.sourceUrl,
+        item.originalUrl,
+        item.treeSourceUrl
+      ]);
+      if (sourceUrl) {
+        item.source_url = item.source_url || sourceUrl;
+        item.original_url = item.original_url || sourceUrl;
+        item.sourceUrl = item.sourceUrl || sourceUrl;
+        item.originalUrl = item.originalUrl || sourceUrl;
+        item.treeSourceUrl = item.treeSourceUrl || sourceUrl;
+      }
       if (!item.originalUrl && item.url) {
         item.originalUrl = item.url;
       }

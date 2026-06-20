@@ -22,10 +22,14 @@ class SearchResourceValidator
     public function validate(&$item)
     {
         $isType = intval($item['is_type'] ?? -1);
+        $skipDeepCheck = !empty($item['skip_deep_check']);
 
         if (config('qfshop.is_quan_zc') == 1 && $isType == 0) {
             if ($this->invalidResourceModel->isInvalid($item['url'])) {
                 return false;
+            }
+            if ($skipDeepCheck) {
+                return true;
             }
 
             $this->sendHeartbeat();

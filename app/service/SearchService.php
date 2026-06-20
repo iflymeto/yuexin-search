@@ -119,9 +119,10 @@ class SearchService
         $localInvalidSkipped = 0;
         $localOutputResources = [];
         foreach ($localResources as $item) {
-            if (empty($item['url']) || isset($cachedUrls[$item['url']])) {
+            if (empty($item['url'])) {
                 continue;
             }
+            $item['skip_deep_check'] = true;
             if (!$this->SearchResourceValidator->validate($item)) {
                 $localInvalidSkipped++;
                 DiagnosticLogService::record('search', 'local_invalid_skip', 'warn', '跳过无效本地资源', [

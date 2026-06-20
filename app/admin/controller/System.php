@@ -527,19 +527,39 @@ class System extends QfShop
 
         foreach ($list as $item) {
             try {
-                Db::name('source')->where('source_id', $item['source_id'])->delete();
-
                 $fileList = $this->normalizeFidList($item['fid']);
+                $resultCheck = [
+                    'success' => true,
+                    'message' => '无网盘文件ID，直接删除数据库记录',
+                    'summary' => ['status' => 'no_filelist'],
+                ];
                 if (!empty($fileList)) {
                     $transfer = new \netdisk\Transfer();
-                    $transfer->deletepdirFid((int)$item['is_type'], $fileList);
+                    $deleteResult = $transfer->deletepdirFid((int)$item['is_type'], $fileList);
+                    $resultCheck = $this->normalizePanDeleteResult($deleteResult, (int)$item['is_type']);
+                    if (!$resultCheck['success']) {
+                        $failedResources[] = [
+                            'source_id' => $item['source_id'],
+                            'title' => $item['title'],
+                            'is_type' => (int)$item['is_type'],
+                            'type_name' => $this->getPanTypeName($item['is_type']),
+                            'message' => $resultCheck['message'],
+                            'result' => $deleteResult,
+                            'filelist' => $fileList,
+                        ];
+                        \think\facade\Log::warning('后台清理临时资源网盘文件失败: source_id=' . $item['source_id'] . ' message=' . $resultCheck['message']);
+                        continue;
+                    }
                 }
+
+                Db::name('source')->where('source_id', $item['source_id'])->delete();
 
                 $deletedResources[] = [
                     'source_id' => $item['source_id'],
                     'title' => $item['title'],
                     'is_type' => (int)$item['is_type'],
                     'type_name' => $this->getPanTypeName($item['is_type']),
+                    'delete_result' => $resultCheck['summary'],
                 ];
             } catch (\Exception $e) {
                 $failedResources[] = [
@@ -609,6 +629,111 @@ class System extends QfShop
         }
 
         return [(string)$fid];
+    }
+
+    private function normalizePanDeleteResult($result, $isType)
+    {
+        if ($result === null) {
+            return [
+                'success' => false,
+                'message' => '网盘删除无返回，未确认删除完成',
+                'summary' => ['status' => 'unknown']
+            ];
+        }
+
+        if (!is_array($result)) {
+            return [
+                'success' => false,
+                'message' => '网盘删除返回异常',
+                'summary' => ['raw' => $result]
+            ];
+        }
+
+        if (in_array((int)$isType, [0, 3], true) && isset($result['code']) && (int)$result['code'] === 23004) {
+            return [
+                'success' => true,
+                'message' => '文件已不存在，视为删除完成',
+                'summary' => $result
+            ];
+        }
+
+        if (in_array((int)$isType, [0, 3], true) && isset($result['data']['task_id']) && isset($result['status']) && (int)$result['status'] === 200) {
+            $finish = isset($result['data']['finish']) ? (bool)$result['data']['finish'] : null;
+            $taskStatus = isset($result['data']['status']) ? (int)$result['data']['status'] : null;
+            $isFinished = $finish === true || $taskStatus === 2;
+            return [
+                'success' => $isFinished,
+                'message' => $isFinished ? '删除任务已完成' : '删除任务已提交但未完成，保留数据库记录',
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['data']) && is_array($result['data'])) {
+            $data = $result['data'];
+            $errorCode = $data['error_code'] ?? $data['errno'] ?? null;
+            if ($errorCode !== null && (int)$errorCode !== 0) {
+                return [
+                    'success' => false,
+                    'message' => (string)($data['error_description'] ?? $data['message'] ?? ('删除失败 error_code=' . $errorCode)),
+                    'summary' => $result
+                ];
+            }
+        }
+
+        if (isset($result['code']) && (int)$result['code'] !== 200 && isset($result['message'])) {
+            return [
+                'success' => false,
+                'message' => (string)$result['message'],
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['errno'])) {
+            $errno = (int)$result['errno'];
+            if ((int)$isType === 2 && $errno === 132) {
+                return [
+                    'success' => true,
+                    'message' => '百度要求安全验证，已跳过网盘确认并清理数据库记录',
+                    'summary' => $result
+                ];
+            }
+            return [
+                'success' => $errno === 0,
+                'message' => $errno === 0 ? '删除成功' : ($result['message'] ?? ('删除失败 errno=' . $errno)),
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['status'])) {
+            $status = (int)$result['status'];
+            return [
+                'success' => $status === 200,
+                'message' => $status === 200 ? '删除成功' : ($result['message'] ?? ('删除失败 status=' . $status)),
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['code'])) {
+            $code = (int)$result['code'];
+            if ($isType == 4 && $code === 0) {
+                return [
+                    'success' => true,
+                    'message' => '删除成功',
+                    'summary' => $result
+                ];
+            }
+            return [
+                'success' => in_array($code, [0, 200], true),
+                'message' => in_array($code, [0, 200], true) ? '删除成功' : ($result['message'] ?? $result['msg'] ?? ('删除失败 code=' . $code)),
+                'summary' => $result
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => '网盘删除返回格式未知，未确认删除完成',
+            'summary' => $result
+        ];
     }
 
     private function getPanTypeName($type)

@@ -55,7 +55,7 @@ class SearchService
         $cachedUrls = [];
         $validCachedItems = [];
         $cachedSkippedCount = 0;
-        $debugMode = intval($is_show) === 1;
+        $debugMode = request()->param('debug/d', 0) === 1;
         DiagnosticLogService::record('search', 'mode', 'info', '搜索模式已确定', [
             'keyword' => $title,
             'is_type' => $is_type,

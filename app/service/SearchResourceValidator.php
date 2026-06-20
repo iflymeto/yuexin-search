@@ -257,16 +257,12 @@ class SearchResourceValidator
         $data = $detailData['data'] ?? [];
         $share = $data['share'] ?? [];
         $status = intval($share['status'] ?? 0);
-        $auditStatus = intval($share['audit_status'] ?? ($data['audit_status'] ?? 0));
         $partialViolation = !empty($share['partial_violation']);
         $list = $data['list'] ?? [];
         $fileTotal = intval($share['all_file_num'] ?? ($share['file_num'] ?? ($detailData['metadata']['_total'] ?? 0)));
         $listCount = is_array($list) ? count($list) : 0;
 
         if ($status !== 1) {
-            return false;
-        }
-        if ($auditStatus > 0 && $auditStatus !== 1) {
             return false;
         }
         if ($partialViolation && $listCount === 0) {

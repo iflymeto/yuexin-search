@@ -52,14 +52,25 @@ class SearchResultCacheService
     private function mergeUnique(array $newResults, array $oldResults)
     {
         $unique = [];
-        $urlSet = [];
+        $keySet = [];
         foreach (array_merge($newResults, $oldResults) as $item) {
-            if (empty($item['url']) || isset($urlSet[$item['url']])) {
+            $key = $this->resultKey($item);
+            if ($key === '' || isset($keySet[$key])) {
                 continue;
             }
             $unique[] = $item;
-            $urlSet[$item['url']] = true;
+            $keySet[$key] = true;
         }
         return $unique;
+    }
+
+    private function resultKey(array $item)
+    {
+        foreach (['source_url', 'original_url', 'url'] as $field) {
+            if (!empty($item[$field])) {
+                return trim((string)$item[$field]);
+            }
+        }
+        return '';
     }
 }

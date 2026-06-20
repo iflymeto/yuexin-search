@@ -19,7 +19,8 @@ class BaiduWork
         12 => '转存失败，转存文件数超过限制',
         20 => '转存失败，容量不足',
         105 => '链接错误，所访问的页面不存在',
-        115 => '该文件禁止分享'
+        115 => '该文件禁止分享',
+        132 => '百度要求安全验证，无法自动删除'
     ];
 
     public function getErrorMessage($code)
@@ -358,8 +359,7 @@ class BaiduWork
             'filelist' => json_encode($filePath)
         ];
 
-        $res = $this->request('POST', $url, $params, $data);
-        return $res['errno'];
+        return $this->request('POST', $url, $params, $data);
     }
 
     /**
@@ -390,6 +390,7 @@ class BaiduWork
             if (substr($path, 0, 1) !== '/') {
                 $path = '/' . $path;
             }
+            $path = preg_replace('#/+#', '/', $path);
             
             $processedPaths[] = $path;
         }
@@ -403,12 +404,14 @@ class BaiduWork
         
         // 调用删除方法
         $result = $this->deleteFile($processedPaths);
+        $errno = is_array($result) && isset($result['errno']) ? (int)$result['errno'] : -101;
         
         return [
-            'errno' => $result,
-            'message' => $this->getErrorMessage($result),
+            'errno' => $errno,
+            'message' => $this->getErrorMessage($errno),
             'deletedCount' => count($processedPaths),
-            'paths' => $processedPaths
+            'paths' => $processedPaths,
+            'raw' => $result
         ];
     }
 

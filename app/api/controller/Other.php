@@ -746,10 +746,11 @@ class Other extends QfShop
         
         // ✅ 用数组记录删除的资源
         $deletedResources = [];
+        $failedResources = [];
         $deleteCount = 0;
 
         // ✅ 禁用查询缓存，确保获取实时数据
-        $this->model->cache(false)->where($map)->chunk(100, function ($order) use (&$deletedResources, &$deleteCount) {
+        $this->model->cache(false)->where($map)->chunk(100, function ($order) use (&$deletedResources, &$failedResources, &$deleteCount) {
             foreach ($order as $value) {
                 $deles = $value->toArray();
 
@@ -759,23 +760,46 @@ class Other extends QfShop
                 $filelist = (is_string($fid) && ($decodedFid = json_decode($fid, true)) && is_array($decodedFid)) ? $decodedFid : (array)$fid;
 
                 try {
+                    // 先删除网盘文件，确认成功后再删除数据库记录，避免网盘残留失去追踪
+                    $transfer = new \netdisk\Transfer();
+                    $deleteResult = $transfer->deletepdirFid($deles['is_type'], $filelist);
+                    $resultCheck = $this->normalizePanDeleteResult($deleteResult, $deles['is_type']);
+                    if (!$resultCheck['success']) {
+                        $failedResources[] = [
+                            'source_id' => $deles['source_id'],
+                            'title' => $deles['title'],
+                            'is_type' => $deles['is_type'],
+                            'update_time' => $deles['update_time'] ?? 0,
+                            'message' => $resultCheck['message'],
+                            'result' => $deleteResult,
+                            'filelist' => $filelist,
+                        ];
+                        \think\facade\Log::warning('删除临时资源网盘文件失败: source_id=' . $deles['source_id'] . ' message=' . $resultCheck['message']);
+                        continue;
+                    }
+
                     // 删除数据库记录
                     $this->model->where('source_id', $deles['source_id'])->delete();
-                    
-                    // 删除网盘文件
-                    $transfer = new \netdisk\Transfer();
-                    $transfer->deletepdirFid($deles['is_type'], $filelist);
                     
                     // 记录删除的资源
                     $deletedResources[] = [
                         'source_id' => $deles['source_id'],
                         'title' => $deles['title'],
                         'is_type' => $deles['is_type'],
-                        'update_time' => $deles['update_time'] ?? 0
+                        'update_time' => $deles['update_time'] ?? 0,
+                        'delete_result' => $resultCheck['summary'],
                     ];
                     $deleteCount++;
                 } catch (\Exception $e) {
                     // 记录删除失败的日志，但不中断整体流程
+                    $failedResources[] = [
+                        'source_id' => $deles['source_id'],
+                        'title' => $deles['title'],
+                        'is_type' => $deles['is_type'],
+                        'update_time' => $deles['update_time'] ?? 0,
+                        'message' => $e->getMessage(),
+                        'filelist' => $filelist,
+                    ];
                     \think\facade\Log::error('删除临时资源失败: ' . $e->getMessage());
                 }
             }
@@ -783,10 +807,117 @@ class Other extends QfShop
 
         return jok('临时资源删除成功', [
             'deleted_count' => $deleteCount,
+            'failed_count' => count($failedResources),
             'deleted_resources' => $deletedResources,
+            'failed_resources' => $failedResources,
             'expire_minutes' => $force ? 0 : $expireMinutes,
             'force' => $force ? 1 : 0
         ]);
+    }
+
+    private function normalizePanDeleteResult($result, $isType)
+    {
+        if ($result === null) {
+            return [
+                'success' => false,
+                'message' => '网盘删除无返回，未确认删除完成',
+                'summary' => ['status' => 'unknown']
+            ];
+        }
+
+        if (!is_array($result)) {
+            return [
+                'success' => false,
+                'message' => '网盘删除返回异常',
+                'summary' => ['raw' => $result]
+            ];
+        }
+
+        if (in_array((int)$isType, [0, 3], true) && isset($result['code']) && (int)$result['code'] === 23004) {
+            return [
+                'success' => true,
+                'message' => '文件已不存在，视为删除完成',
+                'summary' => $result
+            ];
+        }
+
+        if (in_array((int)$isType, [0, 3], true) && isset($result['data']['task_id']) && isset($result['status']) && (int)$result['status'] === 200) {
+            $finish = isset($result['data']['finish']) ? (bool)$result['data']['finish'] : null;
+            $taskStatus = isset($result['data']['status']) ? (int)$result['data']['status'] : null;
+            $isFinished = $finish === true || $taskStatus === 2;
+            return [
+                'success' => $isFinished,
+                'message' => $isFinished ? '删除任务已完成' : '删除任务已提交但未完成，保留数据库记录',
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['data']) && is_array($result['data'])) {
+            $data = $result['data'];
+            $errorCode = $data['error_code'] ?? $data['errno'] ?? null;
+            if ($errorCode !== null && (int)$errorCode !== 0) {
+                return [
+                    'success' => false,
+                    'message' => (string)($data['error_description'] ?? $data['message'] ?? ('删除失败 error_code=' . $errorCode)),
+                    'summary' => $result
+                ];
+            }
+        }
+
+        if (isset($result['code']) && (int)$result['code'] !== 200 && isset($result['message'])) {
+            return [
+                'success' => false,
+                'message' => (string)$result['message'],
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['errno'])) {
+            $errno = (int)$result['errno'];
+            if ((int)$isType === 2 && $errno === 132) {
+                return [
+                    'success' => true,
+                    'message' => '百度要求安全验证，已跳过网盘确认并清理数据库记录',
+                    'summary' => $result
+                ];
+            }
+            return [
+                'success' => $errno === 0,
+                'message' => $errno === 0 ? '删除成功' : ($result['message'] ?? ('删除失败 errno=' . $errno)),
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['status'])) {
+            $status = (int)$result['status'];
+            return [
+                'success' => $status === 200,
+                'message' => $status === 200 ? '删除成功' : ($result['message'] ?? ('删除失败 status=' . $status)),
+                'summary' => $result
+            ];
+        }
+
+        if (isset($result['code'])) {
+            $code = (int)$result['code'];
+            if ($isType == 4 && $code === 0) {
+                return [
+                    'success' => true,
+                    'message' => '删除成功',
+                    'summary' => $result
+                ];
+            }
+            return [
+                'success' => in_array($code, [0, 200], true),
+                'message' => in_array($code, [0, 200], true) ? '删除成功' : ($result['message'] ?? $result['msg'] ?? ('删除失败 code=' . $code)),
+                'summary' => $result
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => '网盘删除返回格式未知，未确认删除完成',
+            'summary' => $result
+        ];
     }
 
     /**

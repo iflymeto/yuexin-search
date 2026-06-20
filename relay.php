@@ -43,6 +43,11 @@ function relayClientIp()
     return $_SERVER['REMOTE_ADDR'] ?? '';
 }
 
+function relayIsLocalRequest()
+{
+    return in_array(relayClientIp(), ['127.0.0.1', '::1'], true);
+}
+
 function relayMakeSign($secret, $method, $targetUrl, $timestamp, $nonce, $headersJson, $cookies, $postData)
 {
     $base = strtoupper($method) . "\n"
@@ -74,6 +79,15 @@ function relayHashEquals($known, $user)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
+}
+
+if (isset($_GET['health'])) {
+    if (!relayIsLocalRequest()) {
+        relayJson(403, 'Health check is local only', 403);
+    }
+    relayJson(200, 'ok', 200, [
+        'time' => time(),
+    ]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

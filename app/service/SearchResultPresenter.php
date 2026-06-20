@@ -31,25 +31,48 @@ class SearchResultPresenter
             'cache_time' => date('Y-m-d H:i:s', $cachedResults['cache_time'])
         ]);
 
+        $clientItems = [];
         foreach ($cachedResults['data'] as $item) {
-            if (!$this->validator->validateCached($item)) {
+            if (empty($item['url'])) {
                 $skippedCount++;
                 continue;
             }
 
-            $validItems[] = $item;
-            $cachedUrls[$item['url']] = true;
-            if (!empty($item['source_url'])) {
-                $cachedUrls[$item['source_url']] = true;
+            $rawItem = $item;
+            $validIndex = count($validItems);
+            $validItems[] = $rawItem;
+            $cachedUrls[$rawItem['url']] = true;
+            if (!empty($rawItem['source_url'])) {
+                $cachedUrls[$rawItem['source_url']] = true;
             }
-            if (!empty($item['original_url'])) {
-                $cachedUrls[$item['original_url']] = true;
+            if (!empty($rawItem['original_url'])) {
+                $cachedUrls[$rawItem['original_url']] = true;
             }
-            $item['is_new'] = false;
-            $item = $this->treeKeyService->appendKey($item);
-            $item = $this->protectUrlForClient($item, $isShow);
-            $this->emitter->data($item);
+            $clientItem = $rawItem;
+            $clientItem['is_new'] = false;
+            $clientItem = $this->treeKeyService->appendKey($clientItem);
+            $clientItem = $this->protectUrlForClient($clientItem, $isShow);
+            $clientItems[$validIndex] = $clientItem;
+            $this->emitter->data($clientItem);
         }
+
+        foreach ($validItems as $index => $rawItem) {
+            if (!$this->validator->validateCached($rawItem)) {
+                $skippedCount++;
+                $this->removeCachedItem($clientItems[$index] ?? $rawItem);
+                unset($validItems[$index]);
+                unset($cachedUrls[$rawItem['url']]);
+                if (!empty($rawItem['source_url'])) {
+                    unset($cachedUrls[$rawItem['source_url']]);
+                }
+                if (!empty($rawItem['original_url'])) {
+                    unset($cachedUrls[$rawItem['original_url']]);
+                }
+                continue;
+            }
+            $validItems[$index] = $rawItem;
+        }
+        $validItems = array_values($validItems);
 
         $this->emitter->event('cache_end', [
             'message' => '缓存验证完成，正在搜索新资源...',
@@ -141,5 +164,16 @@ class SearchResultPresenter
             }
         }
         return $item;
+    }
+
+    private function removeCachedItem(array $item)
+    {
+        $payload = [
+            'url' => $item['url'] ?? '',
+            'source_url' => $item['source_url'] ?? '',
+            'original_url' => $item['original_url'] ?? '',
+            'title' => $item['title'] ?? '',
+        ];
+        $this->emitter->event('cache_remove', $payload);
     }
 }

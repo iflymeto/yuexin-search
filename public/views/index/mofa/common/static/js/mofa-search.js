@@ -155,7 +155,7 @@
       const status = document.createElement("div");
       status.className = "search-status-line";
       status.innerHTML = '<span class="search-status-dot"></span><span>' + escapeHtml(text) + '</span>';
-      target.appendChild(status);
+      target.insertBefore(status, target.firstChild);
       return status;
     }
 
@@ -186,8 +186,22 @@
       };
     }
 
+    function getSearchItemKeys(item) {
+      if (!item) return [];
+      return [
+        item.source_url,
+        item.original_url,
+        item.sourceUrl,
+        item.originalUrl,
+        item.treeSourceUrl,
+        item.url,
+        item.title
+      ].map(value => String(value || "").trim()).filter(Boolean);
+    }
+
     function getSearchItemKey(item) {
-      return String(item && (item.source_url || item.original_url || item.sourceUrl || item.originalUrl || item.treeSourceUrl || item.url || item.title || "")).trim();
+      const keys = getSearchItemKeys(item);
+      return keys[0] || "";
     }
 
     function isLocalSearchItem(item) {
@@ -247,7 +261,7 @@
       if (!target || !item) return;
       const buckets = state.searchBuckets;
       const card = ensureSearchItemCard(item);
-      let beforeNode = status && status.parentNode === target ? status : null;
+      let beforeNode = null;
 
       if (item.__searchBucket === "local") {
         beforeNode = firstBucketCard(buckets.fresh) || firstBucketCard(buckets.cached) || beforeNode;
@@ -268,13 +282,21 @@
       const key = getSearchItemKey(item);
       if (!key) return state.searchItems;
 
-      let existing = buckets.seen.get(key);
+      const keys = getSearchItemKeys(item);
+      let existing = null;
+      for (const alias of keys) {
+        existing = buckets.seen.get(alias);
+        if (existing) break;
+      }
       if (existing) {
         const wasLocal = isLocalSearchItem(existing);
         item = mergeSearchItem(existing, item);
         removeBucketItem(buckets.local, existing);
         removeBucketItem(buckets.fresh, existing);
         removeBucketItem(buckets.cached, existing);
+        getSearchItemKeys(existing).forEach(alias => {
+          if (buckets.seen.get(alias) === existing) buckets.seen.delete(alias);
+        });
         if (!wasLocal && isLocalSearchItem(item)) {
           refreshSearchItemCard(item);
         }
@@ -293,9 +315,37 @@
         buckets.cached.push(item);
       }
 
-      buckets.seen.set(key, item);
+      getSearchItemKeys(item).forEach(alias => buckets.seen.set(alias, item));
       state.searchItems = buckets.local.concat(buckets.fresh, buckets.cached);
       return state.searchItems;
+    }
+
+    function removeSearchItemFromBuckets(item) {
+      if (!state.searchBuckets || !item) return false;
+      const buckets = state.searchBuckets;
+      const keys = getSearchItemKeys(item);
+      let existing = null;
+      let matchedKey = "";
+      for (const key of keys) {
+        existing = buckets.seen.get(key);
+        if (existing) {
+          matchedKey = key;
+          break;
+        }
+      }
+      if (!existing) return false;
+      removeBucketItem(buckets.local, existing);
+      removeBucketItem(buckets.fresh, existing);
+      removeBucketItem(buckets.cached, existing);
+      if (matchedKey) buckets.seen.delete(matchedKey);
+      keys.forEach(key => {
+        if (buckets.seen.get(key) === existing) buckets.seen.delete(key);
+      });
+      if (existing.__searchCard && existing.__searchCard.parentNode) {
+        existing.__searchCard.parentNode.removeChild(existing.__searchCard);
+      }
+      state.searchItems = buckets.local.concat(buckets.fresh, buckets.cached);
+      return true;
     }
 
     function renderSearchItems(target, items) {
@@ -374,12 +424,22 @@
           return;
         }
 
+        if (data.type === "cache_remove") {
+          data = normalizeSearchItem(data);
+          if (removeSearchItemFromBuckets(data)) {
+            renderSearchResultHeader(keyword, state.searchItems.length, true);
+            el.searchResult.classList.toggle("is-empty", state.searchItems.length === 0);
+            setStatusText(status, currentPanName() + "已找到 " + state.searchItems.length + " 条，继续搜索中");
+          }
+          return;
+        }
+
         if (!data || !data.url || !data.title) return;
         data = normalizeSearchItem(data);
         el.searchResult.classList.remove("is-empty");
         if (state.searchPendingReplace) {
           target.innerHTML = "";
-          target.appendChild(status);
+          target.insertBefore(status, target.firstChild);
           state.searchPendingReplace = false;
         }
         addSearchItemToBuckets(data);

@@ -542,7 +542,7 @@ class XunleiPan extends BasePan
             $this->urlHeader
         );
 
-        return ['status' => 200];
+        return $res;
     }
 
     /**

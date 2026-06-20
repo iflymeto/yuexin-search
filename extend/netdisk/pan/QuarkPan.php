@@ -387,12 +387,46 @@ class QuarkPan extends BasePan
             "fr" => "pc",
             "uc_param_str" => ""
         ];
-        return $this->executeApiRequest(
+        $result = $this->executeApiRequest(
             "https://drive-pc.quark.cn/1/clouddrive/file/delete", 
             "POST", 
             $urlData, 
             $queryParams
         );
+
+        return $this->waitDeleteTaskIfNeeded($result);
+    }
+
+    private function waitDeleteTaskIfNeeded($result)
+    {
+        if (!is_array($result) || empty($result['data']['task_id'])) {
+            return $result;
+        }
+
+        if (!empty($result['data']['finish'])) {
+            return $result;
+        }
+
+        $taskId = $result['data']['task_id'];
+        $retryIndex = 0;
+        $sleepMs = isset($result['metadata']['tq_gap']) ? max(200000, (int)$result['metadata']['tq_gap'] * 1000) : 300000;
+        $lastResult = $result;
+
+        while ($retryIndex < 10) {
+            usleep(min($sleepMs, 1000000));
+            $taskResult = $this->getShareTask($taskId, $retryIndex);
+            if (is_array($taskResult)) {
+                $lastResult = $taskResult;
+                $data = isset($taskResult['data']) && is_array($taskResult['data']) ? $taskResult['data'] : [];
+                if (!empty($data['finish']) || (isset($data['status']) && (int)$data['status'] === 2)) {
+                    $lastResult['data']['finish'] = true;
+                    return $lastResult;
+                }
+            }
+            $retryIndex++;
+        }
+
+        return $lastResult;
     }
     
     /**
